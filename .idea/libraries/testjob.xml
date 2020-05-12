@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="testjob">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/azkaban-common/src/test/resources/project/testjob/testjob.zip!/" />
+      <root url="jar://$PROJECT_DIR$/azkaban-common/src/test/resources/project/testjob/testjob-med.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
