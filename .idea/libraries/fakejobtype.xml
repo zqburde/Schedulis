@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="fakejobtype">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/azkaban-common/src/test/resources/plugins/jobtypes/anothertestjob/lib/fakejobtype.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

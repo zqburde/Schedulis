@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="sample_flow_01">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/azkaban-common/src/test/resources/sample_flow_01.zip!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
