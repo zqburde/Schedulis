@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="az-flow-trigger-dependency-plugin">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/azkaban-web-server/src/test/resources/az-flow-trigger-dependency-plugin.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
