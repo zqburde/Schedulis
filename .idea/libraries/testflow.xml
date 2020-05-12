@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="testflow">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/azkaban-common/src/test/resources/project/testflow/flowTestWithError.zip!/" />
+      <root url="jar://$PROJECT_DIR$/azkaban-common/src/test/resources/project/testflow/testFlow.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
