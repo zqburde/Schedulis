@@ -26,7 +26,7 @@ DataSphere Studio 可以将编辑好的工作流一键发布到 Schedulis 进行
 | 系统管理 | 用户管理 | 支持 | 不支持 | 支持 | 支持 | 不支持 |
 
 # 界面预览 (动图加载缓慢，请耐心等待)
-![](./docs/assets/readme/img/introduce.gif)
+![image](https://note.youdao.com/ynoteshare1/index.html?id=cdde8e39879040458340ad2d05a76f9b&type=note)
 
 # 架构设计
 
