@@ -29,7 +29,7 @@ DataSphere Studio 可以将编辑好的工作流一键发布到 Schedulis 进行
 ![image](https://github.com/SelfImpr001/MyPhotos/blob/master/Schedulis/introduce.gif)
 
 # 架构设计
-![Schedulis Architecture](./docs/assets/readme/img/architecture2.png)
+![Schedulis Architecture](docs/assets/readme/img/architecture1.png)
 
 ![DSS工程发布到调度系统的架构设计](https://github.com/WeBankFinTech/DataSphereStudio/blob/master/docs/zh_CN/ch4/DSS%E5%B7%A5%E7%A8%8B%E5%8F%91%E5%B8%83%E8%B0%83%E5%BA%A6%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1.md)
 
