@@ -25,7 +25,7 @@ DataSphere Studio 可以将编辑好的工作流一键发布到 Schedulis 进行
 |  | 失败策略 | <p>支持任务失败暂停、跳过、重试、超时处理 | <p>不支持失败策略 | <p>支持任务超时处理 | <p>支持部分任务重跑策略 | <p>支持任务超时处理和失败重试 |
 | 系统管理 | 用户管理 | 支持 | 不支持 | 支持 | 支持 | 不支持 |
 
-# 界面预览 (动图加载缓慢，请耐心等待)
+# 界面预览
 ![image](https://github.com/SelfImpr001/MyPhotos/blob/master/Schedulis/introduce.gif)
 
 # 架构设计
