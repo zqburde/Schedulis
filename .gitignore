@@ -17,8 +17,6 @@ gen
 /.idea
 .DS_Store
 LICENSE
-bin/
-docs/
 !/az-intellij-style.xml
 !/assembly.xml
 !/LICENSE
