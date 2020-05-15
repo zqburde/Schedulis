@@ -1,21 +1,10 @@
 # Created by .ignore support plugin (hsz.mobi)
-### Example user template template
-### Example user template
-
 # IntelliJ project files
 .idea
 *.iml
-out
-gen
-/.apt_generated/
-/.classpath
-/.factorypath
-/.project
-/.settings/
-/.springBeans
-/target/
+*/target/
+/azkaban-jobtype/jobtypes/
 /.idea
-.DS_Store
 LICENSE
 !/az-intellij-style.xml
 !/assembly.xml
