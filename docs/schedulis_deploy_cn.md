@@ -30,7 +30,7 @@ HA 部署模式，即多个 WebServer 组合一个及以上 ExecutorServer 的�
 1. 使用 Git 下载 Schedulis 项目文件
 2. 下载jobtype插件的依赖和配置，链接: https://pan.baidu.com/s/1V0pyhzwRCNdVgDhkNYWUhQ 提取码: hcnk ；（由于文件大小较大，所以放在网盘进行管理）
 3. 进入项目文件的根目录下，将第二步中下载的jobtypes文件解压后放入module（azkaban-jobtyope）的根目录，然后使用 Maven 来编译打包整个项目 ```mvn clean install -Dmaven.test.skip=true```    
-待整个项目编译打包成功后，用户可以在这两个服务各自的 target 目录下找到相应的 .ZIP 安装包。这里需要注意：如发现安装包没有plugins，或者plugins为空，则分别进入 WebServer 和 ExecServer 目录，为它们单独再次编译即可。
+待整个项目编译打包成功后，用户可以在这两个服务(azkaban-web-server 和 azkaban-exec-server)各自的 target 目录下找到相应的 .ZIP 安装包(schedulis_***_web.zip 和 schedulis_***_exec.zip)。这里需要注意：如发现安装包没有plugins，或者plugins为空，则分别进入 WebServer 和 ExecServer 目录，为它们单独再次编译即可。
 4. 将以下文件复制到需要部署的 Executor 或者 WebServer 服务器:    
     - Executor 或者 WebServer 安装包 
     - 项目文件根目录下的 bin/construct 目录中的数据库初始化脚本 hdp\_wtss\_deploy\_script.sql    
