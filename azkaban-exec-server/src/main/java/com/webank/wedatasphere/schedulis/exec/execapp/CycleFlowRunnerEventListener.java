@@ -64,10 +64,9 @@ public class CycleFlowRunnerEventListener implements EventListener {
 
     private static final Logger logger = Logger.getLogger(CycleFlowRunnerEventListener.class);
 
-    private static final String WTSS_WEB_SERVER_HOST = "wtss.web.server.host";
-    private static final String WTSS_WEB_SERVER_POST = "wtss.web.server.port";
-    private static final String WTSS_CYCLE_INTERVAL = "wtss.cycle.interval";
-    private static final String WTSS_CYCLE_RETRY_TIMES = "wtss.cycle.retry.times";
+    private static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
+    private static final String EXECUTE_CYCLE_INTERVAL = "execute.cycle.interval";
+    private static final String EXECUTE_CYCLE_RETRY_TIMES = "execute.cycle.retry.times";
 
     private ExecutionCycleDao executionCycleDao;
     private Props props;
@@ -109,7 +108,7 @@ public class CycleFlowRunnerEventListener implements EventListener {
 
     private void submitExecutableFlow(ExecutableFlow flow, ExecutionCycle cycleFlow) {
         try {
-            int retryTimes = props.getInt(WTSS_CYCLE_RETRY_TIMES, 5);
+            int retryTimes = props.getInt(EXECUTE_CYCLE_RETRY_TIMES, 5);
             Pair<Boolean, Integer> pair = submitExecutableFlow(flow, retryTimes);
             boolean submitFlowResult = pair.getFirst();
             if (submitFlowResult) {
@@ -151,7 +150,7 @@ public class CycleFlowRunnerEventListener implements EventListener {
     private Pair<Boolean, Integer> submitExecutableFlow(ExecutableFlow flow, int retryTimes) throws IOException {
         Supplier<Pair<Boolean, Integer>> submitExecutableFlow = () -> {
             try {
-                int interval = props.getInt(WTSS_CYCLE_INTERVAL, 5);
+                int interval = props.getInt(EXECUTE_CYCLE_INTERVAL, 5);
                 sleep(interval * 1000);
                 logger.info(String.format("submit cycle: %s : %d flow start ...", flow.getFlowId(), flow.getExecutionId()));
                 Pair<Boolean, Integer> result = submitExecutableFlow(flow);
@@ -264,9 +263,8 @@ public class CycleFlowRunnerEventListener implements EventListener {
         String urlSuffix = params.keySet().stream()
                 .map(key -> key + "=" + params.get(key))
                 .collect(joining("&"));
-        String host = props.getString(WTSS_WEB_SERVER_HOST);
-        int port = props.getInt(WTSS_WEB_SERVER_POST);
-        String url = "http://" + host + ":" + port + "/executor?" + urlSuffix;
+        String webServerUrl = props.getString(AZKABAN_WEBSERVER_URL);
+        String url = webServerUrl + "/executor?" + urlSuffix;
         logger.info("cycle flow url: " + url);
         return HttpUrl.parse(url);
     }
