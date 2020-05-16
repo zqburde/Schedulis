@@ -157,9 +157,6 @@ checkers.num.threads=200
 #Web Sever url相关配置， eg: http://localhost:8081
 azkaban.webserver.url=http://webserver_ip:webserver_port
 
-#循环执行配置，Webserver 地址和端口
-wtss.web.server.host=webserver_ip
-wtss.web.server.port=webserver_port
 ```
 
 #### plugin.properties
@@ -231,7 +228,7 @@ azkaban.executorselector.comparator.Memory=3
 azkaban.executorselector.comparator.LastDispatched=1
 azkaban.executorselector.comparator.NumberOfAssignedFlowComparator=1
 
-# LDAP 地址配置，若没有相应的 IP，请修改为 WebServer 的 IP 和相对应的端口
+# LDAP 地址配置
 ladp.ip=ldap_ip
 ladp.port=ldap_port
 ```
