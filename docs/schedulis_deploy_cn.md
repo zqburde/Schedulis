@@ -105,7 +105,7 @@ azkaban.native.lib=/appcom/Install/AzkabanInstall/wtss-exec/lib
 
 #### common.properties
 此配置文件存放于 ExecServer 安装包下的 plugins/jobtypes 目录下    
-此配置文件主要是设置 DataChecker 和 EventChecker 插件的数据库地址
+此配置文件主要是设置 DataChecker 和 EventChecker 插件的数据库地址，如不需要这两个插件可不用配置
 ```
 #配置集群 Hive 的元数据库（密码用 base64 加密）
 job.datachecker.jdo.option.name="job"
@@ -326,6 +326,7 @@ nginx -s reload
 ***
 
 ## 四、Schedulis 自动化环境部署准备 <a name="自动化">
+自动化安装比较适合节点较多的情况下的快速配置。
 
 ### 一）、使用前置
 - 自动化安装依赖ansible，请在普通版部署模式的基础上安装ansible
