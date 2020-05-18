@@ -224,7 +224,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
         logger.error("load trigger updates from DB failed" + e);
       }
     }else{
-      triggersFromDb = (List<Trigger>) triggerIdMap.values();
+      triggersFromDb = getTriggers();
     }
     for (final Trigger t : triggersFromDb) {
       if (t.getSource().equals(triggerSource)
