@@ -69,10 +69,6 @@ public class SystemServlet extends LoginAbstractAzkabanServlet {
     private final String viewerName;
     private final String viewerPath;
 
-    private static final String DEPARTMENT_MAINTAINER_CHECK_SWITCH = "department.maintainer.check.switch";
-
-    private static boolean department_maintainer_check_switch;
-
     public SystemServlet(final Props propsPlugin) {
 
         this.propsPlugin = propsPlugin;
@@ -93,7 +89,6 @@ public class SystemServlet extends LoginAbstractAzkabanServlet {
         Injector injector = ServiceProvider.SERVICE_PROVIDER.getInjector().createChildInjector(new SystemModule());
         systemManager = injector.getInstance(SystemManager.class);
         propsAzkaban = ServiceProvider.SERVICE_PROVIDER.getInstance(Props.class);
-        department_maintainer_check_switch = propsAzkaban.getBooleanDefaultFalse(DEPARTMENT_MAINTAINER_CHECK_SWITCH, false);
     }
 
     @Override
@@ -592,90 +587,17 @@ public class SystemServlet extends LoginAbstractAzkabanServlet {
         final int departmentId = Integer.valueOf(getParam(req, "departmentId"));
 
         Map<String, String> dataMap = loadSystemServletI18nData();
-
         try {
-
             if (0 == roleId) {
                 throw new SystemUserManagerException(dataMap.get("plsSelectRole"));
             }
-
             if (0 == departmentId) {
                 throw new SystemUserManagerException(dataMap.get("plsSelectDep"));
             }
 
-            // 校验用户权限开关是否开启,开启的时候需要判断添加的用户是否符合规则,关闭的时候不需要校验
-            boolean wtssProjectPrivilegeCheck = ProjectManagerServlet.getWtssProjectPrivilegeCheck();
-
-            // 用户名是否需要分类, true:需要, false:不需要
-            if (department_maintainer_check_switch) {
-                // 判断添加的用户是不是运维用户,如果不是,则只能新增的用户只能设置他自己作为代理用户
-                if (userId.startsWith("WTSS_")) {
-                    if (categoryUser != 1) {
-                        throw new SystemUserManagerException(dataMap.get("errusercate"));
-                    }
-                    String[] userIdParts = StringUtils.split(userId, "_");
-                    if (userIdParts.length == 3) {
-                        String simpleDepartmentCode = userIdParts[1];
-                        if (!Pattern.compile("^[a-zA-Z]+$").matcher(simpleDepartmentCode).matches()) {
-                            throw new SystemUserManagerException(dataMap.get("invalidUserNamePrefix") + userId + dataMap.get("invalidDepCode"));
-                        }
-                    }else {
-                        throw new SystemUserManagerException(dataMap.get("invalidUserNamePrefix") + userId + dataMap.get("invalidLength"));
-                    }
-
-                } else if (userId.startsWith("hduser")) {
-                    if (categoryUser != 2) {
-                        throw new SystemUserManagerException(dataMap.get("errusercate"));
-                    }
-                    if (StringUtils.isNotBlank(proxyUser)) {
-                        // 判断开关是否打开,打开,则需要校验添加的代理用户是不是本人,关闭,不需要校验
-                        if (wtssProjectPrivilegeCheck) {
-                            if (roleId != 1) {
-                                if (!proxyUser.equals(userId)) {
-                                    throw new SystemUserManagerException(dataMap.get("invalidAddSystemUserProxy") + userId);
-                                }
-                            }
-                        }
-                    }
-
-                } else if (Pattern.compile("^[0-9]+$").matcher(userId).matches()) {
-                    if (categoryUser != 3) {
-                        throw new SystemUserManagerException(dataMap.get("errusercate"));
-                    }
-                    // 判断增加的用户是不是管理员
-                    if (roleId != 1) {
-                        // userId为纯数字的实名用户
-                        if (StringUtils.isNotBlank(proxyUser)) {
-                            WebankUser webankUser = this.systemManager.getWebankUserByUserId(userId);
-                            if (wtssProjectPrivilegeCheck) {
-                                if (webankUser != null) {
-                                    if (!proxyUser.equals(webankUser.urn)) {
-                                        throw new SystemUserManagerException(dataMap.get("invalidAddRealNameUserProxy") + webankUser.urn);
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-
-                } else {
-                    throw new SystemUserManagerException(dataMap.get("invalidUserNamePrefix") + userId + dataMap.get("invalidName"));
-                }
-            }
-
-            WtssUser wtssUser = this.systemManager.getSystemUserById(userId);
-            if (null != wtssUser) {
-                throw new SystemUserManagerException(dataMap.get("userHasExist"));
-            }
-
             // 校验用户是否存在
             WtssUser tempWtssUser = this.systemManager.getSystemUserById(userId);
-
-            // 针对id 带前缀'wtss_' 的, 因为第一次添加的时候如果不是WebankUser对象,则会在userId前加上前缀'wtss_'
-            // 此处如果不加这个前缀是查不出来的, 代码就会走新增逻辑,然后报错:'主键userId重复定义'
-            // 该条查询在 this.systemManager.getSystemUserById(userId) 这条查询无结果之后再执行
             WtssUser featureWtssUser = this.systemManager.getSystemUserById(("wtss_" + userId));
-
             if ((null != tempWtssUser) || (null != featureWtssUser)) {
                 throw new SystemUserManagerException(dataMap.get("userHasExist"));
             }
@@ -737,38 +659,9 @@ public class SystemServlet extends LoginAbstractAzkabanServlet {
             if (0 == roleId) {
                 throw new SystemUserManagerException(dataMap.get("plsSelectRole"));
             }
-
             if (0 == departmentId) {
                 throw new SystemUserManagerException(dataMap.get("plsSelectDep"));
             }
-
-            // 校验用户权限开关是否开启,开启的时候需要判断添加的用户是否符合规则,关闭的时候不需要校验
-            boolean wtssProjectPrivilegeCheck = ProjectManagerServlet.getWtssProjectPrivilegeCheck();
-
-                WtssUser wtssUser = this.systemManager.getSystemUserById(userId);
-                // 实名用户的普通用户只能设置自己为代理
-                if (Pattern.compile("^[0-9]+$").matcher(userId).matches()) {
-                    if (roleId != 1) {
-                        if (StringUtils.isNotBlank(proxyUser)) {
-                            // 校验开关是否打开,打开,只能设置自己为代理用户
-                            if (wtssProjectPrivilegeCheck) {
-                                if (!wtssUser.getUsername().equals(proxyUser)) {
-                                    throw new SystemUserManagerException(dataMap.get("invalidUpdateRealNameUserProxy") + wtssUser.getUsername());
-                                }
-                            }
-                        }
-                    }
-                } else if (wtssUser.getUsername().startsWith("hduser")) {
-                    if (StringUtils.isNotBlank(proxyUser)) {
-                        if (wtssProjectPrivilegeCheck) {
-                            if (roleId != 1) {
-                                if (!proxyUser.equals(wtssUser.getUsername())) {
-                                    throw new SystemUserManagerException(dataMap.get("invalidUpdateSystemUserProxy") + wtssUser.getUsername());
-                                }
-                            }
-                        }
-                    }
-                }
 
             int addResult = this.systemManager.updateSystemUser(userId, password, roleId, proxyUser, departmentId);
             if (addResult != 1) {
