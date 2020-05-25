@@ -70,15 +70,6 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   private static final Logger logger = Logger.getLogger(LoginAbstractAzkabanServlet.class.getName());
   private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
 
-  private static final String WTSS_SUPER_USER = "dws-wtss";
-  private static final String WTSS_SUPER_USER_PWD = "WeBankBDPWTSS&DWS@2019";
-
-  private static final String WTSS_SUPER_USER_2 = "superadmin";
-  private static final String WTSS_SUPER_USER_PWD_2 = "Abcd1234";
-
-  private static final String WTSS_SUPER_USER_STR = "superUser";
-  private static final String WTSS_SUPER_USER_PWD_STR = "superUserPwd";
-
   private static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
 
   private static final HashMap<String, String> contextType = new HashMap<>();
@@ -173,12 +164,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         handleErrorRequest(req, resp, "Illegal Request.");
         return;
       }
-      // 针对非页面操作的客户端,新增用户直接使用超级管理员
-      boolean flag = featureAddSystemUserViaFastTrack(req, resp, "GET");
-      // 如果flag是true, 说明未请求 addSystemUserViaFastTrack 接口,此处设置 flag 避免重复添加数据导致报错
-      if (flag) {
-        handleGet(req, resp, session);
-      }
+      handleGet(req, resp, session);
     } else {
       if (hasParam(req, "ajax")) {
         final HashMap<String, String> retVal = new HashMap<>();
@@ -197,45 +183,6 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   private boolean isRequestWithoutSession(HttpServletRequest req) {
     String ajaxName = getParam(req,"ajax", "");
     return ajaxName.equals("executeFlowCycleFromExecutor");
-  }
-
-  /**
-   * 处理非页面登录的新增用户请求
-   * @param req
-   * @param resp
-   * @param type 请求类型
-   * @throws ServletException
-   * @throws IOException
-   */
-  private boolean featureAddSystemUserViaFastTrack(final HttpServletRequest req, final HttpServletResponse resp,
-                                                   String type) throws ServletException, IOException {
-    boolean flag = true;
-    // 针对非页面操作的客户端,新增用户直接使用超级管理员
-    if (hasParam(req, "ajax")) {
-      String ajaxName = getParam(req, "ajax");
-      if (org.apache.commons.lang.StringUtils.isNotBlank(ajaxName)) {
-        if (ajaxName.equals("addSystemUserViaFastTrack")) {
-          try {
-            final String ip = getRealClientIpAddr(req);
-            //如果超级用户用户名和密码都是对的，那么我们直接放行, 创建超级管理员的session
-            Session session = createSession(WTSS_SUPER_USER_2, WTSS_SUPER_USER_PWD_2, ip, WTSS_SUPER_USER_STR);
-            // 使用超级管理员身份处理
-            if (type.equals("GET")) {
-              handleGet(req, resp, session);
-            } else {
-              handlePost(req, resp, session);
-            }
-
-            // 调用了addSystemUserViaFastTrack接口之后,需要将标识变为false
-          } catch (UserManagerException e) {
-            logger.error("addSystemUserViaFastTrack exception,cause is:{} ", e);
-          }
-          // 不管执行结果怎样,本次请求都算是执行过,所以讲flag标识设置为false
-          flag = false;
-        }
-      }
-    }
-    return flag;
   }
 
   /**
@@ -487,22 +434,11 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         final String password  = (String) params.get("userpwd");
         final String ip = getRealClientIpAddr(req);
 
-        String superUser = (String)params.get(WTSS_SUPER_USER_STR);
-        String superUserPwd = (String)params.get(WTSS_SUPER_USER_PWD_STR);
-        if (WTSS_SUPER_USER.equals(superUser) && WTSS_SUPER_USER_PWD.equals(superUserPwd)){
-          try{
-            session = createSession(username, password, ip, superUser);
-          } catch(final Exception e){
-            writeResponse(resp, "Login error: " + e.getMessage());
-            return;
-          }
-        }else{
-          try {
-            session = createSession(username, password, ip);
-          } catch (final UserManagerException e) {
-            writeResponse(resp, "Login error: " + e.getMessage());
-            return;
-          }
+        try {
+          session = createSession(username, password, ip);
+        } catch (final UserManagerException e) {
+          writeResponse(resp, "Login error: " + e.getMessage());
+          return;
         }
       }
       handleMultiformPost(req, resp, params, session);
@@ -534,14 +470,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         }
       }
     } else {
-
-      // 针对非页面操作的客户端,新增用户直接使用超级管理员
-      boolean flag = featureAddSystemUserViaFastTrack(req, resp, "POST");
-
-      // 如果flag是true, 说明未请求 addSystemUserViaFastTrack 接口,此处设置 flag 避免重复添加数据导致报错
-      if (flag) {
-        handlePost(req, resp, session);
-      }
+      handlePost(req, resp, session);
     }
   }
 
@@ -588,29 +517,6 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     final String username = getParam(req, "username");
     final String password = getParam(req, "userpwd");
     final String ip = getRealClientIpAddr(req);
-    try{
-      final String superUser = getParam(req, WTSS_SUPER_USER_STR);
-      final String superUserPwd = getParam(req,  WTSS_SUPER_USER_PWD_STR);
-      if (WTSS_SUPER_USER.equals(superUser) &&
-              WTSS_SUPER_USER_PWD.equals(superUserPwd)){
-        logger.info("superUser " + superUser + " signed username is " + username);
-        //如果超级用户用户名和密码都是对的，那么我们直接放行
-        if(!StringUtils.isFromBrowser(req.getHeader("User-Agent"))){
-          logger.info("not browser.");
-          Session cacheSession = this.application.getSessionCache().getSessionByUsername(username);
-          if(cacheSession != null){
-            logger.info("session not found.");
-            return cacheSession;
-          }
-        }
-        Session newSession = createSession(username, password, ip, superUser);
-        getApplication().getSessionCache().addSession(newSession);
-        return newSession;
-      }
-    }catch(final Exception e){
-      logger.error("no super user", e);
-      //没有超级用户，直接ignore
-    }
     return createSession(username, password, ip, req);
   }
 
@@ -647,26 +553,6 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     getApplication().getSessionCache().addSession(session);
     return session;
   }
-
-
-  private Session createSession(final String username, final String password, final String ip,
-                                final String superUser) throws UserManagerException{
-
-    UserManager manager = getApplication().getTransitionService().getUserManager();
-    if (manager instanceof SystemUserManager){
-      //不改接口，直接改SystemUserManager，这样做到少侵入
-      SystemUserManager userManager = (SystemUserManager)manager;
-      final User user = userManager.getUser(username, password, superUser);
-      logger.info("User is " + user.toString());
-      final String uuid = UUID.randomUUID().toString();
-      return new Session(uuid, user, ip);
-    }else{
-      logger.warn("user manager 不是 WebankXmlUserManager 实例，不能进行创建session");
-      return null;
-    }
-  }
-
-
 
   protected boolean hasPermission(final Project project, final User user, final Permission.Type type) {
     if (project.hasPermission(user, type)) {
@@ -711,11 +597,6 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         session = createSession(req);
       } catch (final UserManagerException | IOException e) {
         ret.put("error", "Login in error. " + e.getMessage());
-        return;
-      }
-      if (null == session){
-        logger.error("session is null");
-        ret.put("error","Login in error, session is null.");
         return;
       }
       final Cookie cookie = new Cookie(SESSION_ID_NAME, session.getSessionId());
