@@ -180,6 +180,13 @@ public class FlowRunner extends EventHandler implements Runnable {
   private ExecutorService executorPriorityService;
 
   private EventListener cycleFlowRunnerEventListener;
+
+  private long pausedStartTime;
+
+  private long maxPausedTime;
+
+  private volatile boolean isFailedPaused = false;
+
   /**
    * Constructor. This will create its own ExecutorService for thread pools
    */
@@ -600,7 +607,11 @@ public class FlowRunner extends EventHandler implements Runnable {
             this.mainSyncObj.wait(CHECK_WAIT_MS);
           } catch (final InterruptedException e) {
           }
-
+          if((System.currentTimeMillis() - this.pausedStartTime) > maxPausedTime){
+            this.logger.warn("The pause timed out and the job flow was re executed.");
+            reStart();
+            updateFlow();
+          }
           continue;
         } else {
           if (this.retryFailedJobs) {
@@ -620,6 +631,15 @@ public class FlowRunner extends EventHandler implements Runnable {
 
     updateFlow();
     this.logger.info("Finished Flow");
+  }
+
+  public long getMaxPausedTime() {
+    return maxPausedTime;
+  }
+
+  public FlowRunner setMaxPausedTime(long maxPausedTime) {
+    this.maxPausedTime = maxPausedTime;
+    return this;
   }
 
   private void retryAllFailures() throws IOException {
@@ -714,7 +734,6 @@ public class FlowRunner extends EventHandler implements Runnable {
         }
         this.logger.info("Restarting failed job: " + nodePath);
         this.flowKilled = false;
-        this.flowFailed = false;
         node.resetForRetry();
         if ((node.getStatus() == Status.READY
                 || node.getStatus() == Status.DISABLED)) {
@@ -1629,10 +1648,10 @@ public class FlowRunner extends EventHandler implements Runnable {
   public void pause(final String user) {
     synchronized (this.mainSyncObj) {
       if (!this.flowFinished) {
-        this.logger.info("Flow paused by " + user);
+        this.logger.info("Flow paused by " + user + ". If the pause is not cancelled after " + (double)this.maxPausedTime/1000/60 + " minutes, the flow will automatically resume running.");
         this.flowPaused = true;
         this.flow.setStatus(Status.PAUSED);
-
+        this.pausedStartTime = System.currentTimeMillis();
         updateFlow();
       } else {
         this.logger.info("Cannot pause finished flow. Called by user " + user);
@@ -1640,17 +1659,6 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
 
     interrupt();
-  }
-
-  public void failedPause() {
-    if (!this.flowFinished && !this.flowPaused) {
-      this.logger.info("paused flow, execId: " + this.flow.getExecutionId());
-      this.flowPaused = true;
-      this.flow.setStatus(Status.PAUSED);
-      updateFlow();
-    } else {
-      this.logger.info("Cannot pause finished flow, execId: " + this.flow.getExecutionId());
-    }
   }
 
   /**
@@ -1669,7 +1677,12 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
     if(failedNodes == 0){
       //将flow状态改为Running, 子flow有job没跑完，父级flow肯定还是running
-      base.setStatus(Status.RUNNING);
+      if(!base.getStatus().equals(Status.PAUSED)){
+        base.setStatus(Status.RUNNING);
+      }
+      if(base instanceof ExecutableFlow) {
+        this.isFailedPaused = false;
+      }
     }
     if(base.getParentFlow() != null) {
       resetFlowStatus(base.getParentFlow(), executableNode);
@@ -1731,20 +1744,26 @@ public class FlowRunner extends EventHandler implements Runnable {
         this.logger.info("Cannot resume flow that isn't paused");
       } else {
         this.logger.info("Flow resumed by " + user);
-        this.flowPaused = false;
-        if (this.flowFailed) {
-          this.flow.setStatus(Status.FAILED_FINISHING);
-        } else if (this.flowKilled) {
-          this.flow.setStatus(Status.KILLING);
-        } else {
-          this.flow.setStatus(Status.RUNNING);
-        }
-
+        reStart();
         updateFlow();
       }
     }
 
     interrupt();
+  }
+
+  private void reStart(){
+    this.flowPaused = false;
+    if (this.flowFailed || this.isFailedPaused) {
+      logger.info("set flow status FAILED_FINISHING");
+      this.flow.setStatus(Status.FAILED_FINISHING);
+    } else if (this.flowKilled) {
+      logger.info("set flow status KILLING");
+      this.flow.setStatus(Status.KILLING);
+    } else {
+      logger.info("set flow status RUNNING");
+      this.flow.setStatus(Status.RUNNING);
+    }
   }
 
   /**
@@ -2201,6 +2220,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   private void failedWaitingJobHandle(ExecutableNode node){
     try {
       if(node.getStatus().equals(Status.FAILED_WAITING) && FlowRunner.this.failureAction == FailureAction.FAILED_PAUSE){
+        FlowRunner.this.isFailedPaused = true;
         FlowRunner.this.failedNodes.put(node.getNestedId(), node);
         if(!FlowRunner.this.isTriggerStarted){
           killFlowTrigger = new KillFlowTrigger(FlowRunner.this, FlowRunner.this.logger);
