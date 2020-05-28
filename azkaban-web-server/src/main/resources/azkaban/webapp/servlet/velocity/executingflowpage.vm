@@ -137,10 +137,10 @@
                title="Analyze job in ${executionExternalLinkLabel}">${executionExternalLinkLabel}</a>
         </li>
       #end
-      <!--
+
       <li class="nav-button pull-right">
-        <button type="button" id="pausebtn" class="btn btn-primary btn-sm">暂停</button>
-      </li>-->
+        <button type="button" id="pausebtn" class="btn btn-primary btn-sm">$pause</button>
+      </li>
       #if (${execPerm})
         <li class="nav-button pull-right">
           <button type="button" id="resumebtn" class="btn btn-primary btn-sm">$reStart</button>
@@ -183,6 +183,27 @@
           <form id="delete-form">
             <button type="button" class="btn btn-default" data-dismiss="modal">$cancel</button>
             <button type="button" class="btn btn-danger" id="shutdown-selected-flow-btn">$shutdownExec</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  ## 暂停作业流提示框
+  <div class="modal" id="paused-flow-modal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h4 id="paused-flow-title" class="modal-title">$pausedFlow</h4>
+        </div>
+        <div class="modal-body">
+          <p><strong>$warn</strong>$pausedFlowMsg</p>
+        </div>
+        <div class="modal-footer">
+          <form id="delete-form">
+            <button type="button" class="btn btn-default" data-dismiss="modal">$cancel</button>
+            <button type="button" class="btn btn-danger" data-dismiss="modal" id="paused-flow-btn">$confirm</button>
           </form>
         </div>
       </div>
