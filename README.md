@@ -10,7 +10,7 @@ Schedulis 支持常规的 Command Shell 和 Linkis（HadoopMR、 Hive、Spark、
 DataSphere Studio 可以将编辑好的工作流一键发布到 Schedulis 进行调度，而 Schedulis 也实现了 Linkis 插件，用于向 Linkis 提交任务，这样使得 Schedulis 与 DataSphere Studio 和 Linkis 能够无缝衔接，从而实现数据应用开发全流程的连贯顺滑用户体验。
 
 # 与业界现有调度系统的比较
-下面将 Schedulis 和业界现有的调度系统做了个对比，包括：Azkaban， Dolphin， Airflow 和 Xxl-job
+下面将 Schedulis 和业界现有的调度系统做了个对比，包括：Azkaban， Airflow 和 Xxl-job
 
 | 模块 | 描述 | Schedulis | Azkaban  | Airflow | Xxl-job |
 | :----: | :----: |-------|-------|-------|-------|  
