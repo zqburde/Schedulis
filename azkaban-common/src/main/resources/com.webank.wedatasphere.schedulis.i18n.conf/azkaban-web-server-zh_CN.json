@@ -45,7 +45,11 @@
     "retryAllFailTitle": "重试所有失败工作流",
     "tipsRetry": "重试所有失败的Job, 请确认是否重试 !",
     "skipAllFailedJob": "跳过所有FAILED状态job",
-    "tipsSkipFailed": "跳过所有FAILED状态job, 请确认是否跳过!"
+    "tipsSkipFailed": "跳过所有FAILED状态job, 请确认是否跳过!",
+    "confirm": "确定",
+    "pausedFlow": "暂停作业流",
+    "pausedFlowMsg": "如果作业流暂停执行，READY状态的任务将不会被提交执行，已经运行的任务会继续执行，确定要暂停？",
+    "pause": "暂停"
   },
   "azkaban.webapp.servlet.velocity.executionspage.vm": {
     "runningFlow": "正在执行的工作流",
