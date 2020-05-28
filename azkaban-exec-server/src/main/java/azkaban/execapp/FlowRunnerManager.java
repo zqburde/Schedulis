@@ -16,6 +16,7 @@
 
 package azkaban.execapp;
 
+import static azkaban.Constants.*;
 import static java.util.Objects.requireNonNull;
 
 import azkaban.Constants;
@@ -449,7 +450,9 @@ public class FlowRunnerManager implements EventListener,
     runner.setFlowWatcher(watcher)
         .setJobLogSettings(this.jobLogChunkSize, this.jobLogNumFiles)
         .setValidateProxyUser(this.validateProxyUser)
-        .setNumJobThreads(numJobThreads).addListener(this);
+        .setNumJobThreads(numJobThreads)
+        .setMaxPausedTime(getMaxPausedTime())
+        .addListener(this);
 
     // FIXME Add a listener for loop execution, and continue to submit new tasks when the job stream execution is complete.
     EventListener cycleFlowRunnerEventListener = new CycleFlowRunnerEventListener(executionCycleDao, azkabanProps, alerterHolder);
@@ -457,6 +460,17 @@ public class FlowRunnerManager implements EventListener,
     runner.addListener(cycleFlowRunnerEventListener);
     configureFlowLevelMetrics(runner);
     return runner;
+  }
+
+  private long getMaxPausedTime(){
+    long time;
+    try{
+      time = this.azkabanProps.getLong(FLOW_PAUSED_MAX_TIME_MS, DEFAULT_FLOW_PAUSED_MAX_TIME);
+    } catch (RuntimeException re){
+      logger.warn("get the FLOW_PAUSED_MAX_TIME_MS property failed.", re);
+      time = DEFAULT_FLOW_PAUSED_MAX_TIME;
+    }
+    return time;
   }
 
   private void submitFlowRunner(final FlowRunner runner) throws ExecutorManagerException {

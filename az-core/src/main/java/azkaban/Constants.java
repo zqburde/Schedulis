@@ -39,6 +39,10 @@ import java.util.concurrent.TimeUnit;
 public class Constants {
 
 
+  public static final String FLOW_PAUSED_MAX_TIME_MS = "flow.paused.max.time.ms";
+
+  public static final long DEFAULT_FLOW_PAUSED_MAX_TIME = 1 * 60 * 60 * 1000;
+
   public static final String FAILED_PAUSED_MAX_WAIT_MS = "failed.paused.max.wait.ms";
   public static final String FAILED_PAUSED_CHECK_TIME_MS = "failed.paused.check.time.ms";
 
