@@ -730,7 +730,8 @@
     "haveHisReRun": "History Re-Run job have been existed.",
     "submitHisReRunSuccess": " submit history Re-Run job success.",
     "submitHisReRunFail": " submit history Re-Run job failed.",
-    "resolveSlaFailed": "Resolve Sla alert settings failed."
+    "resolveSlaFailed": "Resolve Sla alert settings failed.",
+    "permissionForAction": "You have no Execute or Schedule permission for project: "
   },
   "azkaban.webapp.servlet.ProjectManagerServlet": {
     "project": "Project[",
@@ -740,6 +741,7 @@
     "flow": "Flow[",
     "job": "Job[",
     "config": "Configuration[",
+    "permissionForAction": "You have no Execute or Schedule permission for project: ",
     "uploadJobCoverFieldError": "Upload job cover field error",
     "getLastRunFailed": "Get the last flow execution  Failed",
     "noPerAccessProject": "No permission access to this project: ",

@@ -730,7 +730,8 @@
     "haveHisReRun": "历史重跑任务已存在.",
     "submitHisReRunSuccess": " 提交历史重跑任务成功.",
     "submitHisReRunFail": " 提交历史重跑任务失败.",
-    "resolveSlaFailed": "解析sla告警设置失败."
+    "resolveSlaFailed": "解析sla告警设置失败.",
+    "permissionForAction": "你没有权限执行或者调度这个项目: "
   },
   "azkaban.webapp.servlet.ProjectManagerServlet": {
     "project": "项目  ",
@@ -740,6 +741,7 @@
     "flow": " 工作流 ",
     "job": "任务 ",
     "config": "配置 ",
+    "permissionForAction": "你没有权限执行或者调度这个项目: ",
     "uploadJobCoverFieldError": "上传任务覆盖属性错误.",
     "getLastRunFailed": "获取项目最后一次执行工作流失败.",
     "noPerAccessProject": "没有权限查看项目 ",
