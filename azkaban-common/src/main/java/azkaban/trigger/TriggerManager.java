@@ -16,8 +16,10 @@
 
 package azkaban.trigger;
 
+import azkaban.trigger.builtin.ExecuteFlowAction;
 import com.webank.wedatasphere.schedulis.common.distributelock.DBTableDistributeLock;
 
+import org.apache.commons.collections4.MapUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTimeUtils;
 
@@ -72,6 +74,10 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
   private Props azkprops;
   private DatabaseOperator dbOperator;
 
+  public static final String SYSTEM_SCHEDULE_SWITCH_ACTIVE = "system.schedule.switch.active";
+
+  // 定时调度生效系统级别开关
+  private static boolean system_schedule_switch_active;
 
   @Inject
   public TriggerManager(final Props props, final TriggerLoader triggerLoader,
@@ -94,7 +100,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
     } catch (final Exception e) {
       throw new TriggerManagerException(e);
     }
-
+    system_schedule_switch_active = props.getBoolean(SYSTEM_SCHEDULE_SWITCH_ACTIVE, true);
     Condition.setCheckerLoader(this.checkerTypeLoader);
     Trigger.setActionTypeLoader(this.actionTypeLoader);
 
@@ -118,7 +124,9 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
       throw new TriggerManagerException(e);
     }
 
-    this.runnerThread.start();
+    if (system_schedule_switch_active) {
+      this.runnerThread.start();
+    }
   }
 
   protected CheckerTypeLoader getCheckerLoader() {
@@ -465,7 +473,27 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
       for (final TriggerAction action : actions) {
         try {
           logger.info("Doing trigger actions " + action.getDescription() + " for " + t);
-          action.doAction();
+
+          // 检查定时调度系统级别的激活开关和页面级别的激活开关, true:激活状态  false:失效状态
+          if (action instanceof ExecuteFlowAction) {
+            Map<String, Object> otherOption = ((ExecuteFlowAction) action).getOtherOption();
+            if (MapUtils.isNotEmpty(otherOption)) {
+
+              // 为历史数据初始化
+              Boolean activeFlag = (Boolean)otherOption.get("activeFlag");
+
+              logger.info("current schedule active switch, flowLevel=" + activeFlag);
+              if (null == activeFlag) {
+                activeFlag = true;
+              }
+              if (activeFlag) {
+                action.doAction();
+              }
+            }
+          } else {
+            // 非定时调度执行,直接执行
+            action.doAction();
+          }
         } catch (final ExecutorManagerException e) {
           if (e.getReason() == ExecutorManagerException.Reason.SkippedExecution) {
             logger.info("Skipped action [" + action.getDescription() + "] for [" + t +

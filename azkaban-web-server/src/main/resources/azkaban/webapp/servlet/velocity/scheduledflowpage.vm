@@ -119,10 +119,11 @@
             <th class="date">$updateSchTime</th>
             <th class="date">$nextExecTime</th>
             <th class="date">$cronExpre</th>
+            <th>$activeSch</th>
             <th>$flowValid</th>
             <th>$execParam</th>
             <th>$setAlertorNo</th>
-            <th colspan="3" class="action ignoresort">$operate</th>
+            <th colspan="4" class="action ignoresort">$operate</th>
           </tr>
           </thead>
           <tbody id="schedules-tbody">
