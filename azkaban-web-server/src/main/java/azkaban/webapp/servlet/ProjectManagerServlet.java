@@ -700,6 +700,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                 final User user = session.getUser();
                 if (wtss_project_privilege_check) {
                     int deleteScheduleFlowFlag = checkUserOperatorFlag(user);
+                    resultMap.put("deleteScheduleFlowFlag", deleteScheduleFlowFlag);
                     logger.info("current user delete schedule flow permission flag is deleteScheduleFlowFlag=" + deleteScheduleFlowFlag);
                 } else {
                     resultMap.put("deleteScheduleFlowFlag", 1);

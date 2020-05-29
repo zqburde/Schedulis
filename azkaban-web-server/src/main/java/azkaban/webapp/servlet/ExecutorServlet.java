@@ -483,8 +483,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     private void ajaxFetchScheduledFlowGraph(final String projectName, final String flowName,
         final HashMap<String, Object> ret, final User user) throws ServletException {
         final Project project = getProjectAjaxByPermission(ret, projectName, user, Type.EXECUTE);
+        Map<String, String> stringStringMap = loadExecutorServletI18nData();
         if (project == null) {
-            ret.put("error", "Project '" + projectName + "' doesn't exist.");
+            ret.put("error", stringStringMap.get("permissionForAction") + projectName);
             return;
         }
         try {
