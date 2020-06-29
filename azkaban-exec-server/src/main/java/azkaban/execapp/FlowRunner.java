@@ -61,8 +61,6 @@ import azkaban.sla.SlaOption;
 import azkaban.spi.AzkabanEventReporter;
 import azkaban.spi.EventType;
 import azkaban.utils.*;
-
-import com.alibaba.fastjson.JSONObject;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -93,6 +91,7 @@ import java.util.stream.Collectors;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
@@ -785,8 +784,8 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
   }
 
-  public boolean setFlowFailed(final JSONObject json){
-    boolean flowFailed = json.getBooleanValue("flowFailed");
+  public boolean setFlowFailed(final JsonObject json){
+    boolean flowFailed = json.get("flowFailed").getAsBoolean();
     boolean ret = true;
     synchronized (this.mainSyncObj) {
       if (!this.flowFinished && this.flowPaused) {

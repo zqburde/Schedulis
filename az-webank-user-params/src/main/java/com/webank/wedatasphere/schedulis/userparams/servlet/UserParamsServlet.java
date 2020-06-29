@@ -22,7 +22,10 @@ import azkaban.server.session.Session;
 import azkaban.utils.Props;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.Page;
+import com.google.gson.JsonObject;
 import com.google.inject.Injector;
+import com.webank.wedatasphere.schedulis.common.utils.GsonUtils;
+import org.json.JSONObject;
 import com.webank.wedatasphere.schedulis.common.executor.UserVariable;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import com.webank.wedatasphere.schedulis.common.system.entity.WtssUser;
@@ -38,7 +41,7 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.json.JSONObject;
+
 
 public class UserParamsServlet extends LoginAbstractAzkabanServlet {
 
@@ -180,8 +183,8 @@ public class UserParamsServlet extends LoginAbstractAzkabanServlet {
 
 
     private void ajaxFetchAllUserVariable(final HttpServletRequest req, final HttpServletResponse resp, final Session session, final HashMap<String, Object> ret) throws ServletException {
-        com.alibaba.fastjson.JSONObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
-        UserVariable userVariable = com.alibaba.fastjson.JSONObject.toJavaObject(jsonObject, UserVariable.class);
+        JsonObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
+        UserVariable userVariable = GsonUtils.jsonToJavaObject(jsonObject, UserVariable.class);
         if(!userVariable.getOwner().equals(session.getUser().getUserId())){
             ret.put("error", "No Access Permission");
         }
@@ -193,8 +196,8 @@ public class UserParamsServlet extends LoginAbstractAzkabanServlet {
     }
 
     private void ajaxAddUserVariable(final HttpServletRequest req, final HttpServletResponse resp, final Session session, final HashMap<String, Object> ret) throws ServletException {
-        com.alibaba.fastjson.JSONObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
-        UserVariable userVariable = com.alibaba.fastjson.JSONObject.toJavaObject(jsonObject, UserVariable.class);
+        JsonObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
+        UserVariable userVariable = GsonUtils.jsonToJavaObject(jsonObject, UserVariable.class);
 
         for(WtssUser user: userVariable.getUsers()){
             if(!this.userParamsService.checkWtssUserIsExist(user.getUserId())){
@@ -213,8 +216,8 @@ public class UserParamsServlet extends LoginAbstractAzkabanServlet {
 
 
     private void ajaxDeleteUserVariable(final HttpServletRequest req, final HttpServletResponse resp, final Session session, final HashMap<String, Object> ret) throws ServletException {
-        com.alibaba.fastjson.JSONObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
-        UserVariable userVariable = com.alibaba.fastjson.JSONObject.toJavaObject(jsonObject, UserVariable.class);
+        JsonObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
+        UserVariable userVariable = GsonUtils.jsonToJavaObject(jsonObject, UserVariable.class);
         userVariable.setOwner(session.getUser().getUserId());
         if(this.userParamsService.deleteUserVariable(userVariable)){
             ret.put("success", "Request Success");
@@ -224,8 +227,8 @@ public class UserParamsServlet extends LoginAbstractAzkabanServlet {
     }
 
     private void ajaxUpdateUpdateUserVariable(final HttpServletRequest req, final HttpServletResponse resp, final Session session, final HashMap<String, Object> ret) throws ServletException {
-        com.alibaba.fastjson.JSONObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
-        UserVariable userVariable = com.alibaba.fastjson.JSONObject.toJavaObject(jsonObject, UserVariable.class);
+        JsonObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
+        UserVariable userVariable = GsonUtils.jsonToJavaObject(jsonObject, UserVariable.class);
         userVariable.setOwner(session.getUser().getUserId());
         for(WtssUser user: userVariable.getUsers()){
             if(!this.userParamsService.checkWtssUserIsExist(user.getUserId())){
@@ -241,8 +244,8 @@ public class UserParamsServlet extends LoginAbstractAzkabanServlet {
     }
 
     private void ajaxFetchUserVariableById(final HttpServletRequest req, final HttpServletResponse resp, final Session session, final HashMap<String, Object> ret) throws ServletException {
-        com.alibaba.fastjson.JSONObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
-        UserVariable userVariable = com.alibaba.fastjson.JSONObject.toJavaObject(jsonObject, UserVariable.class);
+        JsonObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
+        UserVariable userVariable = GsonUtils.jsonToJavaObject(jsonObject, UserVariable.class);
         userVariable = this.userParamsService.getUserVariableById(userVariable.getId());
         if(userVariable != null) {
             ret.put("userparam", userVariable);

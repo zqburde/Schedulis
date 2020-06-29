@@ -27,7 +27,7 @@ import azkaban.user.User;
 import azkaban.utils.Utils;
 import azkaban.utils.WebUtils;
 import azkaban.webapp.AzkabanWebServer;
-import com.alibaba.fastjson.JSON;
+
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import com.webank.wedatasphere.schedulis.common.jobExecutor.utils.SystemBuiltInParamJodeTimeUtils;
 import com.webank.wedatasphere.schedulis.common.system.SystemManager;
@@ -184,7 +184,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
           final long endTime = "".equals(end) ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN).parseDateTime(end).getMillis();
 
           //添加权限判断 admin 用户能查看所有flow历史 user用户只能查看自己的flow历史
-          logger.info("userRoleSet value=" + JSON.toJSONString(userRoleSet));
+          logger.info("userRoleSet value=" + userRoleSet.toString());
           if(userRoleSet.contains("admin")){
             List<ExecutableFlow> tempData = this.executorManagerAdapter.getExecutableFlows(projContain, flowContain, execIdcontain,
                 userContain, status, beginTime, endTime, (pageNum - 1) * pageSize, pageSize, flowType);
