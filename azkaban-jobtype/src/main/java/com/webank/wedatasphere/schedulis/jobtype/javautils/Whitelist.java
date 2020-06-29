@@ -23,7 +23,8 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.utils.Props;
@@ -40,7 +41,7 @@ public class Whitelist {
   public static final String WHITE_LIST_FILE_PATH_KEY = "whitelist.file.path";
 
   private static final String PROXY_USER_KEY = "user.to.proxy";
-  private static Logger logger = Logger.getLogger(Whitelist.class);
+  private static Logger logger = LoggerFactory.getLogger(Whitelist.class);
 
   private final Set<String> whitelistSet;
 

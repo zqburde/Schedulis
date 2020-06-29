@@ -54,7 +54,8 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
@@ -65,7 +66,7 @@ import org.joda.time.format.DateTimeFormat;
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   private static final long serialVersionUID = 1L;
-  private static final Logger logger = Logger.getLogger(ScheduleServlet.class);
+  private static final Logger logger = LoggerFactory.getLogger(ScheduleServlet.class);
   private ProjectManager projectManager;
   private ScheduleManager scheduleManager;
   private TransitionService transitionService;
@@ -952,7 +953,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       hasFlowTrigger = this.projectManager.hasFlowTrigger(project, flow);
     } catch (final Exception ex) {
-      logger.error(ex);
+      logger.error(ex.getMessage(), ex);
       msg.append(String.format("Error, looking for flow trigger of flow: %s.%s. <br/>",
           projectName, flowName));
       return false;
@@ -985,7 +986,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       }
     } catch (final Exception e) {
       msg.append(e.getMessage() + "<br/>");
-      logger.error(e);
+      logger.error(e.getMessage(), e);
       return false;
     }
 
@@ -997,7 +998,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       flowOptions = HttpRequestUtils.parseFlowOptions(json);
       HttpRequestUtils.filterAdminOnlyFlowParams(flowOptions, user);
     } catch (final Exception e) {
-      logger.error(e);
+      logger.error(e.getMessage(), e);
     }
     //设置其他参数配置
     Map<String, Object> otherOptions = new HashMap<>();
@@ -1022,7 +1023,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       String userDep = transitionService.getUserDepartmentByUsername(user.getUserId());
       otherOptions.put("alertUserDeparment", userDep);
     } catch (SystemUserManagerException e) {
-      logger.error("setting department info failed， " + e.getMessage());
+      logger.error("setting department info failed， " , e);
       msg.append("setting department info failed. <br/>");
       return false;
     }
@@ -1083,7 +1084,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     try {
       hasFlowTrigger = this.projectManager.hasFlowTrigger(project, flow);
     } catch (final Exception ex) {
-      logger.error(ex);
+      logger.error(ex.getMessage(), ex);
       ret.put("status", "error");
       ret.put("message", String.format("Error looking for flow trigger of flow: %s.%s ",
           projectName, flowName));
@@ -1202,7 +1203,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       String userDep = transitionService.getUserDepartmentByUsername(user.getUserId());
       otherOptions.put("alertUserDeparment", userDep);
     } catch (SystemUserManagerException e) {
-      logger.error("setting department info failed， " + e.getMessage());
+      logger.error("setting department info failed， ", e);
       ret.put("status", "failed");
       ret.put("message", "setting department info failed.");
       return;

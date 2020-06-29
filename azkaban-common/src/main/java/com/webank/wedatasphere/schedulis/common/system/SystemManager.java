@@ -44,13 +44,14 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Singleton
 public class SystemManager {
 
-  private static final Logger logger = Logger.getLogger(SystemManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(SystemManager.class);
   private final ProjectLoader projectLoader;
   private final SystemUserLoader systemUserLoader;
   private final JdbcExecutorLoader jdbcExecutorLoader;

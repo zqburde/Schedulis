@@ -29,7 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 
 /**
@@ -38,7 +39,7 @@ import org.apache.log4j.Logger;
  */
 public class InMemoryMetricEmitter implements IMetricEmitter {
 
-  protected static final Logger logger = Logger.getLogger(InMemoryMetricEmitter.class);
+  private static final Logger logger = LoggerFactory.getLogger(InMemoryMetricEmitter.class);
   private static final String INMEMORY_METRIC_REPORTER_WINDOW = "azkaban.metric.inmemory.interval";
   private static final String INMEMORY_METRIC_NUM_INSTANCES = "azkaban.metric.inmemory.maxinstances";
   private static final String INMEMORY_METRIC_STANDARDDEVIATION_FACTOR =

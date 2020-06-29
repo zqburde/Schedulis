@@ -16,8 +16,10 @@
 
 package azkaban.executor.selector;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.util.Comparator;
-import org.apache.log4j.Logger;
 
 /**
  * wrapper class for a factor comparator .
@@ -26,7 +28,7 @@ import org.apache.log4j.Logger;
  */
 public final class FactorComparator<T> {
 
-  private static final Logger logger = Logger.getLogger(CandidateComparator.class);
+  private static final Logger logger = LoggerFactory.getLogger(CandidateComparator.class);
 
   private final String factorName;
   private final Comparator<T> comparator;

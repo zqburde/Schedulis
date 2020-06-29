@@ -58,7 +58,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ObjectUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Abstract Servlet that handles auto login when the session hasn't been verified.
@@ -67,7 +68,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
   private static final long serialVersionUID = 1L;
 
-  private static final Logger logger = Logger.getLogger(LoginAbstractAzkabanServlet.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger("LoginAccessLogger");
   private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
 
   private static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
@@ -136,7 +137,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     }
 
     if("/api/v1/redirect".equals(req.getRequestURI())){
-      logger.info("ingore the auth of DSS request: {}" +  req.getRequestURI());
+      logger.info("ingore the auth of DSS request: {}",  req.getRequestURI());
       handleDssRequest(req,resp,session);
     }
 
@@ -155,7 +156,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         }
       }
       if (logger.isDebugEnabled() && session != null) {
-        logger.debug("Found session " + session.getUser());
+        logger.debug("Found session {}", session.getUser());
       }
       if (handleFileGet(req, resp)) {
         return;
@@ -656,9 +657,9 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       final Cookie cookie = new Cookie(SESSION_ID_NAME, session.getSessionId());
       cookie.setPath("/");
       resp.addCookie(cookie);
-      logger.info("session.id {} " + session.getSessionId());
+      logger.info("session.id {} ", session.getSessionId());
     } else {
-      logger.error("Login in error,invalid username {}" + username);
+      logger.error("Login in error,invalid username {}", username);
     }
   }
 
@@ -671,7 +672,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   protected boolean isAjaxCall(final HttpServletRequest req) throws ServletException {
     final String value = req.getHeader("X-Requested-With");
     if (value != null) {
-      logger.info("has X-Requested-With " + value);
+      logger.info("has X-Requested-With {}", value);
       return value.equals("XMLHttpRequest");
     }
     final String ajaxString = req.getParameter("ajax");

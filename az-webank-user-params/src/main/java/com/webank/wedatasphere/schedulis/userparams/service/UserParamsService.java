@@ -31,12 +31,13 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class UserParamsService {
 
-    private static final Logger logger = Logger.getLogger(UserParamsService.class);
+    private static final Logger logger = LoggerFactory.getLogger(UserParamsService.class);
     private final ProjectLoader projectLoader;
     private final JdbcExecutorLoader jdbcExecutorLoader;
     private final SystemUserLoader systemUserLoader;

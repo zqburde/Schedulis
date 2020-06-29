@@ -39,7 +39,8 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.exec.Utilities;
 import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import azkaban.utils.Props;
 
@@ -50,7 +51,7 @@ public class HadoopSecureHiveWrapper {
   private static final String SINGLE_QUOTE_STRING = Character
       .toString(SINGLE_QUOTE);
 
-  private static final Logger logger = Logger.getRootLogger();
+  private static final Logger logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
   private static CliSessionState ss;
   private static String hiveScript;

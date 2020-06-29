@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.util.Properties;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
 
 public abstract class HadoopSecurityManager {
 

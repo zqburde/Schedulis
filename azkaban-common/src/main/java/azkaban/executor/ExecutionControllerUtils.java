@@ -29,16 +29,15 @@ import azkaban.sla.SlaOption;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Utils for controlling executions.
  */
 public class ExecutionControllerUtils {
 
-  private static final Logger logger = LoggerFactory.getLogger(
-      ExecutionControllerUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExecutionControllerUtils.class);
   /**
    * If the current status of the execution is not one of the finished statuses, mark the execution
    * as failed in the DB.

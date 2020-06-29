@@ -20,15 +20,15 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.hadoop.hive.cli.CliDriver;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Grab bag of utilities for working with Hive. End users should obtain
  * instances of the provided interfaces from these methods.
  */
 public class HiveUtils {
-  private final static Logger LOG =
-      Logger.getLogger("com.linkedin.hive.HiveUtils");
+  private final static Logger logger = LoggerFactory.getLogger("com.linkedin.hive.HiveUtils");
 
   private HiveUtils() {
   }
@@ -59,7 +59,7 @@ public class HiveUtils {
     File[] files = new File(original).listFiles();
 
     if (files == null || files.length == 0) {
-      LOG.info("No files in to expand in aux jar path. Returning original parameter");
+      logger.info("No files in to expand in aux jar path. Returning original parameter");
       return original;
     }
 

@@ -24,7 +24,8 @@ import java.io.OutputStream;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -39,7 +40,7 @@ import org.apache.log4j.Logger;
  * constructed.
  */
 public class HadoopConfigurationInjector {
-  private static Logger _logger = Logger.getLogger(HadoopConfigurationInjector.class);
+  private static Logger _logger = LoggerFactory.getLogger(HadoopConfigurationInjector.class);
 
   // File to which the Hadoop configuration to inject will be written.
   private static final String INJECT_FILE = "hadoop-inject.xml";

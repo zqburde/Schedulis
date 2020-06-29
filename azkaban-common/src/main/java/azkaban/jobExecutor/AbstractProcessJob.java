@@ -28,7 +28,7 @@ import java.io.InputStream;
 import java.util.Map;
 import org.apache.commons.fileupload.util.Streams;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
 
 /**
  * A revised process-based job

@@ -27,14 +27,16 @@ import azkaban.trigger.ConditionChecker;
 import azkaban.utils.Utils;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.log4j.Logger;
+
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.ReadablePeriod;
 
 public class SlaChecker implements ConditionChecker {
 
   public static final String type = "SlaChecker";
-  private static final Logger logger = Logger.getLogger(SlaChecker.class);
+  private static final Logger logger = LoggerFactory.getLogger(SlaChecker.class);
   private final String id;
   private final SlaOption slaOption;
   private final int execId;
