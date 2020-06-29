@@ -23,6 +23,8 @@ import com.webank.wedatasphere.schedulis.common.system.entity.WtssUser;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.webank.wedatasphere.schedulis.common.executor.DepartmentGroup;
 import com.webank.wedatasphere.schedulis.common.executor.DepartmentGroupDao;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
@@ -40,6 +42,8 @@ import java.time.Duration;
 
 @Singleton
 public class JdbcExecutorLoader implements ExecutorLoader {
+
+  private static Logger logger = LoggerFactory.getLogger(JdbcExecutorLoader.class);
 
   private final ExecutionFlowDao executionFlowDao;
   private final ExecutorDao executorDao;

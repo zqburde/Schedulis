@@ -39,14 +39,15 @@ import javax.inject.Singleton;
 
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.DateTime;
 
 
 @Singleton
 public class ExecutionLogsDao implements ExecutionLogsAdapter {
 
-  private static final Logger logger = Logger.getLogger(ExecutionLogsDao.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExecutionLogsDao.class);
   private final DatabaseOperator dbOperator;
   private final EncodingType defaultEncodingType = EncodingType.GZIP;
 

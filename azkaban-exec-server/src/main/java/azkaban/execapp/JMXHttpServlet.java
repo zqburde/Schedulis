@@ -32,12 +32,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
 
   private static final long serialVersionUID = -3085603824826446270L;
-  private static final Logger logger = Logger.getLogger(JMXHttpServlet.class);
+  private static final Logger logger = LoggerFactory.getLogger(JMXHttpServlet.class);
   private AzkabanExecutorServer server;
 
   @Override
@@ -92,7 +93,7 @@ public class JMXHttpServlet extends HttpServlet implements ConnectorParams {
 
           ret.put("attributes", attributes);
         } catch (final Exception e) {
-          logger.error(e);
+          logger.error("", e);
           ret.put("error", "'" + mbeanName + "' is not a valid mBean name");
         }
       }

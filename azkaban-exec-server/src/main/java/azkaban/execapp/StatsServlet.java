@@ -25,6 +25,9 @@ import azkaban.metric.inmemoryemitter.InMemoryHistoryNode;
 import azkaban.metric.inmemoryemitter.InMemoryMetricEmitter;
 import azkaban.server.HttpRequestUtils;
 import azkaban.utils.JSONUtils;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -38,7 +41,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
 
 /**
  * Servlet to communicate with Azkaban exec server This servlet get requests from stats servlet in
@@ -47,7 +49,7 @@ import org.apache.log4j.Logger;
 public class StatsServlet extends HttpServlet implements ConnectorParams {
 
   private static final long serialVersionUID = 2L;
-  private static final Logger logger = Logger.getLogger(StatsServlet.class);
+  private static final Logger logger = LoggerFactory.getLogger(StatsServlet.class);
 
   public boolean hasParam(final HttpServletRequest request, final String param) {
     return HttpRequestUtils.hasParam(request, param);
@@ -130,7 +132,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
     } catch (final Exception e) {
-      logger.error(e);
+      logger.error("", e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -152,7 +154,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
     } catch (final Exception e) {
-      logger.error(e);
+      logger.error("", e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -174,7 +176,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
     } catch (final Exception e) {
-      logger.error(e);
+      logger.error("", e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }
@@ -272,7 +274,7 @@ public class StatsServlet extends HttpServlet implements ConnectorParams {
         ret.put(RESPONSE_ERROR, "MetricManager is not available");
       }
     } catch (final Exception e) {
-      logger.error(e);
+      logger.error("", e);
       ret.put(RESPONSE_ERROR, e.getMessage());
     }
   }

@@ -28,14 +28,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 
 public class ServerStatisticsServlet extends HttpServlet {
 
   private static final long serialVersionUID = 1L;
   private static final int cacheTimeInMilliseconds = 1000;
-  private static final Logger logger = Logger.getLogger(ServerStatisticsServlet.class);
+  private static final Logger logger = LoggerFactory.getLogger(ServerStatisticsServlet.class);
   private static final String noCacheParamName = "nocache";
   private static final boolean exists_Bash = new File("/bin/bash").exists();
   private static final boolean exists_Cat = new File("/bin/cat").exists();

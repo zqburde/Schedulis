@@ -41,14 +41,16 @@ import javax.inject.Singleton;
 import javax.mail.internet.AddressException;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class Emailer extends AbstractMailer implements Alerter {
 
+  private static final Logger logger = LoggerFactory.getLogger(Emailer.class);
+
   private static final String HTTPS = "https";
   private static final String HTTP = "http";
-  private static final Logger logger = Logger.getLogger(Emailer.class);
   private final CommonMetrics commonMetrics;
   private final String scheme;
   private final String clientHostname;

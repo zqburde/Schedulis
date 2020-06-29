@@ -58,11 +58,12 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import org.apache.commons.collections.MapUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CycleFlowRunnerEventListener implements EventListener {
 
-    private static final Logger logger = Logger.getLogger(CycleFlowRunnerEventListener.class);
+    private static final Logger logger = LoggerFactory.getLogger(CycleFlowRunnerEventListener.class);
 
     private static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
     private static final String EXECUTE_CYCLE_INTERVAL = "execute.cycle.interval";

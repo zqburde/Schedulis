@@ -32,13 +32,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 
 @Singleton
 public class LocalStorage implements Storage {
 
-  private static final Logger log = Logger.getLogger(LocalStorage.class);
+  private static final Logger logger = LoggerFactory.getLogger(LocalStorage.class);
 
   final File rootDirectory;
 
@@ -52,7 +53,7 @@ public class LocalStorage implements Storage {
     final File baseDirectory = new File(baseDirectoryPath);
     if (!baseDirectory.exists()) {
       baseDirectory.mkdir();
-      log.info("Creating dir: " + baseDirectory.getAbsolutePath());
+      logger.info("Creating dir: " + baseDirectory.getAbsolutePath());
     }
     return baseDirectory;
   }
@@ -81,7 +82,7 @@ public class LocalStorage implements Storage {
   public String put(final StorageMetadata metadata, final File localFile) {
     final File projectDir = new File(this.rootDirectory, String.valueOf(metadata.getProjectId()));
     if (projectDir.mkdir()) {
-      log.info("Created project dir: " + projectDir.getAbsolutePath());
+      logger.info("Created project dir: " + projectDir.getAbsolutePath());
     }
 
     final File targetFile = new File(projectDir, String.format("%s-%s.zip",
@@ -89,7 +90,7 @@ public class LocalStorage implements Storage {
         new String(Hex.encodeHex(metadata.getHash()))));
 
     if (targetFile.exists()) {
-      log.info(String.format("Duplicate found: meta: %s, targetFile: %s, ", metadata,
+      logger.info(String.format("Duplicate found: meta: %s, targetFile: %s, ", metadata,
           targetFile.getAbsolutePath()));
       return getRelativePath(targetFile);
     }
@@ -98,7 +99,7 @@ public class LocalStorage implements Storage {
     try {
       FileUtils.copyFile(localFile, targetFile);
     } catch (final IOException e) {
-      log.error("LocalStorage error in put(): meta: " + metadata);
+      logger.error("LocalStorage error in put(): meta: " + metadata);
       throw new StorageException(e);
     }
     return getRelativePath(targetFile);
@@ -113,9 +114,9 @@ public class LocalStorage implements Storage {
     final File file = getFile(key);
     final boolean result = file.exists() && file.delete();
     if (result) {
-      log.warn("Deleted file: " + file.getAbsolutePath());
+      logger.warn("Deleted file: " + file.getAbsolutePath());
     } else {
-      log.warn("Unable to delete file: " + file.getAbsolutePath());
+      logger.warn("Unable to delete file: " + file.getAbsolutePath());
     }
     return result;
   }

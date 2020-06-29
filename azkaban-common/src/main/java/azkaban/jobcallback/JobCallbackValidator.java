@@ -11,8 +11,10 @@ import static azkaban.jobcallback.JobCallbackConstants.SEQUENCE_TOKEN;
 import static azkaban.jobcallback.JobCallbackConstants.STATUS_TOKEN;
 
 import azkaban.utils.Props;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.util.Collection;
-import org.apache.log4j.Logger;
 
 /**
  * Responsible for validating the job callback related properties at project upload time
@@ -21,8 +23,7 @@ import org.apache.log4j.Logger;
  */
 public class JobCallbackValidator {
 
-  private static final Logger logger = Logger
-      .getLogger(JobCallbackValidator.class);
+  private static final Logger logger = LoggerFactory.getLogger(JobCallbackValidator.class);
 
   /**
    * Make sure all the job callback related properties are valid

@@ -29,13 +29,14 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.JobConf;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import azkaban.utils.Props;
 
 public class HadoopUtils {
 
-  private static final Logger logger = Logger.getLogger(HadoopUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(HadoopUtils.class);
 
   public static void setClassLoaderAndJar(JobConf conf, Class<?> jobClass) {
     conf.setClassLoader(Thread.currentThread().getContextClassLoader());

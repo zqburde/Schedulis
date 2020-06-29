@@ -21,10 +21,11 @@ import azkaban.utils.MemConfValue;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
+import org.slf4j.Logger;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.log4j.Logger;
 
 public class JavaProcessJob extends ProcessJob {
 

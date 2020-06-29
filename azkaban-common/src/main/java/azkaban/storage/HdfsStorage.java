@@ -33,13 +33,14 @@ import java.net.URI;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 
 @Singleton
 public class HdfsStorage implements Storage {
 
-  private static final Logger log = Logger.getLogger(HdfsStorage.class);
+  private static final Logger logger = LoggerFactory.getLogger(HdfsStorage.class);
   private static final String HDFS_SCHEME = "hdfs";
 
   private final HdfsAuth hdfsAuth;
@@ -70,21 +71,21 @@ public class HdfsStorage implements Storage {
         String.valueOf(metadata.getProjectId()));
     try {
       if (this.hdfs.mkdirs(projectsPath)) {
-        log.info("Created project dir: " + projectsPath);
+        logger.info("Created project dir: " + projectsPath);
       }
       final Path targetPath = createTargetPath(metadata, projectsPath);
       if (this.hdfs.exists(targetPath)) {
-        log.info(
+        logger.info(
             String.format("Duplicate Found: meta: %s path: %s", metadata, targetPath));
         return getRelativePath(targetPath);
       }
 
       // Copy file to HDFS
-      log.info(String.format("Creating project artifact: meta: %s path: %s", metadata, targetPath));
+      logger.info(String.format("Creating project artifact: meta: %s path: %s", metadata, targetPath));
       this.hdfs.copyFromLocalFile(new Path(localFile.getAbsolutePath()), targetPath);
       return getRelativePath(targetPath);
     } catch (final IOException e) {
-      log.error("error in put(): Metadata: " + metadata);
+      logger.error("error in put(): Metadata: " + metadata);
       throw new StorageException(e);
     }
   }
@@ -107,7 +108,7 @@ public class HdfsStorage implements Storage {
     try {
       return this.hdfs.delete(path, false);
     } catch (final IOException e) {
-      log.error("HDFS delete failed on " + path, e);
+      logger.error("HDFS delete failed on " + path, e);
       return false;
     }
   }

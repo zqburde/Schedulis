@@ -17,15 +17,17 @@
 package azkaban.database;
 
 import azkaban.utils.Props;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
 
-import org.apache.log4j.Logger;
 
 public class DataSourceUtils {
 
-  private static final Logger logger = Logger.getLogger(DataSourceUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(DataSourceUtils.class);
 
   /**
    * Hidden datasource

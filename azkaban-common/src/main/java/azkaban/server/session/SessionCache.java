@@ -20,9 +20,11 @@ import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Props;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
-import org.apache.log4j.Logger;
 /**
  * Cache for web session.
  *
@@ -35,7 +37,7 @@ import org.apache.log4j.Logger;
  */
 public class SessionCache {
 
-  private static final Logger logger = Logger.getLogger(SessionCache.class);
+  private static final Logger logger = LoggerFactory.getLogger(SessionCache.class);
 
   private static final int MAX_NUM_SESSIONS = 10000;
   private static final long DEFAULT_SESSION_TIME_TO_LIVE = 1 * 60 * 60 * 1000L;

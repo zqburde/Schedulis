@@ -22,15 +22,15 @@ import azkaban.execapp.FlowRunnerManager;
 import azkaban.trigger.TriggerAction;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 
 public class KillExecutionAction implements TriggerAction {
 
   public static final String type = "KillExecutionAction";
 
-  private static final Logger logger = Logger
-      .getLogger(KillExecutionAction.class);
+  private static final Logger logger = LoggerFactory.getLogger(KillExecutionAction.class);
 
   private final String actionId;
   private final int execId;

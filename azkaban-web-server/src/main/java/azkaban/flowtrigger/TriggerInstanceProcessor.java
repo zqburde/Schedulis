@@ -27,6 +27,9 @@ import azkaban.utils.EmailMessage;
 import azkaban.utils.Emailer;
 import azkaban.utils.Utils;
 import com.google.common.base.Preconditions;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -34,14 +37,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Singleton
 @SuppressWarnings("FutureReturnValueIgnored")
 public class TriggerInstanceProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(TriggerInstanceProcessor.class);
+
   private static final String FAILURE_EMAIL_SUBJECT = "flow trigger for flow '%s', project '%s' "
       + "has been cancelled on %s";
   private final static int THREAD_POOL_SIZE = 32;

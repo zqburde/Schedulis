@@ -17,7 +17,7 @@
 package azkaban.alert;
 
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Map;

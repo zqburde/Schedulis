@@ -18,7 +18,8 @@ package com.webank.wedatasphere.schedulis.common.i18nutils;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -29,7 +30,7 @@ import java.util.Map;
 
 public class LoadJsonUtils {
 
-    private static final Logger logger = Logger.getLogger(LoadJsonUtils.class);
+    private static final Logger logger = LoggerFactory.getLogger(LoadJsonUtils.class);
     public static volatile String languageType = "zh_CN";
 
     public static String getLanguageType() {

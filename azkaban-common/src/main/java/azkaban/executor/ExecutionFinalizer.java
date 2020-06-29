@@ -20,7 +20,8 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import azkaban.alert.Alerter;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,7 +33,7 @@ import java.util.Map;
  */
 public class ExecutionFinalizer {
 
-  private static final Logger logger = Logger.getLogger(ExecutionFinalizer.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExecutionFinalizer.class);
 
   private final ExecutorLoader executorLoader;
   private final ExecutorManagerUpdaterStage updaterStage;
@@ -98,7 +99,7 @@ public class ExecutionFinalizer {
       this.runningExecutions.get().remove(execId);
     } catch (final ExecutorManagerException e) {
       alertUser = false; // failed due to azkaban internal error, not to alert user
-      logger.error(e);
+      logger.error("", e);
     }
     if(dsFlow == null){
       logger.error("can not found ExecutableFlow by execId:" + execId);
