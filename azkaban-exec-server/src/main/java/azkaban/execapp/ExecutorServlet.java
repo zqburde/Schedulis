@@ -42,14 +42,15 @@ import javax.servlet.http.HttpServletResponse;
 
 import azkaban.utils.Pair;
 import com.alibaba.fastjson.JSONObject;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
 
 
 public class ExecutorServlet extends HttpServlet implements ConnectorParams {
 
   public static final String JSON_MIME_TYPE = "application/json";
-  private static final Logger logger = Logger.getLogger(ExecutorServlet.class
+  private static final Logger logger = LoggerFactory.getLogger(ExecutorServlet.class
       .getName());
   private static final long serialVersionUID = -3528600004096666451L;
   private AzkabanExecutorServer application;

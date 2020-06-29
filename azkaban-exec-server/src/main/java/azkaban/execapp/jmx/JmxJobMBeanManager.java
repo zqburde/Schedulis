@@ -11,7 +11,8 @@ import azkaban.utils.Props;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Responsible keeping track of job related MBean attributes through listening to job related
@@ -21,8 +22,7 @@ import org.apache.log4j.Logger;
  */
 public class JmxJobMBeanManager implements JmxJobMXBean, EventListener {
 
-  private static final Logger logger = Logger
-      .getLogger(JmxJobMBeanManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(JmxJobMBeanManager.class);
 
   private static final JmxJobMBeanManager INSTANCE = new JmxJobMBeanManager();
 

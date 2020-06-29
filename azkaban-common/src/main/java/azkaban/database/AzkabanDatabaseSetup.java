@@ -37,7 +37,8 @@ import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * @deprecated in favor of {@link azkaban.db.DatabaseSetup}.
@@ -50,8 +51,7 @@ public class AzkabanDatabaseSetup {
       "database.auto.update.tables";
   public static final String DATABASE_SQL_SCRIPT_DIR =
       "database.sql.scripts.dir";
-  private static final Logger logger = Logger
-      .getLogger(AzkabanDatabaseSetup.class);
+  private static final Logger logger = LoggerFactory.getLogger(AzkabanDatabaseSetup.class);
   private static final String DEFAULT_SCRIPT_PATH = "sql";
   private static final String CREATE_SCRIPT_PREFIX = "create.";
   private static final String UPDATE_SCRIPT_PREFIX = "update.";

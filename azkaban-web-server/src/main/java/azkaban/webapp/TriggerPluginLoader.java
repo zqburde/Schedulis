@@ -33,14 +33,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
 //import org.mortbay.jetty.servlet.Context;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 
 public class TriggerPluginLoader {
 
-  private static final Logger log = Logger.getLogger(TriggerPluginLoader.class);
+  private static final Logger log = LoggerFactory.getLogger(TriggerPluginLoader.class);
   private final String pluginPath;
 
   public TriggerPluginLoader(final Props props) {
@@ -122,7 +123,7 @@ public class TriggerPluginLoader {
             final URL url = files[i].toURI().toURL();
             urls.add(url);
           } catch (final MalformedURLException e) {
-            log.error(e);
+            log.error(e.getMessage(), e);
           }
         }
         if (extLibClasspath != null) {
@@ -132,7 +133,7 @@ public class TriggerPluginLoader {
               final URL url = file.toURI().toURL();
               urls.add(url);
             } catch (final MalformedURLException e) {
-              log.error(e);
+              log.error(e.getMessage(), e);
             }
           }
         }
@@ -172,7 +173,7 @@ public class TriggerPluginLoader {
             constructor.newInstance(pluginName, pluginProps, root,
                 azkabanWebServer);
       } catch (final Exception e) {
-        log.error(e);
+        log.error(e.getMessage(), e);
       }
 
       if (!(obj instanceof TriggerPlugin)) {

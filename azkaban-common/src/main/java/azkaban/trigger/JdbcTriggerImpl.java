@@ -30,7 +30,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.DateTime;
 
 
@@ -55,7 +56,7 @@ public class JdbcTriggerImpl implements TriggerLoader {
   private static final String UPDATE_TRIGGER =
       "UPDATE " + TRIGGER_TABLE_NAME
           + " SET trigger_source=?, modify_time=?, enc_type=?, data=? WHERE trigger_id=?";
-  private static final Logger logger = Logger.getLogger(JdbcTriggerImpl.class);
+  private static final Logger logger = LoggerFactory.getLogger(JdbcTriggerImpl.class);
   private final DatabaseOperator dbOperator;
   private final EncodingType defaultEncodingType = EncodingType.GZIP;
 

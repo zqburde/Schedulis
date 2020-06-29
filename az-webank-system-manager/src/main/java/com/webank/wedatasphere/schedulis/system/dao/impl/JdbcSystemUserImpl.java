@@ -37,12 +37,13 @@ import javax.inject.Singleton;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class JdbcSystemUserImpl implements SystemUserLoader {
 
-    private static final Logger logger = Logger.getLogger(JdbcSystemUserImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(JdbcSystemUserImpl.class);
 
     private final DatabaseOperator dbOperator;
 

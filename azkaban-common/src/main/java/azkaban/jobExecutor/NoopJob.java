@@ -17,7 +17,7 @@
 package azkaban.jobExecutor;
 
 import azkaban.utils.Props;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
 
 /**
  * A no-op job.

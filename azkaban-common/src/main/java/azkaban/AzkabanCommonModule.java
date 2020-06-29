@@ -39,8 +39,8 @@ import com.webank.wedatasphere.schedulis.common.executor.ExecutionLogsAdapter;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutorQueueLoader;
 import com.webank.wedatasphere.schedulis.common.executor.JdbcExecutorQueueLoader;
 import org.apache.commons.dbutils.QueryRunner;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 
 /**

@@ -33,7 +33,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import okhttp3.Call;
 import okhttp3.FormBody;
 import okhttp3.MediaType;
@@ -48,7 +49,7 @@ import org.joda.time.format.DateTimeFormat;
  */
 public class HttpUtils {
 
-  private static final Logger logger = Logger.getLogger(HttpUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
 
   public static Map<String, String> getReturnMap(String dataStr){
     Map<String, String> dataMap = new HashMap<>();

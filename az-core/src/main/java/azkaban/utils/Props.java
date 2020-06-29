@@ -16,6 +16,9 @@
 
 package azkaban.utils;
 
+
+import org.slf4j.Logger;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -38,7 +41,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
-import org.apache.log4j.Logger;
 
 /**
  * Hashmap implementation of a hierarchical properties with helpful converter functions and

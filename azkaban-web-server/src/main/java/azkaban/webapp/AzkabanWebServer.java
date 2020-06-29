@@ -109,8 +109,7 @@ import javax.management.ObjectName;
 import javax.servlet.DispatcherType;
 import joptsimple.internal.Strings;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
-import org.apache.log4j.jmx.HierarchyDynamicMBean;
+
 import org.apache.velocity.app.VelocityEngine;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -118,7 +117,8 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.joda.time.DateTimeZone;
-
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * The Azkaban Jetty server class
@@ -143,7 +143,7 @@ public class AzkabanWebServer extends AzkabanServer {
   public static final String DEFAULT_CONF_PATH = "conf";
   private static final String AZKABAN_ACCESS_LOGGER_NAME =
       "azkaban.webapp.servlet.LoginAbstractAzkabanServlet";
-  private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
+  private static final Logger logger = LoggerFactory.getLogger(AzkabanWebServer.class);
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
   private static final String DEFAULT_STATIC_DIR = "";
@@ -330,7 +330,8 @@ public class AzkabanWebServer extends AzkabanServer {
     final ArrayList<String> jarPaths = new ArrayList<>();
     for (final File pluginDir : pluginDirs) {
       if (!pluginDir.exists()) {
-        logger.error("Error viewer plugin path " + pluginDir.getPath() + " doesn't exist.");
+        logger.error("Error viewer plugin path " + pluginDir.getPath()
+            + " doesn't exist.");
         continue;
       }
 
@@ -391,7 +392,7 @@ public class AzkabanWebServer extends AzkabanServer {
             final URL url = files[i].toURI().toURL();
             urls.add(url);
           } catch (final MalformedURLException e) {
-            logger.error(e);
+            logger.error("MalformedURLException", e);
           }
         }
 
@@ -409,7 +410,7 @@ public class AzkabanWebServer extends AzkabanServer {
                     final URL url = extLibFiles[i].toURI().toURL();
                     urls.add(url);
                   } catch (final MalformedURLException e) {
-                    logger.error(e);
+                    logger.error("MalformedURLException", e);
                   }
                 }
               } else { // extLibFile is a file
@@ -417,7 +418,7 @@ public class AzkabanWebServer extends AzkabanServer {
                   final URL url = extLibFile.toURI().toURL();
                   urls.add(url);
                 } catch (final MalformedURLException e) {
-                  logger.error(e);
+                  logger.error("MalformedURLException", e);
                 }
               }
             } else {
@@ -460,8 +461,7 @@ public class AzkabanWebServer extends AzkabanServer {
       try {//调用类的构造方法获取类实例
         obj = constructor.newInstance(pluginProps);
       } catch (final Exception e) {
-        logger.error(e);
-        logger.error(e.getCause());
+        logger.error("new instance failed", e);
       }
 
       if (!(obj instanceof AbstractAzkabanServlet)) {
@@ -530,7 +530,7 @@ public class AzkabanWebServer extends AzkabanServer {
       this.server.start();
       logger.info("Server started");
     } catch (final Exception e) {
-      logger.warn(e);
+      logger.warn("serer start failed", e);
       Utils.croak(e.getMessage(), 1);
     }
   }
@@ -673,19 +673,19 @@ public class AzkabanWebServer extends AzkabanServer {
 
     // Register Log4J loggers as JMX beans so the log level can be
     // updated via JConsole or Java VisualVM
-    final HierarchyDynamicMBean log4jMBean = new HierarchyDynamicMBean();
-    registerMbean("log4jmxbean", log4jMBean);
-    final ObjectName accessLogLoggerObjName =
-        log4jMBean.addLoggerMBean(AZKABAN_ACCESS_LOGGER_NAME);
-
-    if (accessLogLoggerObjName == null) {
-      logger.info(
-          "************* loginLoggerObjName is null, make sure there is a logger with name "
-              + AZKABAN_ACCESS_LOGGER_NAME);
-    } else {
-      logger.info("******** loginLoggerObjName: "
-          + accessLogLoggerObjName.getCanonicalName());
-    }
+//    final HierarchyDynamicMBean log4jMBean = new HierarchyDynamicMBean();
+//    registerMbean("log4jmxbean", log4jMBean);
+//    final ObjectName accessLogLoggerObjName =
+//        log4jMBean.addLoggerMBean(AZKABAN_ACCESS_LOGGER_NAME);
+//
+//    if (accessLogLoggerObjName == null) {
+//      logger.info(
+//          "************* loginLoggerObjName is null, make sure there is a logger with name "
+//              + AZKABAN_ACCESS_LOGGER_NAME);
+//    } else {
+//      logger.info("******** loginLoggerObjName: "
+//          + accessLogLoggerObjName.getCanonicalName());
+//    }
   }
 
   public void close() {
@@ -703,7 +703,7 @@ public class AzkabanWebServer extends AzkabanServer {
       this.server.stop();
     } catch (final Exception e) {
       // Catch all while closing server
-      logger.error(e);
+      logger.error("server stop failed", e);
     }
     this.server.destroy();
   }
@@ -730,7 +730,7 @@ public class AzkabanWebServer extends AzkabanServer {
     try {
       return this.mbeanServer.getMBeanInfo(name);
     } catch (final Exception e) {
-      logger.error(e);
+      logger.error("getMBeanInfo failed", e);
       return null;
     }
   }
@@ -739,7 +739,7 @@ public class AzkabanWebServer extends AzkabanServer {
     try {
       return this.mbeanServer.getAttribute(name, attribute);
     } catch (final Exception e) {
-      logger.error(e);
+      logger.error("getAttribute failed", e);
       return null;
     }
   }

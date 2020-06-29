@@ -28,7 +28,8 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.spark.SparkConf;
 import org.apache.spark.network.util.JavaUtils;
 import org.apache.spark.util.Utils;
@@ -55,7 +56,7 @@ import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_
  */
 public class HadoopSecureSparkWrapper {
 
-  private static final Logger logger = Logger.getRootLogger();
+  private static final Logger logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
   private static final String EMPTY_STRING = "";
 
   //SPARK CONF PARAM

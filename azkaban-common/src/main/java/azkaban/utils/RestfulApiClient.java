@@ -33,7 +33,8 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * class handles the communication between the application and a Restful API based web server.
@@ -46,7 +47,7 @@ import org.apache.log4j.Logger;
  */
 public abstract class RestfulApiClient<T> {
 
-  protected static Logger logger = Logger.getLogger(RestfulApiClient.class);
+  protected static Logger logger = LoggerFactory.getLogger(RestfulApiClient.class);
 
   /**
    * helper function to build a valid URI.

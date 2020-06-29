@@ -33,8 +33,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
-import org.apache.log4j.Logger;
-
+import org.slf4j.Logger;
 public class SecurityUtils {
 
   // Secure Hadoop proxy user params

@@ -24,7 +24,8 @@ import com.webank.wedatasphere.schedulis.common.jobExecutor.utils.SystemBuiltInP
 import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDateTime;
 
@@ -114,7 +115,7 @@ public class ExecutorManager extends EventHandler implements
   // 12 weeks
   private static final long DEFAULT_EXECUTION_LOGS_RETENTION_MS = 3 * 4 * 7 * 24 * 60 * 60 * 1000L;
   private static final Duration RECENTLY_FINISHED_LIFETIME = Duration.ofMinutes(10);
-  private static final Logger logger = Logger.getLogger(ExecutorManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExecutorManager.class);
   private final RunningExecutions runningExecutions;
   private final Props azkProps;
   private final CommonMetrics commonMetrics;

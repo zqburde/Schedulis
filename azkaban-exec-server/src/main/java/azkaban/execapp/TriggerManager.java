@@ -33,7 +33,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.ReadablePeriod;
 
 
@@ -41,7 +42,7 @@ import org.joda.time.ReadablePeriod;
 public class TriggerManager {
 
   private static final int SCHEDULED_THREAD_POOL_SIZE = 4;
-  private static final Logger logger = Logger.getLogger(TriggerManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(TriggerManager.class);
   private final ScheduledExecutorService scheduledService;
   private final ExecutorLoader executorLoader;
 

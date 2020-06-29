@@ -18,16 +18,18 @@ package azkaban.trigger;
 
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import org.apache.log4j.Logger;
 
 public class ActionTypeLoader {
 
   public static final String DEFAULT_TRIGGER_ACTION_PLUGIN_DIR =
       "plugins/triggeractions";
-  private static final Logger logger = Logger.getLogger(ActionTypeLoader.class);
+  private static final Logger logger = LoggerFactory.getLogger(ActionTypeLoader.class);
   protected static Map<String, Class<? extends TriggerAction>> actionToClass =
       new HashMap<>();
 

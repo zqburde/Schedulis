@@ -26,7 +26,8 @@ import java.util.Map;
 import java.util.TimeZone;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.message.BasicHeader;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Responsible processing job callback properties on job status change events.
@@ -43,8 +44,8 @@ import org.apache.log4j.Logger;
  */
 public class JobCallbackManager implements EventListener {
 
-  private static final Logger logger = Logger
-      .getLogger(JobCallbackManager.class);
+  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(JobCallbackManager.class);
+
   private static final JobCallbackStatusEnum[] ON_COMPLETION_JOB_CALLBACK_STATUS =
       {SUCCESS, FAILURE, COMPLETED};
   private static boolean isInitialized = false;

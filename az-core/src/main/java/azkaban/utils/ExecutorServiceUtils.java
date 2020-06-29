@@ -16,11 +16,12 @@
 
 package azkaban.utils;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Executor service related utilities.
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
 public class ExecutorServiceUtils {
 
   private static final Logger logger = LoggerFactory.getLogger(ExecutorServiceUtils.class);
+
   private static final TimeUnit MILLI_SECONDS_TIME_UNIT = TimeUnit.MILLISECONDS;
 
   /**

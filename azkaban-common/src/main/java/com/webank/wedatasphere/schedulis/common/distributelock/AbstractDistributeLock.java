@@ -17,7 +17,8 @@
 package com.webank.wedatasphere.schedulis.common.distributelock;
 
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -35,7 +36,7 @@ import azkaban.db.DatabaseOperator;
  */
 public class AbstractDistributeLock implements DistributeLockAdapter {
 
-    private static final Logger log = Logger.getLogger(AbstractDistributeLock.class);
+    private static final Logger log = LoggerFactory.getLogger(AbstractDistributeLock.class);
     DatabaseOperator dbOperator;
 
     @Inject

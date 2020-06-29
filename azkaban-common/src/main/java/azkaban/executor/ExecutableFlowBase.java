@@ -22,22 +22,24 @@ import azkaban.flow.Node;
 import azkaban.flow.SpecialJobTypes;
 import azkaban.project.Project;
 import azkaban.utils.TypedMapWrapper;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ExecutableFlowBase extends ExecutableNode {
+
+  private static final Logger logger = LoggerFactory.getLogger(ExecutableFlowBase.class);
 
   public static final String FLOW_ID_PARAM = "flowId";
   public static final String NODES_PARAM = "nodes";
   public static final String PROPERTIES_PARAM = "properties";
   public static final String SOURCE_PARAM = "source";
   public static final String INHERITED_PARAM = "inherited";
-  private static final Logger logger = LoggerFactory.getLogger(ExecutableFlowBase.class);
 
   private final HashMap<String, ExecutableNode> executableNodes =
       new HashMap<>();

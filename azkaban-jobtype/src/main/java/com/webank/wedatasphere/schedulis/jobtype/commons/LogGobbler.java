@@ -17,22 +17,21 @@
 package com.webank.wedatasphere.schedulis.jobtype.commons;
 
 import com.google.common.base.Joiner;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import org.slf4j.Logger;
 
 public class LogGobbler extends Thread {
 
   private final BufferedReader inputReader;
   private final Logger logger;
-  private final Level loggingLevel;
+  private final String loggingLevel;
   private final CircularBuffer<String> buffer;
 
   public LogGobbler(final Reader inputReader, final Logger logger,
-      final Level level, final int bufferLines) {
+      final String level, final int bufferLines) {
     this.inputReader = new BufferedReader(inputReader);
     this.logger = logger;
     this.loggingLevel = level;
@@ -58,7 +57,17 @@ public class LogGobbler extends Thread {
 
   private void log(final String message) {
     if (this.logger != null) {
-      this.logger.log(this.loggingLevel, message);
+      if (this.loggingLevel.equals("INFO")) {
+        this.logger.info(message);
+      } else if (this.loggingLevel.equals("ERROR")) {
+        this.logger.error(message);
+      } else if (this.loggingLevel.equals("DEBUG")) {
+        this.logger.debug(message);
+      } else if (this.loggingLevel.equals("WARN")) {
+        this.logger.warn(message);
+      } else {
+        this.logger.trace(message);
+      }
     }
   }
 

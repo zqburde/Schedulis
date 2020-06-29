@@ -18,7 +18,8 @@ package com.webank.wedatasphere.schedulis.common.utils;
 
 import azkaban.utils.Props;
 import java.nio.charset.Charset;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.forgerock.opendj.ldap.Connection;
 import org.forgerock.opendj.ldap.LDAPConnectionFactory;
 import org.forgerock.opendj.ldap.LdapException;
@@ -26,7 +27,7 @@ import org.forgerock.opendj.ldap.requests.BindRequest;
 import org.forgerock.opendj.ldap.requests.Requests;
 
 public class LdapCheckCenter {
-  private static final Logger logger = Logger.getLogger(LdapCheckCenter.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger(LdapCheckCenter.class.getName());
   private volatile static LDAPConnectionFactory lcf;
 
   public static boolean checkLogin(Props props, String userName, String password) {

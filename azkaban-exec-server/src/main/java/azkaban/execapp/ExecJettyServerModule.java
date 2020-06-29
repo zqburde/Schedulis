@@ -6,7 +6,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 //import org.mortbay.jetty.Connector;
 //import org.mortbay.jetty.Server;
 //import org.mortbay.jetty.servlet.Context;
@@ -26,7 +27,7 @@ public class ExecJettyServerModule extends AbstractModule {
   private static final int DEFAULT_HEADER_BUFFER_SIZE = 4096;
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
 
-  private static final Logger logger = Logger.getLogger(ExecJettyServerModule.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExecJettyServerModule.class);
 
   @Override
   protected void configure() {
