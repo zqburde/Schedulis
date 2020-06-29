@@ -41,7 +41,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import azkaban.utils.Pair;
-import com.alibaba.fastjson.JSONObject;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
+import com.webank.wedatasphere.schedulis.common.utils.GsonUtils;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -399,8 +401,8 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       return;
     }
     try {
-      JSONObject jsonObject = new JSONObject();
-      jsonObject.put("flowFailed", Boolean.valueOf(getParam(req, "flowFailed")));
+      JsonObject jsonObject = new JsonObject();
+      jsonObject.addProperty("flowFailed", Boolean.valueOf(getParam(req, "flowFailed")));
       this.flowRunnerManager.setFlowFailed(execid, jsonObject);
       respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_SUCCESS);
     } catch (final Exception e) {
@@ -416,8 +418,8 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       return;
     }
     try {
-      JSONObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
-      String disableJob = jsonObject.getString("disableJob");
+      JsonObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
+      String disableJob = jsonObject.get("disableJob").getAsString();
       this.flowRunnerManager.setJobDisabled(execid, disableJob, respMap, user);
     } catch (final Exception e) {
       logger.error(e.getMessage(), e);
@@ -432,8 +434,8 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       return;
     }
     try {
-      JSONObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
-      List<String> retryFailedJobs = jsonObject.getJSONArray("retryFailedJobs").toJavaList(String.class);
+      JsonObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
+      List<String> retryFailedJobs = GsonUtils.jsonToJavaObject(jsonObject.getAsJsonArray("retryFailedJobs"), new TypeToken<List<String>>() {}.getType());
       this.flowRunnerManager.retryJobs(execid, retryFailedJobs);
       respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_SUCCESS);
     } catch (final Exception e) {
@@ -449,8 +451,8 @@ public class ExecutorServlet extends HttpServlet implements ConnectorParams {
       return;
     }
     try {
-      JSONObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
-      List<String> skipFailedJobs = jsonObject.getJSONArray("skipFailedJobs").toJavaList(String.class);
+      JsonObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
+      List<String> skipFailedJobs = GsonUtils.jsonToJavaObject(jsonObject.getAsJsonArray("skipFailedJobs"), new TypeToken<List<String>>() {}.getType());
       this.flowRunnerManager.skipFailedJobs(execid, skipFailedJobs);
       respMap.put(ConnectorParams.STATUS_PARAM, ConnectorParams.RESPONSE_SUCCESS);
     } catch (final Exception e) {

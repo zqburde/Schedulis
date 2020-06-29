@@ -16,8 +16,8 @@
 
 package com.webank.wedatasphere.schedulis.common.i18nutils;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+
+import com.webank.wedatasphere.schedulis.common.utils.GsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,11 +51,9 @@ public class LoadJsonUtils {
         Map<String, String> resultMap = new HashMap<>();
         try {
             String jsonStr = readFromTextFile(fileName);
-            JSONObject json = JSON.parseObject(jsonStr, JSONObject.class);
-            String data = json.getString(dataNode);
-            resultMap =  JSON.parseObject(data, Map.class);
+            resultMap = (Map<String, String>)GsonUtils.json2Map(jsonStr).get(dataNode);
         } catch (Exception e) {
-            logger.error("Json File trans Failed, caused by:" + e);
+            logger.error("Json File trans Failed, caused by:{}", e);
         }
         return resultMap;
     }
