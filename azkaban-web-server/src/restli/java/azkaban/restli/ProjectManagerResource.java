@@ -41,14 +41,14 @@ import java.net.URL;
 import java.util.Map;
 import javax.servlet.ServletException;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.quartz.SchedulerException;
 
 @RestLiActions(name = "project", namespace = "azkaban.restli")
 public class ProjectManagerResource extends ResourceContextHolder {
 
-  private static final Logger logger = Logger
-      .getLogger(ProjectManagerResource.class);
+  private static final Logger logger = LoggerFactory.getLogger(ProjectManagerResource.class);
 
   public AzkabanWebServer getAzkaban() {
     return AzkabanWebServer.getInstance();

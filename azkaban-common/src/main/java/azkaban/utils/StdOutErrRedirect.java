@@ -16,10 +16,12 @@
 
 package azkaban.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.OutputStream;
 import java.io.PrintStream;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+
 
 /**
  * A class to encapsulate the redirection of stdout and stderr to log4j This allows us to catch
@@ -28,31 +30,47 @@ import org.apache.log4j.Logger;
 
 public class StdOutErrRedirect {
 
-  private static final Logger logger = Logger.getLogger(StdOutErrRedirect.class);
-  private static final PrintStream infoStream = createStream(System.out, Level.INFO);
-  private static final PrintStream errorStream = createStream(System.out, Level.ERROR);
+  private static final Logger logger = LoggerFactory.getLogger(StdOutErrRedirect.class);
+  private static final PrintStream infoStream = createStream(System.out, "INFO");
+  private static final PrintStream errorStream = createStream(System.out, "ERROR");
 
   public static void redirectOutAndErrToLog() {
     System.setOut(infoStream);
     System.setErr(errorStream);
   }
 
-  private static PrintStream createStream(final PrintStream stream, final Level level) {
+  private static PrintStream createStream(final PrintStream stream, final String level) {
     return new LogStream(stream, level);
   }
 
   private static class LogStream extends PrintStream {
 
-    private final Level level;
+    private final String level;
 
-    public LogStream(final OutputStream out, final Level level) {
+    public LogStream(final OutputStream out, final String level) {
       super(out);
       this.level = level;
     }
 
     // Underlying mechanism to log to log4j - all print methods will use this
     private void write(final String string) {
-      logger.log(this.level, string);
+      switch (this.level) {
+        case "INFO":
+          logger.info(string);
+          break;
+        case "DEBUG":
+          logger.debug(string);
+          break;
+        case "ERROR":
+          logger.error(string);
+          break;
+        case "WARN":
+          logger.warn(string);
+          break;
+        default:
+          logger.trace(string);
+          break;
+      }
     }
 
     // String

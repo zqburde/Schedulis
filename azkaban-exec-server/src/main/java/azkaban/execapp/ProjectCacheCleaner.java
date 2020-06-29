@@ -30,8 +30,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.slf4j.Logger;
+
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * This class is responsible for deleting least recently accessed projects in the shared project

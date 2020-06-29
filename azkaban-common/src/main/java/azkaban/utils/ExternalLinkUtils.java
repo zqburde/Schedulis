@@ -17,14 +17,16 @@
 package azkaban.utils;
 
 import azkaban.Constants;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import javax.servlet.http.HttpServletRequest;
-import org.apache.log4j.Logger;
 
 public class ExternalLinkUtils {
 
-  private static final Logger logger = Logger.getLogger(ExternalLinkUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExternalLinkUtils.class);
 
   public static String getExternalAnalyzerOnReq(final Props azkProps,
       final HttpServletRequest req) {

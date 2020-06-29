@@ -32,8 +32,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Place Hadoop dependencies in this module. Since Hadoop is not included in the Azkaban Runtime

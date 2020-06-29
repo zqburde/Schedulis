@@ -38,12 +38,13 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Deprecated
 public class SystemBuiltInParamUtils {
 
-  private static final Logger utilLogger = Logger.getLogger(SystemBuiltInParamUtils.class);
+  private static final Logger utilLogger = LoggerFactory.getLogger(SystemBuiltInParamUtils.class);
 
   public static final String RUN_DATE = "run_date";
   public static final String RUN_DATE_STD = "run_date_std";

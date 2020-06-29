@@ -39,14 +39,15 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * The main page
  */
 public class ProjectServlet extends LoginAbstractAzkabanServlet {
 
-  private static final Logger logger = Logger.getLogger(ProjectServlet.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger(ProjectServlet.class.getName());
   private static final String LOCKDOWN_CREATE_PROJECTS_KEY = "lockdown.create.projects";
   private static final long serialVersionUID = -1;
   private TransitionService transitionService;
@@ -413,7 +414,7 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
       ret.put("langType", languageType);
     } catch (Exception e) {
       ret.put("error", e.getMessage());
-      logger.error("languageType load error: caused by:" + e);
+      logger.error("languageType load error: caused by:", e);
     }
   }
 

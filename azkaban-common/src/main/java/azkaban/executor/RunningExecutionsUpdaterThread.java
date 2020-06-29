@@ -16,15 +16,17 @@
 
 package azkaban.executor;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import javax.inject.Inject;
-import org.apache.log4j.Logger;
 
 /**
  * Updates running executions periodically.
  */
 public class RunningExecutionsUpdaterThread extends Thread {
 
-  private static final Logger logger = Logger.getLogger(RunningExecutionsUpdaterThread.class);
+  private static final Logger logger = LoggerFactory.getLogger(RunningExecutionsUpdaterThread.class);
 
   volatile int waitTimeIdleMs = 2000;
   volatile int waitTimeMs = 500;

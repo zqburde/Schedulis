@@ -19,7 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * This is a wrapper over the binary executable execute-as-user. It provides a simple API to run
@@ -27,7 +28,7 @@ import org.apache.log4j.Logger;
  */
 public class ExecuteAsUser {
 
-  private final static Logger log = Logger.getLogger(ExecuteAsUser.class);
+  private final static Logger logger = LoggerFactory.getLogger(ExecuteAsUser.class);
   private final static String EXECUTE_AS_USER = "execute-as-user";
 
   private final File binaryExecutable;
@@ -57,7 +58,7 @@ public class ExecuteAsUser {
    * @return The return value of the shell command
    */
   public int execute(final String user, final List<String> command) throws IOException {
-    log.info("Command: " + command);
+    logger.info("Command: " + command);
     final Process process = new ProcessBuilder()
         .command(constructExecuteAsCommand(user, command))
         .inheritIO()
@@ -67,7 +68,7 @@ public class ExecuteAsUser {
     try {
       exitCode = process.waitFor();
     } catch (final InterruptedException e) {
-      log.error(e.getMessage(), e);
+      logger.error(e.getMessage(), e);
       exitCode = 1;
     }
     return exitCode;

@@ -24,11 +24,13 @@ import azkaban.utils.Props;
 import javax.inject.Inject;
 import com.google.inject.Provider;
 import java.util.List;
-import org.apache.log4j.Logger;
+
 //import org.mortbay.jetty.Connector;
 //import org.mortbay.jetty.Server;
 //import org.mortbay.jetty.bio.SocketConnector;
 //import org.mortbay.jetty.security.SslSocketConnector;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -36,7 +38,7 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class WebServerProvider implements Provider<Server> {
 
-  private static final Logger logger = Logger.getLogger(WebServerProvider.class);
+  private static final Logger logger = LoggerFactory.getLogger(WebServerProvider.class);
   private static final int MAX_HEADER_BUFFER_SIZE = 10 * 1024 * 1024;
 
   @Inject

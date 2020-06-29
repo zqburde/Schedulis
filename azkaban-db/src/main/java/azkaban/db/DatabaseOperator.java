@@ -24,7 +24,8 @@ import javax.inject.Inject;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * This interface is to define Base Data Access Object contract for Azkaban. All azkaban DB related
@@ -35,7 +36,7 @@ import org.apache.log4j.Logger;
  */
 public class DatabaseOperator {
 
-  private static final Logger logger = Logger.getLogger(DatabaseOperator.class);
+  private static final Logger logger = LoggerFactory.getLogger(DatabaseOperator.class);
 
   private final QueryRunner queryRunner;
 

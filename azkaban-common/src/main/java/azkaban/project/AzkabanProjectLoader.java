@@ -59,6 +59,7 @@ import org.slf4j.LoggerFactory;
 class AzkabanProjectLoader {
 
   private static final Logger log = LoggerFactory.getLogger(AzkabanProjectLoader.class);
+
   private static final String DIRECTORY_FLOW_REPORT_KEY = "Directory Flow";
 
   private final Props props;

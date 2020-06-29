@@ -73,7 +73,8 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.DateTimeZone;
 //import org.mortbay.jetty.Connector;
 //import org.mortbay.jetty.Server;
@@ -89,7 +90,7 @@ public class AzkabanExecutorServer {
   public static final String JOBTYPE_PLUGIN_DIR = "azkaban.jobtype.plugin.dir";
   public static final String METRIC_INTERVAL = "executor.metric.milisecinterval.";
   private static final String CUSTOM_JMX_ATTRIBUTE_PROCESSOR_PROPERTY = "jmx.attribute.processor.class";
-  private static final Logger logger = Logger.getLogger(AzkabanExecutorServer.class);
+  private static final Logger logger = LoggerFactory.getLogger(AzkabanExecutorServer.class);
   private static final String DEFAULT_TIMEZONE_ID = "default.timezone.id";
   private static final String EXECUTOR_SERVER_ID = "executor.server.id";
 
@@ -256,7 +257,7 @@ public class AzkabanExecutorServer {
     try {
       this.server.start();
     } catch (final Exception e) {
-      logger.error(e);
+      logger.error("", e);
       Utils.croak(e.getMessage(), 1);
     }
 
@@ -460,7 +461,7 @@ public class AzkabanExecutorServer {
     try {
       return this.mbeanServer.getMBeanInfo(name);
     } catch (final Exception e) {
-      logger.error(e);
+      logger.error("", e);
       return null;
     }
   }
@@ -469,7 +470,7 @@ public class AzkabanExecutorServer {
     try {
       return this.mbeanServer.getAttribute(name, attribute);
     } catch (final Exception e) {
-      logger.error(e);
+      logger.error("", e);
       return null;
     }
   }
@@ -522,7 +523,7 @@ public class AzkabanExecutorServer {
     try {
       Thread.sleep(duration.toMillis());
     } catch (final InterruptedException e) {
-      logger.error(e);
+      logger.error("", e);
     }
   }
 

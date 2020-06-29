@@ -51,13 +51,14 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 
 @Singleton
 public class ProjectManager {
 
-  private static final Logger logger = Logger.getLogger(ProjectManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(ProjectManager.class);
   private final AzkabanProjectLoader azkabanProjectLoader;
   private final ProjectLoader projectLoader;
   private final Props props;

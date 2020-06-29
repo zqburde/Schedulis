@@ -22,12 +22,13 @@ import java.util.Base64;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class MySQLDataSource extends AzkabanDataSource {
 
-  private static final Logger logger = Logger.getLogger(MySQLDataSource.class);
+  private static final Logger logger = LoggerFactory.getLogger(MySQLDataSource.class);
   private final DBMetrics dbMetrics;
 
   @Inject
@@ -44,7 +45,7 @@ public class MySQLDataSource extends AzkabanDataSource {
     try {
       pwd = new String(Base64.getDecoder().decode(props.getString("mysql.password").getBytes()),"UTF-8");
     } catch (Exception e){
-      logger.error("password decore failed" + e);
+      logger.error("password decore failed", e);
     }
     final String password = pwd;
     final int numConnections = props.getInt("mysql.numconnections");
@@ -138,7 +139,7 @@ public class MySQLDataSource extends AzkabanDataSource {
           rs.close();
         }
       } catch (SQLException e) {
-        logger.error("SQLException in execute query, caused by:"+e.getMessage());
+        logger.error("SQLException in execute query, caused by:", e);
       }
 
       try {
@@ -146,7 +147,7 @@ public class MySQLDataSource extends AzkabanDataSource {
           ps.close();
         }
       } catch (SQLException e) {
-        logger.error("SQLException in execute query, caused by:"+e.getMessage());
+        logger.error("SQLException in execute query, caused by:", e);
       }
     }
     return false;

@@ -17,10 +17,12 @@
 package azkaban.executor;
 
 import com.google.common.collect.ImmutableSet;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.util.Collection;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
 
 /**
  * Loads & provides executors.
@@ -28,7 +30,7 @@ import org.apache.log4j.Logger;
 @Singleton
 public class ActiveExecutors {
 
-  private static final Logger logger = Logger.getLogger(ExecutorManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExecutorManager.class);
 
   private volatile ImmutableSet<Executor> activeExecutors;
   private final ExecutorLoader executorLoader;

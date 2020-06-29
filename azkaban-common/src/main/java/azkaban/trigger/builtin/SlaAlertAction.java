@@ -23,15 +23,17 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.TriggerAction;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.log4j.Logger;
 
 public class SlaAlertAction implements TriggerAction {
 
   public static final String type = "AlertAction";
 
-  private static final Logger logger = Logger.getLogger(SlaAlertAction.class);
+  private static final Logger logger = LoggerFactory.getLogger(SlaAlertAction.class);
 
   private final String actionId;
   private final SlaOption slaOption;

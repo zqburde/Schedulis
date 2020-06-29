@@ -39,8 +39,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class FlowTriggerDependencyPluginManager {
@@ -49,8 +49,7 @@ public class FlowTriggerDependencyPluginManager {
   public static final String PRIVATE_CONFIG_FILE = "private.properties";
   public static final String DEPENDENCY_CLASS = "dependency.class";
   public static final String CLASS_PATH = "dependency.classpath";
-  private static final Logger logger = LoggerFactory
-      .getLogger(FlowTriggerDependencyPluginManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(FlowTriggerDependencyPluginManager.class);
   private final String pluginDir;
   private final Map<String, DependencyCheck> dependencyTypeMap;
   private final ClassLoader prevClassLoader;

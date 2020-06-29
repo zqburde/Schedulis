@@ -48,13 +48,14 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
-  private static final Logger logger = Logger.getLogger(HistoryServlet.class);
+  private static final Logger logger = LoggerFactory.getLogger(HistoryServlet.class);
   private static final String FILTER_BY_DATE_PATTERN = "MM/dd/yyyy hh:mm aa";
   private static final String EMPRY_ADVANCED_FILTER = "0-1";
   private static final long serialVersionUID = 1L;
@@ -255,7 +256,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
           }
         }
       } catch (final ExecutorManagerException e) {
-        logger.error("find flow executed history error,caused by:" + e);
+        logger.error("find flow executed history error,caused by:", e);
         page.add("error", e.getMessage());
       }
     } else if (hasParam(req, "search") && StringUtils.isNotBlank(getParam(req, "searchterm").trim())) {
@@ -282,7 +283,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
           history = this.executorManagerAdapter.getUserExecutableFlows((pageNum - 1) * pageSize, pageSize, user.getUserId());
         }
       } catch (final ExecutorManagerException e) {
-        logger.error("find flow by role error,caused by:" + e);
+        logger.error("find flow by role error,caused by:", e);
       }
     }
     if(null != history && !history.isEmpty()){
@@ -760,7 +761,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
           total = this.executorManagerAdapter.getUserExecHistoryTotal(userMap);
         }
       } catch (final ExecutorManagerException e) {
-        logger.error("find flow by role error,caused by:" + e);
+        logger.error("find flow by role error,caused by:", e);
       }
     }
     //计算RunDate日期
@@ -779,7 +780,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
             try {
               executableFlow.setUpdateTime(Long.parseLong(runDatestr));
             } catch (Exception e) {
-              logger.error("rundate convert failed (String to long)" + runDatestr + "{}"+e);
+              logger.error("rundate convert failed (String to long) {}", runDatestr, e);
             }finally {
               executableFlow.setUpdateTime(0);
               executableFlow.getOtherOption().put("run_date",runDatestr);
@@ -826,7 +827,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
         historyInfo.put("runDate", executableFlow.getUpdateTime()== 0 ? executableFlow.getOtherOption().get("run_date")
             : webUtils.formatRunDate(executableFlow.getUpdateTime()));
       }catch (Exception e) {
-        logger.error("put rundate failed" + "{}" + e);
+        logger.error("put rundate failed",  e);
       }
       historyInfo.put("difftime", Utils.formatDuration(executableFlow.getStartTime(), executableFlow.getEndTime()));
       historyInfo.put("status", executableFlow.getStatus());

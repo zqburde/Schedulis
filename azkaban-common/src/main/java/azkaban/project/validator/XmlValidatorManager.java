@@ -17,7 +17,9 @@ import java.util.Map.Entry;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import org.apache.log4j.Logger;
+
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -45,7 +47,7 @@ public class XmlValidatorManager implements ValidatorManager {
   public static final String VALIDATOR_TAG = "validator";
   public static final String CLASSNAME_ATTR = "classname";
   public static final String ITEM_TAG = "property";
-  private static final Logger logger = Logger.getLogger(XmlValidatorManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(XmlValidatorManager.class);
   private static final Map<String, Long> resourceTimestamps = new HashMap<>();
   private static ValidatorClassLoader validatorLoader;
   private final String validatorDirPath;
@@ -124,7 +126,7 @@ public class XmlValidatorManager implements ValidatorManager {
    * {@inheritDoc}
    *
    * @see azkaban.project.validator.ValidatorManager#loadValidators(azkaban.utils.Props,
-   * org.apache.log4j.Logger)
+   * Logger)
    */
   @Override
   public void loadValidators(final Props props, final Logger log) {
