@@ -25,7 +25,6 @@ import azkaban.user.Permission.Type;
 import azkaban.user.Role;
 import azkaban.user.User;
 import azkaban.utils.JSONUtils;
-import com.alibaba.fastjson.JSONObject;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -36,6 +35,11 @@ import java.util.List;
 import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
+import com.webank.wedatasphere.schedulis.common.utils.GsonUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
@@ -125,11 +129,11 @@ public class HttpRequestUtils {
     return execOptions;
   }
 
-  public static ExecutionOptions parseFlowOptions(final JSONObject jsonObject)
+  public static ExecutionOptions parseFlowOptions(final JsonObject jsonObject)
           throws ServletException {
     final ExecutionOptions execOptions = new ExecutionOptions();
-    if (jsonObject.containsKey("failureAction")) {
-      final String option = jsonObject.getString("failureAction");
+    if (jsonObject.has("failureAction")) {
+      final String option = jsonObject.get("failureAction").getAsString();
       if (option.equals("finishCurrent")) {
         execOptions.setFailureAction(FailureAction.FINISH_CURRENTLY_RUNNING);
       } else if (option.equals("cancelImmediately")) {
@@ -141,63 +145,72 @@ public class HttpRequestUtils {
       }
     }
 
-    if (jsonObject.containsKey("failureEmailsOverride")) {
-      final boolean override = (Boolean) jsonObject.getOrDefault("failureEmailsOverride", false);
+    if (jsonObject.has("failureEmailsOverride")) {
+      final boolean override = jsonObject.get("failureEmailsOverride").getAsBoolean();
       execOptions.setFailureEmailsOverridden(override);
     }
-    if (jsonObject.containsKey("successEmailsOverride")) {
-      final boolean override = (Boolean) jsonObject.getOrDefault("successEmailsOverride", false);
+    if (jsonObject.has("successEmailsOverride")) {
+      final boolean override = jsonObject.get("successEmailsOverride").getAsBoolean();
       execOptions.setSuccessEmailsOverridden(override);
     }
 
-    if (jsonObject.containsKey("failureEmails")) {
-      final String emails = jsonObject.getString("failureEmails");
+    if (jsonObject.has("failureEmails")) {
+      final String emails = jsonObject.get("failureEmails").getAsString();
       if (!emails.isEmpty()) {
         final String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
         execOptions.setFailureEmails(Arrays.asList(emailSplit));
       }
     }
-    if (jsonObject.containsKey("successEmails")) {
-      final String emails = jsonObject.getString("successEmails");
+    if (jsonObject.has("successEmails")) {
+      final String emails = jsonObject.get("successEmails").getAsString();
       if (!emails.isEmpty()) {
         final String[] emailSplit = emails.split("\\s*,\\s*|\\s*;\\s*|\\s+");
         execOptions.setSuccessEmails(Arrays.asList(emailSplit));
       }
     }
-    if (jsonObject.containsKey("notifyFailureFirst")) {
-      execOptions.setNotifyOnFirstFailure(Boolean.parseBoolean(jsonObject.getString(
-              "notifyFailureFirst")));
+    if (jsonObject.has("notifyFailureFirst")) {
+      execOptions.setNotifyOnFirstFailure(jsonObject.get(
+              "notifyFailureFirst").getAsBoolean());
     }
-    if (jsonObject.containsKey("notifyFailureLast")) {
-      execOptions.setNotifyOnLastFailure(Boolean.parseBoolean(jsonObject.getString(
-              "notifyFailureLast")));
+    if (jsonObject.has("notifyFailureLast")) {
+      execOptions.setNotifyOnLastFailure(jsonObject.get(
+              "notifyFailureLast").getAsBoolean());
     }
-
-    String concurrentOption = (String) jsonObject.getOrDefault("concurrentOption", "skip");
+    String concurrentOption = "skip";
+    if (jsonObject.has("concurrentOption")) {
+      concurrentOption = jsonObject.get("concurrentOption").getAsString();
+    }
     execOptions.setConcurrentOption(concurrentOption);
+
     if (concurrentOption.equals("pipeline")) {
-      final int pipelineLevel = jsonObject.getIntValue( "pipelineLevel");
+      final int pipelineLevel = jsonObject.get( "pipelineLevel").getAsInt();
       execOptions.setPipelineLevel(pipelineLevel);
     } else if (concurrentOption.equals("queue")) {
       // Not yet implemented
-      final int queueLevel = (Integer) jsonObject.getOrDefault( "queueLevel", 1);
+      int queueLevel = 1;
+      if (jsonObject.has("queueLevel")) {
+        queueLevel = jsonObject.get("queueLevel").getAsInt();
+      }
       execOptions.setPipelineLevel(queueLevel);
     }
 
     String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
-    if (jsonObject.containsKey("mailCreator")) {
-      mailCreator = jsonObject.getString("mailCreator");
+    if (jsonObject.has("mailCreator")) {
+      mailCreator = jsonObject.get("mailCreator").getAsString();
       execOptions.setMailCreator(mailCreator);
     }
 
-    final Map<String, String> flowParamGroup = (Map<String, String>) jsonObject.get("flowOverride");
+    Map<String, String> flowParamGroup = new HashMap<>();
+    if(jsonObject.has("flowOverride")) {
+      flowParamGroup = GsonUtils.jsonToJavaObject(jsonObject.get("flowOverride").getAsJsonObject(), new TypeToken<Map<String, String>>() {
+      }.getType());
+    }
     execOptions.addAllFlowParameters(flowParamGroup);
 
-    if (jsonObject.containsKey("disabled")) {
-      final String disabled = jsonObject.getString("disabled");
-      if (!disabled.isEmpty()) {
-        final List<Object> disabledList =
-                (List<Object>) JSONUtils.parseJSONFromStringQuiet(disabled);
+    if (jsonObject.has("disabled")) {
+      List<Object> disabledList = GsonUtils.jsonToJavaObject(jsonObject.get("disabled"), new TypeToken<List<Object>>() {
+      }.getType());
+      if (disabledList != null) {
         execOptions.setDisabledJobs(disabledList);
       }
     }
@@ -418,18 +431,13 @@ public class HttpRequestUtils {
 
     return responseMap;
   }
-  public static JSONObject parseRequestToJsonObject(final HttpServletRequest request) {
-    JSONObject json = null;
+  public static JsonObject parseRequestToJsonObject(final HttpServletRequest request) {
+    JsonObject json = null;
     BufferedReader br = null;
     try {
       br = new BufferedReader(new InputStreamReader(request.getInputStream(),"utf-8"));
-      String line = null;
-      StringBuilder sb = new StringBuilder();
-      while((line = br.readLine()) != null){
-        sb.append(line);
-      }
-      json = JSONObject.parseObject(sb.toString());
-    } catch (IOException io){
+      json = JsonParser.parseReader(br).getAsJsonObject();
+    } catch (Exception io){
       logger.error("IOException: {}" , io);
     }finally {
       try {

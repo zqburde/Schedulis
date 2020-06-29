@@ -16,7 +16,6 @@
 
 package com.webank.wedatasphere.schedulis.jobtype.util;
 
-import com.alibaba.fastjson.JSONObject;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;

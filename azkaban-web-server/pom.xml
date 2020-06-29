@@ -25,6 +25,12 @@
             <groupId>com.webank.wedatasphere.schedulis</groupId>
             <artifactId>azkaban-common</artifactId>
             <version>${schedulis.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>fastjson</artifactId>
+                    <groupId>com.alibaba</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.webank.wedatasphere.schedulis</groupId>
@@ -270,12 +276,6 @@
             <artifactId>h2</artifactId>
             <version>${h2.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.61</version>
         </dependency>
 
         <dependency>
