@@ -57,8 +57,7 @@ import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.WebMetrics;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionRecover;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
@@ -69,6 +68,7 @@ import com.webank.wedatasphere.schedulis.common.system.common.TransitionService;
 import com.webank.wedatasphere.schedulis.common.system.entity.WtssUser;
 import com.webank.wedatasphere.schedulis.common.user.SystemUserManager;
 import com.webank.wedatasphere.schedulis.common.utils.AlertUtil;
+import com.webank.wedatasphere.schedulis.common.utils.GsonUtils;
 import com.webank.wedatasphere.schedulis.common.utils.LogErrorCodeFilterUtils;
 import java.io.File;
 import java.io.FileInputStream;
@@ -98,6 +98,10 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
@@ -1387,14 +1391,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         }
         String response = null;
         try {
-            JSONObject request = HttpRequestUtils.parseRequestToJsonObject(req);
-            response = this.executorManagerAdapter.setJobDisabled(exFlow, user.getUserId(), request.toJSONString());
+            JsonObject request = HttpRequestUtils.parseRequestToJsonObject(req);
+            response = this.executorManagerAdapter.setJobDisabled(exFlow, user.getUserId(), request.toString());
             if(response == null){
                 ret.put("error", "Request Failed");
             }
-            JSONObject result = JSONObject.parseObject(response);
-            if (result.containsKey("error")) {
-                ret.put("error", result.getString("error"));
+            JsonObject result = new JsonParser().parse(response).getAsJsonObject();
+            if (result.has("error")) {
+                ret.put("error", result.get("error").getAsString());
             }
         } catch (final Exception e) {
             ret.put("error", e.getMessage());
@@ -1411,14 +1415,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         }
         String response = null;
         try {
-            JSONObject request = HttpRequestUtils.parseRequestToJsonObject(req);
-            response = this.executorManagerAdapter.retryFailedJobs(exFlow, user.getUserId(), request.toJSONString());
+            JsonObject request = HttpRequestUtils.parseRequestToJsonObject(req);
+            response = this.executorManagerAdapter.retryFailedJobs(exFlow, user.getUserId(), request.toString());
             if(response == null){
                 ret.put("error", "Request Failed");
             }
-            JSONObject result = JSONObject.parseObject(response);
-            if (result.containsKey("error")) {
-                ret.put("error", result.getString("error"));
+            JsonObject result = new JsonParser().parse(response).getAsJsonObject();
+            if (result.has("error")) {
+                ret.put("error", result.get("error").getAsString());
             }
         } catch (final Exception e) {
             ret.put("error", e.getMessage());
@@ -1435,14 +1439,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         }
         String response = null;
         try {
-            JSONObject request = HttpRequestUtils.parseRequestToJsonObject(req);
-            response = this.executorManagerAdapter.skipFailedJobs(exFlow, user.getUserId(), request.toJSONString());
+            JsonObject request = HttpRequestUtils.parseRequestToJsonObject(req);
+            response = this.executorManagerAdapter.skipFailedJobs(exFlow, user.getUserId(), request.toString());
             if(response == null){
                 ret.put("error", "Request Failed");
             }
-            JSONObject result = JSONObject.parseObject(response);
-            if (result.containsKey("error")) {
-                ret.put("error", result.getString("error"));
+            JsonObject result = new JsonParser().parse(response).getAsJsonObject();
+            if (result.has("error")) {
+                ret.put("error", result.get("error").getAsString());
             }
         } catch (final Exception e) {
             ret.put("error", e.getMessage());
@@ -1697,8 +1701,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     */
     private void executeAllFlow(final HttpServletRequest req, final HttpServletResponse resp,
         final HashMap<String, Object> ret, final User user) throws ServletException {
-        JSONObject request = HttpRequestUtils.parseRequestToJsonObject(req);
-        String projectName = request.getString("project");
+        JsonObject request = HttpRequestUtils.parseRequestToJsonObject(req);
+        String projectName = request.get("project").getAsString();
         Project project = getProjectAjaxByPermission(ret, projectName, user, Type.EXECUTE);
         Map<String, String> dataMap = loadExecutorServletI18nData();
 
@@ -1726,7 +1730,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     private boolean execFlow(Project project, Flow flow, Map<String, Object> ret,
-        JSONObject request, User user, StringBuilder msg) throws ServletException{
+                             JsonObject request, User user, StringBuilder msg) throws ServletException{
 
         ret.put("flow", flow.getId());
 
@@ -1766,30 +1770,30 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         exflow.setOtherOption(otherOptions);
 
         //设置通用告警级别
-        if (request.containsKey("failureAlertLevel")) {
-            otherOptions.put("failureAlertLevel", request.get("failureAlertLevel"));
+        if (request.has("failureAlertLevel")) {
+            otherOptions.put("failureAlertLevel", request.get("failureAlertLevel").getAsString());
         }
-        if (request.containsKey("successAlertLevel")) {
-            otherOptions.put("successAlertLevel", request.get("successAlertLevel"));
+        if (request.has("successAlertLevel")) {
+            otherOptions.put("successAlertLevel", request.get("successAlertLevel").getAsString());
         }
 
         //---超时告警设置---
         boolean useTimeoutSetting = false;
-        if(request.containsKey("useTimeoutSetting")) {
-            useTimeoutSetting = request.getBoolean("useTimeoutSetting");
+        if(request.has("useTimeoutSetting")) {
+            useTimeoutSetting = request.get("useTimeoutSetting").getAsBoolean();
         }
         final List<SlaOption> slaOptions = new ArrayList<>();
         if (useTimeoutSetting) {
             String emailStr = "";
-            if(request.containsKey("slaEmails")){
-                emailStr = request.getString("slaEmails");
+            if(request.has("slaEmails")){
+                emailStr = request.get("slaEmails").getAsString();
             }
             final String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
             final List<String> slaEmails = Arrays.asList(emailSplit);
             Map<String, String> settings = new HashMap<>();
             try {
-                if(request.containsKey( "settings")){
-                    settings = (Map<String, String>)request.get("settings");
+                if(request.has( "settings")){
+                    settings = GsonUtils.jsonToJavaObject(request.getAsJsonObject("settings"), new TypeToken<Map<String, String>>() {}.getType());
                 }
             } catch (Exception e){
                 logger.error("没有找到超时告警信息");
@@ -1818,10 +1822,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
         //设置flowType
         //对于单次执行，假如提交的json中含有cycleErrorOption，表示是循环执行，需要设置flowType为4; 设置cycleOption
-        if (request.containsKey("cycleErrorOption")) {
+        if (request.has("cycleErrorOption")) {
             exflow.setFlowType(4);
             HashMap<String, String> cycleOption = new HashMap<>();
-            cycleOption.put("cycleErrorOption", (String) request.get("cycleErrorOption"));
+            cycleOption.put("cycleErrorOption", request.get("cycleErrorOption").getAsString());
             exflow.setCycleOption(cycleOption);
         }
 
@@ -1834,7 +1838,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
             final String message = this.executorManagerAdapter.submitExecutableFlow(exflow, user.getUserId());
             msg.append(String.format("Success, flow:%s, execId:%s .<br/>", flow.getId(), exflow.getExecutionId()));
         } catch (final Exception e) {
-            logger.error("submit executableFlow failed, " + e);
+            logger.error("submit executableFlow failed, ", e);
             msg.append(String.format("Error, flow:%s, msg:%s .<br/>", flow.getId(), e.getMessage()));
             return false;
         }
@@ -1874,11 +1878,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         try {
             wtssUser = transitionService.getSystemUserByUserName(user.getUserId());
         } catch (SystemUserManagerException e){
-            logger.error("get wtssUser failed, caused by: " + e);
+            logger.error("get wtssUser failed, caused by: ", e);
         }
         if(wtssUser != null && wtssUser.getProxyUsers() != null) {
             String[] proxySplit = wtssUser.getProxyUsers().split("\\s*,\\s*");
-            logger.info("add proxyUsers," + JSON.toJSONString(proxySplit));
+            logger.info("add proxyUsers," + ArrayUtils.toString(proxySplit));
             exflow.addAllProxyUsers(Arrays.asList(proxySplit));
         }
 
@@ -2070,13 +2074,13 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     private void ajaxCycleParamVerify(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user)
         throws ServletException {
-        JSONObject json = HttpRequestUtils.parseRequestToJsonObject(req);
+        JsonObject json = HttpRequestUtils.parseRequestToJsonObject(req);
         if (json == null) {
-            json = new JSONObject();
+            json = new JsonObject();
             String projectName = getParam(req, "project");
             String flowId = getParam(req, "flow");
-            json.put("project", projectName);
-            json.put("flow", flowId);
+            json.addProperty("project", projectName);
+            json.addProperty("flow", flowId);
         }
         Optional<Pair<Project, Flow>> validateCycleFlowRes = validateCycleFlowParams(json, user, ret);
         if (!validateCycleFlowRes.isPresent()) {
@@ -2141,9 +2145,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         }
     }
 
-    private Optional<Pair<Project, Flow>> validateCycleFlowParams(JSONObject json, User user, Map<String, Object> ret) {
-        final String projectName = json.getString("project");
-        final String flowId = json.getString("flow");
+    private Optional<Pair<Project, Flow>> validateCycleFlowParams(JsonObject json, User user, Map<String, Object> ret) {
+        final String projectName = json.get("project").getAsString();
+        final String flowId = json.get("flow").getAsString();
         final Project project = getProjectAjaxByPermission(ret, projectName, user, Type.EXECUTE);
         if (project == null) {
             logger.error("Project '" + projectName + "' doesn't exist.");
@@ -2346,30 +2350,30 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
      * @param jsonObject 开始时间，结束时间，执行间隔
      * @return 按照时间执行顺序返回一个时间参数集合
      */
-    private Map<String, Object> repeatDateCompute(final JSONObject jsonObject) {
+    private Map<String, Object> repeatDateCompute(final JsonObject jsonObject) {
 
         Map<String, Object> repeatOptionMap = new HashMap<>();
 
         List<Map<String, String>> repeatTimeList = new LinkedList<>();
         Set<Long> timeList = new HashSet<>();
-        List<Long> runDateTimeList = jsonObject.getJSONArray("runDateTimeList").toJavaList(Long.class);
+        List<Long> runDateTimeList = GsonUtils.jsonToJavaObject(jsonObject.getAsJsonArray("runDateTimeList"), new TypeToken<List<Long>>() {}.getType());
         timeList.addAll(runDateTimeList);
         try {
 //      String month = getParam(req, "month");
 //      String day = getParam(req, "day");
 //      String hour = "0";//getParam(req, "hour");
 //      String min = "0";//getParam(req, "min");
-            String recoverNum = jsonObject.getString("recoverNum");
-            String recoverInterval = jsonObject.getString("recoverInterval");
+            String recoverNum = jsonObject.get("recoverNum").getAsString();
+            String recoverInterval = jsonObject.get("recoverInterval").getAsString();
 
-            final String begin = jsonObject.getString("begin");
+            final String begin = jsonObject.get("begin").getAsString();
 
             final long beginTimeLong =
                 DateTimeFormat.forPattern(FILTER_BY_REPEAT_DATE_PATTERN_NEW).parseDateTime(begin).getMillis();
 
             repeatOptionMap.put("recoverStartTime", beginTimeLong);
 
-            final String end = jsonObject.getString("end");
+            final String end = jsonObject.get("end").getAsString();
 
             final long endTimeLong =
                 DateTimeFormat.forPattern(FILTER_BY_REPEAT_DATE_PATTERN_NEW).parseDateTime(end).getMillis();

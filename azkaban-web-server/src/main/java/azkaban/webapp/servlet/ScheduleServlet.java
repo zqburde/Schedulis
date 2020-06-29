@@ -34,7 +34,7 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
-import com.alibaba.fastjson.JSONObject;
+
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import com.webank.wedatasphere.schedulis.common.system.SystemManager;
 import com.webank.wedatasphere.schedulis.common.system.SystemUserManagerException;
@@ -54,6 +54,8 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.google.gson.JsonObject;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import org.joda.time.DateTime;
@@ -905,8 +907,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   private void ajaxScheduleCronAllFlow(final HttpServletRequest req,
       final HashMap<String, Object> ret, final User user) throws ServletException {
-    JSONObject request = HttpRequestUtils.parseRequestToJsonObject(req);
-    String projectName = request.getString("project");
+    JsonObject request = HttpRequestUtils.parseRequestToJsonObject(req);
+    String projectName = request.get("project").getAsString();
     final Project project = this.projectManager.getProject(projectName);
     Map<String, String> dataMap = loadScheduleServletI18nData();
     if (project == null) {
@@ -942,7 +944,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     ret.put("message", sb.toString());
   }
 
-  private boolean scheduleAllFlow(Project project, Flow flow, Map<String, Object> ret, JSONObject json, User user, StringBuilder msg) throws ServletException {
+  private boolean scheduleAllFlow(Project project, Flow flow, Map<String, Object> ret, JsonObject json, User user, StringBuilder msg) throws ServletException {
     final String projectName = project.getName();
     final String flowName = flow.getId();
     final int projectId = project.getId();
@@ -971,10 +973,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     String cronExpression = null;
     try {
-      if (json.containsKey("cronExpression")) {
+      if (json.has("cronExpression")) {
         // everything in Azkaban functions is at the minute granularity, so we add 0 here
         // to let the expression to be complete.
-        cronExpression = json.getString("cronExpression");
+        cronExpression = json.get("cronExpression").getAsString();
         if (azkaban.utils.Utils.isCronExpressionValid(cronExpression, timezone) == false) {
           ret.put("error", "Error," + dataMap.get("thisExpress") + cronExpression + dataMap.get("outRuleQuartz") + "<br/>");
           return false;
@@ -990,8 +992,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return false;
     }
 
-    final long endSchedTime = (Long) json.getOrDefault("endSchedTime",
-        Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME);
+    long endSchedTime = Constants.DEFAULT_SCHEDULE_END_EPOCH_TIME;
+    if(json.has("endSchedTime")){
+      endSchedTime = json.get("endSchedTime").getAsLong();
+    }
 
     ExecutionOptions flowOptions = null;
     try {
@@ -1011,11 +1015,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     otherOptions.put("jobSkipFailedOptions", jobSkipList);
 
     //设置通用告警级别
-    if (json.containsKey("failureAlertLevel")) {
-      otherOptions.put("failureAlertLevel", json.getString("failureAlertLevel"));
+    if (json.has("failureAlertLevel")) {
+      otherOptions.put("failureAlertLevel", json.get("failureAlertLevel").getAsString());
     }
-    if (json.containsKey("successAlertLevel")) {
-      otherOptions.put("successAlertLevel", json.getString("successAlertLevel"));
+    if (json.has("successAlertLevel")) {
+      otherOptions.put("successAlertLevel", json.get("successAlertLevel").getAsString());
     }
 
     try {

@@ -19,7 +19,7 @@ package com.webank.wedatasphere.schedulis.common.utils;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.Status;
 import azkaban.utils.Props;
-import com.alibaba.fastjson.JSON;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -145,7 +145,7 @@ public class HttpUtils {
       dataMap.put("groupName", executableFlow.getProjectName());
       dataMap.put("number", getValue(flowPros, "dcnNumber"));
       dataList.add(dataMap);
-      request = JSON.toJSON(dataList).toString();
+      request = GsonUtils.toJson(dataList);
       actionUrl = azkabanProps.getString("ims.job.register.url", null);
       if(actionUrl == null){
         logger.error("获取注册接口失败");
