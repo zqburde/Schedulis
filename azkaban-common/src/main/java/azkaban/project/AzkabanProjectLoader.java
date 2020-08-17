@@ -202,19 +202,20 @@ class AzkabanProjectLoader {
   private File unzipProject(final File archive, final String fileType)
       throws ProjectManagerException {
     final File file;
-    try {
+
       if (fileType == null) {
         throw new ProjectManagerException("Unknown file type for "
             + archive.getName());
       } else if ("zip".equals(fileType)) {
-        file = unzipFile(archive);
+        try {
+          file = unzipFile(archive);
+        } catch (final Exception e) {
+          throw new ProjectManagerException("Error unzipping file:" + archive.getName() + ", Please check if there are Chinese characters in the file name.", e);
+        }
       } else {
         throw new ProjectManagerException("Unsupported archive type for file "
             + archive.getName());
       }
-    } catch (final IOException e) {
-      throw new ProjectManagerException("Error unzipping file.", e);
-    }
     return file;
   }
 
