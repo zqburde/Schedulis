@@ -16,9 +16,10 @@
 
 package com.webank.wedatasphere.schedulis.common.jobExecutor.utils;
 
+import com.webank.wedatasphere.schedulis.common.utils.DateUtils;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 
@@ -42,90 +43,110 @@ import org.joda.time.format.DateTimeFormatter;
 
 public class SystemBuiltInParamJodeTimeUtils {
 
-  private static final Logger utilLogger = LoggerFactory.getLogger(SystemBuiltInParamJodeTimeUtils.class);
-  public static final String RUN_TODAY = "run_today";
-  public static final String RUN_TODAY_STD = "run_today_std";
-  public static final String RUN_DATE = "run_date";
-  public static final String RUN_DATE_STD = "run_date_std";
-  public static final String RUN_MONTH_BEGIN = "run_month_begin";
-  public static final String RUN_MONTH_BEGIN_STD = "run_month_begin_std";
-  public static final String RUN_MONTH_END = "run_month_end";
-  public static final String RUN_MONTH_END_STD = "run_month_end_std";
-  public static final String MINUS = "MINUS";
-  public static final String PLUS = "PLUS";
+  private static final Logger logger = LoggerFactory.getLogger(SystemBuiltInParamJodeTimeUtils.class);
+
   public static final String TIME_TEMPLATE = "(\\d{4}\\.\\d{2}\\.\\d{2}|\\d{4}/\\d{2}/\\d{2}|\\d{4}-\\d{2}-\\d{2}|\\d{4}\\d{2}\\d{2})";
 
   private Map<String, String> propMap = new HashMap<>();
 
-  private Map<String, LocalDate> defaultDate = new HashMap<>();;
+  private Map<String, LocalDate> defaultDate = new HashMap<>();
+
+  private static String re = "[a-z_]+((\\+|-)[1-9][0-9]*){0,1}";
 
   private void initDate(ExecutableFlow executableFlow) throws RuntimeException{
     LocalDate runDate = null;
-    DateTimeFormatter dateTimeFormatter0 = DateTimeFormat.forPattern("yyyyMMdd");
-    DateTimeFormatter dateTimeFormatter1 = DateTimeFormat.forPattern("yyyy-MM-dd");
+    DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyyMMdd");
     //历史重跑
     if(2 == executableFlow.getFlowType()){
       runDate = new LocalDate(Long.valueOf(executableFlow.getRepeatOption().get("startTimeLong"))).minusDays(1);
     } else {
-      if (null != executableFlow.getExecutionOptions().getFlowParameters().get(RUN_DATE)) {
-        runDate = LocalDate.parse(executableFlow.getExecutionOptions().getFlowParameters().get(RUN_DATE), dateTimeFormatter0);
-      } else if(this.propMap.get(RUN_DATE) != null) {
-        String tmp = this.propMap.get(RUN_DATE).replaceAll("[\"'./-]","");
-        runDate = LocalDate.parse(tmp, dateTimeFormatter0);
+      if (null != executableFlow.getExecutionOptions().getFlowParameters().get(Date.RUN_DATE.getValue())) {
+        runDate = LocalDate.parse(executableFlow.getExecutionOptions().getFlowParameters().get(Date.RUN_DATE.getValue()), dateTimeFormatter);
+      } else if(this.propMap.get(Date.RUN_DATE.getValue()) != null) {
+        String tmp = this.propMap.get(Date.RUN_DATE.getValue()).replaceAll("[\"'./-]","");
+        runDate = LocalDate.parse(tmp, dateTimeFormatter);
       } else {
         runDate = new LocalDate(executableFlow.getSubmitTime()).minusDays(1);
       }
     }
     //用于前端显示
     executableFlow.setRunDate(runDate.toString("yyyyMMdd"));
-    defaultDate.put(RUN_DATE, runDate);
-    defaultDate.put(RUN_DATE_STD, runDate);
-    defaultDate.put(RUN_TODAY, runDate.plusDays(1));
-    defaultDate.put(RUN_TODAY_STD, runDate.plusDays(1));
-    defaultDate.put(RUN_MONTH_BEGIN, runDate.dayOfMonth().withMinimumValue());
-    defaultDate.put(RUN_MONTH_BEGIN_STD, runDate.dayOfMonth().withMinimumValue());
-    defaultDate.put(RUN_MONTH_END, runDate.dayOfMonth().withMaximumValue());
-    defaultDate.put(RUN_MONTH_END_STD, runDate.dayOfMonth().withMaximumValue());
 
-    if(2 != executableFlow.getFlowType()){
-      LocalDate newRunDateStd = hasNewDate(executableFlow, RUN_DATE_STD, dateTimeFormatter1);
-      if(newRunDateStd != null){
-        defaultDate.put(RUN_DATE_STD, newRunDateStd);
-      }
-      LocalDate newRunToday = hasNewDate(executableFlow, RUN_TODAY, dateTimeFormatter0);
-      if(newRunToday != null){
-        defaultDate.put(RUN_TODAY, newRunToday);
-      }
-      LocalDate newRunTodayStd = hasNewDate(executableFlow, RUN_TODAY_STD, dateTimeFormatter1);
-      if(newRunTodayStd != null){
-        defaultDate.put(RUN_TODAY_STD, newRunTodayStd);
-      }
-      LocalDate newRunMonthBegin = hasNewDate(executableFlow, RUN_MONTH_BEGIN, dateTimeFormatter0);
-      if(newRunMonthBegin != null){
-        defaultDate.put(RUN_MONTH_BEGIN, newRunMonthBegin);
-      }
-      LocalDate newRunMonthBeginStd = hasNewDate(executableFlow, RUN_MONTH_BEGIN_STD, dateTimeFormatter1);
-      if(newRunMonthBeginStd != null){
-        defaultDate.put(RUN_MONTH_BEGIN_STD, newRunMonthBeginStd);
-      }
-      LocalDate newRunMonthEnd = hasNewDate(executableFlow, RUN_MONTH_END, dateTimeFormatter0);
-      if(newRunMonthEnd != null){
-        defaultDate.put(RUN_MONTH_END, newRunMonthEnd);
-      }
-      LocalDate newRunMonthEndStd = hasNewDate(executableFlow, RUN_MONTH_END_STD, dateTimeFormatter1);
-      if(newRunMonthEndStd != null){
-        defaultDate.put(RUN_MONTH_END_STD, newRunMonthEndStd);
+    defaultDate.put(Date.RUN_DATE.getValue(), runDate);
+    defaultDate.put(Date.RUN_DATE_STD.getValue(), runDate);
+    defaultDate.put(Date.RUN_TODAY.getValue(), runDate.plusDays(1));
+    defaultDate.put(Date.RUN_TODAY_STD.getValue(), runDate.plusDays(1));
+    defaultDate.put(Date.RUN_MONTH_BEGIN.getValue(), runDate.dayOfMonth().withMinimumValue());
+    defaultDate.put(Date.RUN_MONTH_BEGIN_STD.getValue(), runDate.dayOfMonth().withMinimumValue());
+    defaultDate.put(Date.RUN_MONTH_END.getValue(), runDate.dayOfMonth().withMaximumValue());
+    defaultDate.put(Date.RUN_MONTH_END_STD.getValue(), runDate.dayOfMonth().withMaximumValue());
+
+    defaultDate.put(Date.RUN_QUARTER_BEGIN.getValue(), DateUtils.getQuarterBegin(runDate));
+    defaultDate.put(Date.RUN_QUARTER_END.getValue(), DateUtils.getQuarterEnd(runDate));
+    defaultDate.put(Date.RUN_HALF_YEAR_BEGIN.getValue(), DateUtils.getHalfYearBegin(runDate));
+    defaultDate.put(Date.RUN_HALF_YEAR_END.getValue(), DateUtils.getHalfYearEnd(runDate));
+    defaultDate.put(Date.RUN_YEAR_BEGIN.getValue(), DateUtils.getYearBegin(runDate));
+    defaultDate.put(Date.RUN_YEAR_END.getValue(), DateUtils.getYearEnd(runDate));
+    defaultDate.put(Date.RUN_LAST_MONTH_END.getValue(), DateUtils.getLastMonthEnd(runDate));
+    defaultDate.put(Date.RUN_LAST_QUARTER_END.getValue(), DateUtils.getLastQuarterEnd(runDate));
+    defaultDate.put(Date.RUN_LAST_YEAR_END.getValue(), DateUtils.getLastYearEnd(runDate));
+
+    defaultDate.put(Date.RUN_QUARTER_BEGIN_STD.getValue(), DateUtils.getQuarterBegin(runDate));
+    defaultDate.put(Date.RUN_QUARTER_END_STD.getValue(), DateUtils.getQuarterEnd(runDate));
+    defaultDate.put(Date.RUN_HALF_YEAR_BEGIN_STD.getValue(), DateUtils.getHalfYearBegin(runDate));
+    defaultDate.put(Date.RUN_HALF_YEAR_END_STD.getValue(), DateUtils.getHalfYearEnd(runDate));
+    defaultDate.put(Date.RUN_YEAR_BEGIN_STD.getValue(), DateUtils.getYearBegin(runDate));
+    defaultDate.put(Date.RUN_YEAR_END_STD.getValue(), DateUtils.getYearEnd(runDate));
+    defaultDate.put(Date.RUN_LAST_MONTH_END_STD.getValue(), DateUtils.getLastMonthEnd(runDate));
+    defaultDate.put(Date.RUN_LAST_QUARTER_END_STD.getValue(), DateUtils.getLastQuarterEnd(runDate));
+    defaultDate.put(Date.RUN_LAST_YEAR_END_STD.getValue(), DateUtils.getLastYearEnd(runDate));
+
+    if (2 != executableFlow.getFlowType()) {
+      Date date[] = {
+          Date.RUN_DATE_STD,
+          Date.RUN_TODAY,
+          Date.RUN_TODAY_STD,
+          Date.RUN_MONTH_BEGIN,
+          Date.RUN_MONTH_BEGIN_STD,
+          Date.RUN_MONTH_END,
+          Date.RUN_MONTH_END_STD,
+          Date.RUN_QUARTER_BEGIN,
+          Date.RUN_QUARTER_BEGIN_STD,
+          Date.RUN_QUARTER_END,
+          Date.RUN_QUARTER_END_STD,
+          Date.RUN_LAST_QUARTER_END,
+          Date.RUN_LAST_QUARTER_END_STD,
+          Date.RUN_HALF_YEAR_BEGIN,
+          Date.RUN_HALF_YEAR_BEGIN_STD,
+          Date.RUN_HALF_YEAR_END,
+          Date.RUN_HALF_YEAR_END_STD,
+          Date.RUN_YEAR_BEGIN,
+          Date.RUN_YEAR_BEGIN_STD,
+          Date.RUN_YEAR_END,
+          Date.RUN_YEAR_END_STD,
+          Date.RUN_LAST_MONTH_END,
+          Date.RUN_LAST_MONTH_END_STD,
+          Date.RUN_LAST_YEAR_END,
+          Date.RUN_LAST_YEAR_END_STD
+      };
+      for (Date item : date) {
+        LocalDate newDate;
+        newDate = hasNewDate(executableFlow, item);
+        if (newDate != null) {
+          defaultDate.put(item.getValue(), newDate);
+        }
       }
     }
 
   }
 
-  private LocalDate hasNewDate(ExecutableFlow executableFlow, String dateType, DateTimeFormatter dateTimeFormatter){
+  private LocalDate hasNewDate(ExecutableFlow executableFlow, Date dateType){
     LocalDate newDate = null;
-    if (null != executableFlow.getExecutionOptions().getFlowParameters().get(dateType)) {
-      newDate = LocalDate.parse(executableFlow.getExecutionOptions().getFlowParameters().get(dateType), dateTimeFormatter);
-    } else if(this.propMap.get(dateType) != null) {
-      newDate = LocalDate.parse(this.propMap.get(dateType), dateTimeFormatter);
+    if (null != executableFlow.getExecutionOptions().getFlowParameters().get(dateType.getValue())) {
+      newDate = LocalDate.parse(executableFlow.getExecutionOptions().getFlowParameters().get(dateType.getValue()),
+          DateTimeFormat.forPattern(dateType.getFormat()));
+    } else if(this.propMap.get(dateType.getValue()) != null) {
+      newDate = LocalDate.parse(this.propMap.get(dateType.getValue()), DateTimeFormat.forPattern(dateType.getFormat()));
     }
     return newDate;
   }
@@ -138,7 +159,7 @@ public class SystemBuiltInParamJodeTimeUtils {
       //写入到文件
       fw.write(fileStr);
     } catch (Exception e) {
-      utilLogger.error("写入脚本文件异常！", e);
+      logger.error("写入脚本文件异常！", e);
       e.printStackTrace();
     }finally {
       if(fw != null){
@@ -193,7 +214,7 @@ public class SystemBuiltInParamJodeTimeUtils {
     File f = new File(dirPath);
     if (!f.exists()) {
       //System.out.println(dirPath + " not exists");
-      utilLogger.error("文件地址: " + dirPath + "不存在！");
+      logger.error("文件地址: " + dirPath + "不存在！");
     }
     File fa[] = f.listFiles();
     for (int i = 0; i < fa.length; i++) {
@@ -203,7 +224,8 @@ public class SystemBuiltInParamJodeTimeUtils {
       } else {
         if(fs.getName().endsWith(".py") || fs.getName().endsWith(".sh")
             || fs.getName().endsWith(".sql") || fs.getName().endsWith(".hql")
-            || fs.getName().endsWith(".job") || fs.getName().endsWith(".flow")){
+            || fs.getName().endsWith(".job") || fs.getName().endsWith(".flow")
+            || fs.getName().endsWith(".properties")){
           filePathList.add(fs.getPath().toString());
         }
       }
@@ -228,7 +250,7 @@ public class SystemBuiltInParamJodeTimeUtils {
         }
       }
     } catch (Exception ex) {
-      utilLogger.error("读取properties配置文件异常！", ex);
+      logger.error("读取properties配置文件异常！", ex);
       ex.printStackTrace();
     } finally {
       if (input != null) {
@@ -264,7 +286,7 @@ public class SystemBuiltInParamJodeTimeUtils {
 
       return fileStr;
     } catch (Exception e) {
-      utilLogger.error("读取脚本文件异常！", e);
+      logger.error("读取脚本文件异常！", e);
       e.printStackTrace();
     } finally {
       if(br != null){
@@ -290,7 +312,7 @@ public class SystemBuiltInParamJodeTimeUtils {
     while(matcher.find()){
       String fullStr = matcher.group();  // fullStr = ${abcd}
       String valueStr = matcher.group(1); // valueStr = abcd
-      String timeParam = scriptTimeHandle(valueStr);
+      String timeParam = calculationDate(valueStr);
       if(!"".equals(timeParam)) {
         paramReplaceMap.put(fullStr, timeParam);
       }
@@ -300,142 +322,32 @@ public class SystemBuiltInParamJodeTimeUtils {
     return paramReplaceMap;
   }
 
-  private String scriptTimeHandle(String param) {
 
-    //时间字符串
+  private String calculationDate(String fullVal) {
+    fullVal = fullVal.replaceAll("\\s*", "");
     String timeStr = "";
-    param = param.replaceAll("\\s*", "");
-
-    if (RUN_DATE.equals(param)) {
-      timeStr = defaultDate.get(RUN_DATE).toString("yyyyMMdd");
-
-    } else if (RUN_DATE_STD.equals(param)) {
-      timeStr = defaultDate.get(RUN_DATE_STD).toString("yyyy-MM-dd");
-
-    } else if (param.contains(RUN_DATE) && !param.contains(RUN_DATE_STD)) {
-      String mathStr = StringUtils.substringAfter(param, RUN_DATE);
-      String[] sAry = {};
-      if (MINUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("-");
-        timeStr = defaultDate.get(RUN_DATE).minusDays(Integer.valueOf(sAry[1])).toString("yyyyMMdd");
-      } else if (PLUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("\\+");
-        timeStr = defaultDate.get(RUN_DATE).plusDays(Integer.valueOf(sAry[1])).toString("yyyyMMdd");
-      }
-
-    } else if (param.contains(RUN_DATE) && param.contains(RUN_DATE_STD)) {
-      String mathStr = StringUtils.substringAfter(param, RUN_DATE_STD);
-      String[] sAry = {};
-      if (MINUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("-");
-        timeStr = defaultDate.get(RUN_DATE_STD).minusDays(Integer.valueOf(sAry[1])).toString();
-      } else if (PLUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("\\+");
-        timeStr = defaultDate.get(RUN_DATE_STD).plusDays(Integer.valueOf(sAry[1])).toString();
+    if (fullVal.matches(re)) {
+      String str[] = fullVal.split("\\+|-");
+      if (str.length == 1) {
+        String key = str[0];
+        int num = 0;
+        if (defaultDate.containsKey(key) && Date.getDateMap().containsKey(key)) {
+          Date date = Date.getDateMap().get(key);
+          timeStr = DateUtils.calDate(date, num, defaultDate.get(key));
+        }
+      } else {
+        String key = str[0];
+        int num = Integer.parseInt(StringUtils.substringAfter(fullVal, key));
+        if (defaultDate.containsKey(key) && Date.getDateMap().containsKey(key)) {
+          Date date = Date.getDateMap().get(key);
+          timeStr = DateUtils.calDate(date, num, defaultDate.get(key));
+        }
       }
     }
-
-    if (RUN_MONTH_BEGIN.equals(param)) {
-      timeStr = defaultDate.get(RUN_MONTH_BEGIN).toString("yyyyMMdd");
-
-    } else if (RUN_MONTH_BEGIN_STD.equals(param)) {
-      timeStr = defaultDate.get(RUN_MONTH_BEGIN_STD).toString("yyyy-MM-dd");
-
-    } else if (param.contains(RUN_MONTH_BEGIN) && !param.contains(RUN_MONTH_BEGIN_STD)) {
-      String mathStr = StringUtils.substringAfter(param, RUN_MONTH_BEGIN);
-      String[] sAry = {};
-      if (MINUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("-");
-        timeStr = defaultDate.get(RUN_MONTH_BEGIN).minusMonths(Integer.valueOf(sAry[1])).dayOfMonth()
-            .withMinimumValue().toString("yyyyMMdd");
-
-      } else if (PLUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("\\+");
-        timeStr = defaultDate.get(RUN_MONTH_BEGIN).plusMonths(Integer.valueOf(sAry[1])).dayOfMonth()
-            .withMinimumValue().toString("yyyyMMdd");
-      }
-
-    } else if (param.contains(RUN_MONTH_BEGIN) && param.contains(RUN_MONTH_BEGIN_STD)) {
-      String mathStr = StringUtils.substringAfter(param, RUN_MONTH_BEGIN_STD);
-      String[] sAry = {};
-      if (MINUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("-");
-        timeStr = defaultDate.get(RUN_MONTH_BEGIN_STD).minusMonths(Integer.valueOf(sAry[1])).dayOfMonth()
-            .withMinimumValue().toString("yyyy-MM-dd");
-
-      } else if (PLUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("\\+");
-        timeStr = defaultDate.get(RUN_MONTH_BEGIN_STD).plusMonths(Integer.valueOf(sAry[1])).dayOfMonth()
-            .withMinimumValue().toString("yyyy-MM-dd");
-      }
-    }
-
-    if(RUN_MONTH_END.equals(param)){
-      timeStr = defaultDate.get(RUN_MONTH_END).toString("yyyyMMdd");
-
-    }else if(RUN_MONTH_END_STD.equals(param)){
-      timeStr = defaultDate.get(RUN_MONTH_END_STD).toString("yyyy-MM-dd");
-
-    }else if(param.contains(RUN_MONTH_END) && !param.contains(RUN_MONTH_END_STD)){
-      String mathStr = StringUtils.substringAfter(param, RUN_MONTH_END);
-      String[] sAry = {};
-
-      if(MINUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("-");
-        timeStr = defaultDate.get(RUN_MONTH_END).minusMonths(Integer.valueOf(sAry[1])).dayOfMonth()
-            .withMaximumValue().toString("yyyyMMdd");
-
-      } else if(PLUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("\\+");
-        timeStr = defaultDate.get(RUN_MONTH_END).plusMonths(Integer.valueOf(sAry[1])).dayOfMonth()
-            .withMaximumValue().toString("yyyyMMdd");
-
-      }
-
-    }else if(param.contains(RUN_MONTH_END) && param.contains(RUN_MONTH_END_STD)){
-      String mathStr = StringUtils.substringAfter(param, RUN_MONTH_END_STD);
-      String[] sAry = {};
-
-      if(MINUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("-");
-        timeStr = defaultDate.get(RUN_MONTH_END_STD).minusMonths(Integer.valueOf(sAry[1])).dayOfMonth()
-            .withMaximumValue().toString("yyyy-MM-dd");
-
-      } else if(PLUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("\\+");
-        timeStr = defaultDate.get(RUN_MONTH_END_STD).plusMonths(Integer.valueOf(sAry[1])).dayOfMonth()
-            .withMaximumValue().toString("yyyy-MM-dd");
-      }
-    }
-
-    if (RUN_TODAY.equals(param)) {
-      timeStr = defaultDate.get(RUN_TODAY).toString("yyyyMMdd");
-    } else if (RUN_TODAY_STD.equals(param)) {
-      timeStr = defaultDate.get(RUN_TODAY_STD).toString("yyyy-MM-dd");
-    } else if (param.contains(RUN_TODAY) && !param.contains(RUN_TODAY_STD)) {
-      String mathStr = StringUtils.substringAfter(param, RUN_TODAY);
-      String[] sAry = {};
-      if (MINUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("-");
-        timeStr = defaultDate.get(RUN_TODAY).minusDays(Integer.valueOf(sAry[1])).toString("yyyyMMdd");
-      } else if (PLUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("\\+");
-        timeStr = defaultDate.get(RUN_TODAY).plusDays(Integer.valueOf(sAry[1])).toString("yyyyMMdd");
-      }
-    } else if (param.contains(RUN_TODAY) && param.contains(RUN_TODAY_STD)) {
-      String mathStr = StringUtils.substringAfter(param, RUN_TODAY_STD);
-      String[] sAry = {};
-      if (MINUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("-");
-        timeStr = defaultDate.get(RUN_TODAY_STD).minusDays(Integer.valueOf(sAry[1])).toString("yyyy-MM-dd");
-      } else if (PLUS.equals(paramVerify(mathStr, param))) {
-        sAry = mathStr.split("\\+");
-        timeStr = defaultDate.get(RUN_TODAY_STD).plusDays(Integer.valueOf(sAry[1])).toString("yyyy-MM-dd");
-      }
-    }
-
     return timeStr;
   }
+
+
 
   //过滤用户设置的参数 排除用户设置过的参数
   private void filterUserParam(Map<String, String> systemParam, ExecutableFlow ef){
@@ -483,7 +395,7 @@ public class SystemBuiltInParamJodeTimeUtils {
         }
       }
     } catch(RuntimeException e){
-      utilLogger.error("set rundate failed {}", e);
+      logger.error("set rundate failed {}", e);
     }
 
     //所有脚本的文件地址
@@ -494,7 +406,7 @@ public class SystemBuiltInParamJodeTimeUtils {
       initDate(ef);
     } catch (RuntimeException re){
       initDateIsSuccess = false;
-      utilLogger.error("parse run_date failed.", re);
+      logger.error("parse run_date failed.", re);
     }
     //循环脚本文件地址
     for(String filePath : scriptPathList){
@@ -519,104 +431,6 @@ public class SystemBuiltInParamJodeTimeUtils {
     return propMap;
   }
 
-  public void setPropMap(Map<String, String> propMap) {
-    this.propMap = propMap;
-  }
-
-  public void addPropMap(String key, String value) {
-    this.propMap.put(key, value);
-  }
-
-
-  private String paramVerify(String param, String fullParam){
-
-    String symbol = "";
-
-    String reg = "[0-9]";
-
-    String[] mathStr = {};
-
-    int minusSite = param.indexOf("-");
-    int plusSite = param.indexOf("+");
-
-    String[] sAry = null;
-
-    if((plusSite > minusSite && minusSite != -1) || plusSite == -1){
-      sAry = param.split("-");
-      symbol = MINUS;
-    } else if ((minusSite > plusSite && plusSite != -1) || minusSite == -1){
-      sAry = param.split("\\+");
-      symbol = PLUS;
-    }
-
-    if(fullParam.contains(RUN_DATE) && !fullParam.contains(RUN_DATE_STD)){
-      mathStr = StringUtils.split(fullParam, RUN_DATE);
-    } else if (fullParam.contains(RUN_DATE) && fullParam.contains(RUN_DATE_STD)) {
-      mathStr = StringUtils.split(param, RUN_DATE_STD);
-    } else if (fullParam.contains(RUN_MONTH_BEGIN) && !fullParam.contains(RUN_MONTH_BEGIN_STD)){
-      mathStr = StringUtils.split(param, RUN_MONTH_BEGIN);
-    } else if (fullParam.contains(RUN_MONTH_BEGIN) && fullParam.contains(RUN_MONTH_BEGIN_STD)){
-      mathStr = StringUtils.split(param, RUN_MONTH_BEGIN_STD);
-    } else if(fullParam.contains(RUN_MONTH_END) && !fullParam.contains(RUN_MONTH_END_STD)){
-      mathStr = StringUtils.split(param, RUN_MONTH_END);
-    } else if(fullParam.contains(RUN_MONTH_END) && fullParam.contains(RUN_MONTH_END_STD)){
-      mathStr = StringUtils.split(fullParam, RUN_MONTH_END_STD);
-    }else if(fullParam.contains(RUN_TODAY) && !fullParam.contains(RUN_TODAY_STD)){
-      mathStr = StringUtils.split(fullParam, RUN_TODAY);
-    } else if (fullParam.contains(RUN_TODAY) && fullParam.contains(RUN_TODAY_STD)) {
-      mathStr = StringUtils.split(param, RUN_TODAY_STD);
-    }
-
-    if(mathStr.length > 0){
-      Pattern pattern = Pattern.compile(reg);
-      if(!pattern.matcher(mathStr[0]).find()){
-        utilLogger.error("脚本替换参数适配异常！请检查脚本！");
-        utilLogger.error("The script parameter ${" + fullParam + "} exception!Please check the script!");
-        symbol = "FALSE";
-      }
-    }
-
-    if(sAry.length > 1 && sAry.length == 2){
-      String start = sAry[0];
-      if(StringUtils.isNotEmpty(start)){
-        utilLogger.error("脚本替换参数适配异常！请检查脚本！");
-        utilLogger.error("The script parameter ${" + fullParam + "} exception!Please check the script!");
-        symbol = "FALSE";
-      }
-      String str = sAry[1];
-      Pattern pattern = Pattern.compile("[0-9]*");
-      if(!pattern.matcher(str).matches()){
-        utilLogger.error("脚本替换参数适配异常！请检查脚本！");
-        utilLogger.error("The script parameter ${" + fullParam + "} exception!Please check the script!");
-        symbol = "FALSE";
-      }
-    }else if(sAry.length > 2){//多个运算符号就报异常
-      utilLogger.error("脚本替换参数适配异常！请检查脚本！");
-      utilLogger.error("The script parameter ${" + fullParam + "} exception!Please check the script!");
-      symbol = "FALSE";
-    }else if(sAry.length <= 1){//多个运算符号就报异常
-      utilLogger.error("脚本替换参数适配异常！请检查脚本！");
-      utilLogger.error("The script parameter ${" + fullParam + "} exception!Please check the script!");
-      symbol = "FALSE";
-    }
-
-    return symbol;
-  }
-
-
-  private long flowParamTimesHandle(ExecutableFlow ef){
-    long flowParamSetTime = 0;
-    org.joda.time.format.DateTimeFormatter formatter;
-    if(null != ef.getExecutionOptions().getFlowParameters().get("run_date")){
-      formatter = DateTimeFormat.forPattern("yyyyMMdd");
-      LocalDate localDate = LocalDate.parse(ef.getExecutionOptions().getFlowParameters().get("run_date")
-          , formatter);
-      flowParamSetTime = localDate.toDate().getTime();
-    } else {
-
-    }
-    return flowParamSetTime;
-  }
 
   public static boolean dateFormatCheck(String date){
     Pattern p = Pattern.compile(TIME_TEMPLATE);
@@ -624,7 +438,7 @@ public class SystemBuiltInParamJodeTimeUtils {
     if(m.matches()) {
       return true;
     } else {
-      utilLogger.error(date + "，不是合法的日期格式！");
+      logger.error(date + "，不是合法的日期格式！");
       return false;
     }
   }

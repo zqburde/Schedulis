@@ -170,7 +170,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 
   private String loggerName;
   private String logFileName;
-
   /**
    * Constructor. This will create its own ExecutorService for thread pools
    */
@@ -311,6 +310,19 @@ public class FlowRunner extends EventHandler implements Runnable {
     logger.info("nsWtss: " + this.flow.getNsWtss() + ", flowParamNsWtss: " + flowParamNsWtss + ", flowPropNswtss:" + flowPropNswtss);
   }
 
+/**
+   * rundate替换
+   */
+  private void runDateReplace(){
+    //获取执行Flow节点
+    ExecutableFlow ef = this.flow;
+    // FIXME New feature, replace the run_date variable in the file before the job stream starts running.
+    SystemBuiltInParamJodeTimeUtils sbipu = new SystemBuiltInParamJodeTimeUtils();
+    if(null == ef.getParentFlow()){
+      sbipu.run(this.execDir.getPath(), ef);
+    }
+  }
+  
   private void alertOnIMSRegistStart(){
     try {
       // 注册并上报作业流开始
@@ -343,6 +355,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     try {
 	  // FIXME Create a thread pool and add a thread pool (executorServiceForCheckers) for running checker tasks.
       createThreadPool();
+	    runDateReplace();
       this.logger.info("Fetching job and shared properties.");
       if (!FlowLoaderUtils.isAzkabanFlowVersion20(this.flow.getAzkabanFlowVersion())) {
         loadAllProperties();
@@ -358,14 +371,6 @@ public class FlowRunner extends EventHandler implements Runnable {
 
       this.logger.info("Updating initial flow directory.");
       updateFlow();
-
-      //获取执行Flow节点
-      ExecutableFlow ef = this.flow;
-      // FIXME New feature, replace the run_date variable in the file before the job stream starts running.
-      SystemBuiltInParamJodeTimeUtils sbipu = new SystemBuiltInParamJodeTimeUtils();
-      if(null == ef.getParentFlow()){
-        sbipu.run(this.execDir.getPath(), ef);
-      }
 
       this.fireEventListeners(
               Event.create(this, EventType.FLOW_STARTED, new EventData(this.getExecutableFlow())));
