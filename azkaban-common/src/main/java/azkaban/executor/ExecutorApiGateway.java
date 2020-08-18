@@ -16,8 +16,10 @@
 
 package azkaban.executor;
 
+import azkaban.Constants;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
+import azkaban.utils.Props;
 import com.google.inject.Inject;
 import java.io.IOException;
 import java.net.URI;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Singleton;
 
+import com.webank.wedatasphere.schedulis.common.utils.JwtTokenUtils;
 import okhttp3.*;
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -35,10 +38,12 @@ import org.codehaus.jackson.map.ObjectMapper;
 public class ExecutorApiGateway {
 
   private final ExecutorApiClient apiClient;
+  private final Props azkProps;
 
   @Inject
-  public ExecutorApiGateway(final ExecutorApiClient apiClient) {
+  public ExecutorApiGateway(final ExecutorApiClient apiClient,final Props azkProps) {
     this.apiClient = apiClient;
+    this.azkProps = azkProps;
   }
 
   // FIXME change this method access as public type in order to outside package object can call this method.
@@ -81,6 +86,12 @@ public class ExecutorApiGateway {
       paramList.add(new Pair<>(ConnectorParams.EXECID_PARAM, String
           .valueOf(executionId)));
       paramList.add(new Pair<>(ConnectorParams.USER_PARAM, user));
+
+      if(this.azkProps.getBoolean(Constants.ConfigurationKeys.IP_WHITELIST_ENABLED,false)){
+        String dss_secret = azkProps.getString("dss.secret", "dws-wtss|WeBankBDPWTSS&DWS@2019");
+        String token = JwtTokenUtils.getToken(null,false,dss_secret,300);
+        paramList.add(new Pair<>(ConnectorParams.TOKEN_PARAM, token));
+      }
 
       return callForJsonObjectMap(host, port, "/executor", paramList);
     } catch (final IOException e) {
@@ -130,6 +141,12 @@ public class ExecutorApiGateway {
 
     @SuppressWarnings("unchecked") final URI uri =
         ExecutorApiClient.buildUri(host, port, path, true);
+
+    if(this.azkProps.getBoolean(Constants.ConfigurationKeys.IP_WHITELIST_ENABLED,false)){
+      String dss_secret = azkProps.getString("dss.secret", "dws-wtss|WeBankBDPWTSS&DWS@2019");
+      String token = JwtTokenUtils.getToken(null,false,dss_secret,300);
+      paramList.add(new Pair<>(ConnectorParams.TOKEN_PARAM, token));
+    }
 
     return this.apiClient.httpPost(uri, paramList);
   }

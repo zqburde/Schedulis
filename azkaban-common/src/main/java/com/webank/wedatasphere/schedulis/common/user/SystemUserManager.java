@@ -97,7 +97,7 @@ public class SystemUserManager implements UserManager {
         initUserAuthority(wtssUser, user);
 
       } catch (Exception e) {
-        logger.error("登录失败！异常信息：" + e);
+        logger.error("Login error！ caused by {}：" , e);
         throw new UserManagerException("Error User Name Or Password.");
       }
     }
@@ -115,7 +115,7 @@ public class SystemUserManager implements UserManager {
    */
   public User getUser(String username, String password, String superUser) throws UserManagerException {
     if (StringUtils.isBlank(username)){
-      logger.error("超级用户登录, username 是空值");
+      logger.error("Login by  superuser, username is null");
       throw new UserManagerException("superUser proxy login, username is null");
     }
     User user = null;
@@ -128,13 +128,13 @@ public class SystemUserManager implements UserManager {
           user = new User(wtssUser.getUsername());
           wtssUser.setPassword(password);
         } else {
-          throw new UserManagerException("Unknown User.");
+          throw new UserManagerException("User does not exists");
         }
 
         initUserAuthority(wtssUser, user);
 
       } catch (Exception e) {
-        logger.error("登录失败！异常信息：", e);
+        logger.error("Login error！cased by {}：", e);
         throw new UserManagerException("Error User Name Or Password.");
       }
     }

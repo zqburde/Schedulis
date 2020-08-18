@@ -37,6 +37,7 @@ import com.webank.wedatasphere.dss.appjoint.auth.RedirectMsg;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import com.webank.wedatasphere.schedulis.common.system.SystemManager;
 import com.webank.wedatasphere.schedulis.common.user.SystemUserManager;
+import com.webank.wedatasphere.schedulis.common.utils.RSAUtils;
 import com.webank.wedatasphere.schedulis.common.utils.XSSFilterUtils;
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -359,8 +360,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
           RedirectMsg redirectMsg = appJointAuth.getRedirectMsg(req);
           String redirectUrl = redirectMsg.getRedirectUrl();
           String username = redirectMsg.getUser();
-          logger.info("Succeed to get redirect url: {}, and username: {}" + redirectUrl + "," + username);
-          // 通过用户名，完成无密码登录（将用户信息写入HttpSession）
+          logger.info("Succeed to get redirect url: {}, and username: {}", redirectUrl, username);
+          // 通过用户名，在你的系统完成无密码登录（将用户信息写入HttpSession）
           if(session == null){
             handleDssLoginAction(username, req,resp);
           }
@@ -435,11 +436,36 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         final String password  = (String) params.get("userpwd");
         final String ip = getRealClientIpAddr(req);
 
-        try {
-          session = createSession(username, password, ip);
-        } catch (final UserManagerException e) {
-          writeResponse(resp, "Login error: " + e.getMessage());
-          return;
+        String wtss_secret_de = props.getString("dss.secret", "");
+        String wtss_private_key = props.getString("wtss.private.key", "");
+        String from_dss_secret_de = "";
+        if(params.containsKey("dss_secret")){
+          String from_dss_secret_en = (String)params.get("dss_secret");
+          logger.info("handle dss login , secret > {}" , from_dss_secret_en);
+          try {
+            if(from_dss_secret_en!=null){
+              from_dss_secret_en = from_dss_secret_en.replaceAll(" ","+");
+            }
+            from_dss_secret_de = RSAUtils.decrypt(from_dss_secret_en,wtss_private_key);
+          } catch (Exception e) {
+            logger.error("parse dss.secret failed , caused by {} " , e);
+          }
+        }
+        if(wtss_secret_de.equals(from_dss_secret_de)){
+          logger.info("handle dss login , dss_secret pass check" );
+          try{
+              session = createSession(username, password, ip, wtss_secret_de);
+            } catch(final Exception e){
+              writeResponse(resp, "Login error: " + e.getMessage());
+              return;
+            }
+        }else{
+          try {
+            session = createSession(username, password, ip);
+          } catch (final UserManagerException e) {
+            writeResponse(resp, "Login error: " + e.getMessage());
+            return;
+          }
         }
       }
       handleMultiformPost(req, resp, params, session);
@@ -516,8 +542,61 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   private Session createSession(final HttpServletRequest req)
           throws UserManagerException, ServletException, IOException {
     final String username = getParam(req, "username");
-    final String password = getParam(req, "userpwd");
+    String password = getParam(req, "userpwd");
+
+    final Props props = this.application.getServerProps();
+
+    if (hasParam(req, "encryption") && "true".equals(getParam(req, "encryption"))){
+      String wtss_private_key = props.getString("wtss.private.key", "");
+      logger.debug("encryption is enable , decode password {}" , password);
+      try {
+        if(password!=null){
+          password = password.replaceAll(" ","+");
+        }
+        password = RSAUtils.decrypt(password,wtss_private_key);
+      } catch (Exception e) {
+        throw new RuntimeException("parse encryption secret info failed , caused by {} " + e.getMessage());
+      }
+    }
+
     final String ip = getRealClientIpAddr(req);
+
+    try{
+      String wtss_secret_de = props.getString("dss.secret", "");
+      String wtss_private_key = props.getString("wtss.private.key", "");
+      String from_dss_secret_de = "";
+      if(hasParam(req, "dss_secret")){
+        String from_dss_secret_en = (String)getParam(req, "dss_secret");
+        logger.debug("handle dss login , secret > {}" , from_dss_secret_en);
+        try {
+          if(from_dss_secret_en!=null){
+            from_dss_secret_en = from_dss_secret_en.replaceAll(" ","+");
+          }
+          from_dss_secret_de = RSAUtils.decrypt(from_dss_secret_en,wtss_private_key);
+        } catch (Exception e) {
+          throw new RuntimeException("parse dss.secret failed , caused by " , e);
+        }
+      }
+
+      if(wtss_secret_de.equals(from_dss_secret_de)){
+        logger.debug("handle dss login , dss_secret pass check" );
+        //如果超级用户用户名和密码都是对的，那么我们直接放行
+        if(!StringUtils.isFromBrowser(req.getHeader("User-Agent"))){
+          logger.info("not browser.");
+          Session cacheSession = this.application.getSessionCache().getSessionByUsername(username);
+          if(cacheSession != null){
+            logger.info("session not found.");
+            return cacheSession;
+          }
+        }
+        Session newSession = createSession(username, password, ip, wtss_secret_de);
+        getApplication().getSessionCache().addSession(newSession);
+        return newSession;
+      }
+    }catch(final Exception e){
+      logger.error("no super user", e);
+      //没有超级用户，直接ignore
+    }
     return createSession(username, password, ip, req);
   }
 
@@ -554,6 +633,26 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     getApplication().getSessionCache().addSession(session);
     return session;
   }
+
+
+  private Session createSession(final String username, final String password, final String ip,
+                                final String superUser) throws UserManagerException{
+
+    UserManager manager = getApplication().getTransitionService().getUserManager();
+    if (manager instanceof SystemUserManager){
+      //不改接口，直接改SystemUserManager，这样做到少侵入
+      SystemUserManager userManager = (SystemUserManager)manager;
+      final User user = userManager.getUser(username, password, superUser);
+      logger.info("User is {}", user.toString());
+      final String uuid = UUID.randomUUID().toString();
+      return new Session(uuid, user, ip);
+    }else{
+      logger.warn("user manager 不是 WebankXmlUserManager 实例，不能进行创建session");
+      return null;
+    }
+  }
+
+
 
   protected boolean hasPermission(final Project project, final User user, final Permission.Type type) {
     if (project.hasPermission(user, type)) {
@@ -598,6 +697,11 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         session = createSession(req);
       } catch (final UserManagerException | IOException e) {
         ret.put("error", "Login in error. " + e.getMessage());
+        return;
+      }
+      if (null == session){
+        logger.error("session is null");
+        ret.put("error","Login in error, session is null.");
         return;
       }
       final Cookie cookie = new Cookie(SESSION_ID_NAME, session.getSessionId());
@@ -647,7 +751,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       try {
         session = createDssSession(username,req);
       } catch (final UserManagerException | IOException e) {
-        logger.error("Dss Login in error. " + e.getMessage());
+        logger.error("Dss Login in error.", e);
         return;
       }
       if (null == session){

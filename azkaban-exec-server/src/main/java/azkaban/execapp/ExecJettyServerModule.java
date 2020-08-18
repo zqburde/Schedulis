@@ -25,6 +25,7 @@ public class ExecJettyServerModule extends AbstractModule {
 
   private static final int DEFAULT_THREAD_NUMBER = 50;
   private static final int DEFAULT_HEADER_BUFFER_SIZE = 4096;
+  private static final boolean JETTY_SEND_SERVER_VERSION = false;
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
 
   private static final Logger logger = LoggerFactory.getLogger(ExecJettyServerModule.class);
@@ -138,8 +139,10 @@ public class ExecJettyServerModule extends AbstractModule {
     HttpConfiguration httpConfig = new HttpConfiguration();
 
     final int headerBufferSize = props.getInt("jetty.headerBufferSize", DEFAULT_HEADER_BUFFER_SIZE);
+    final boolean sendServerVersion = props.getBoolean("jetty.send.server.version", JETTY_SEND_SERVER_VERSION);
 
     httpConfig.setRequestHeaderSize(headerBufferSize);
+    httpConfig.setSendServerVersion(sendServerVersion);
 
     int port = props.getInt(ConfigurationKeys.EXECUTOR_PORT, 0);
     String bindAddress = props.getString("executor.bindAddress", "0.0.0.0");
