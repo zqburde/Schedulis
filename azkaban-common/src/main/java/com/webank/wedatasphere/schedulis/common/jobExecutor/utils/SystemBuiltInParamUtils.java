@@ -38,13 +38,13 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Deprecated
 public class SystemBuiltInParamUtils {
 
-  private static final Logger utilLogger = LoggerFactory.getLogger(SystemBuiltInParamUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(SystemBuiltInParamUtils.class);
 
   public static final String RUN_DATE = "run_date";
   public static final String RUN_DATE_STD = "run_date_std";
@@ -65,7 +65,7 @@ public class SystemBuiltInParamUtils {
       //写入到文件
       fw.write(fileStr);
     } catch (Exception e) {
-      utilLogger.error("写入脚本文件异常！", e);
+      logger.error("写入脚本文件异常！", e);
       e.printStackTrace();
     }finally {
       if(fw != null){
@@ -120,7 +120,7 @@ public class SystemBuiltInParamUtils {
     File f = new File(dirPath);
     if (!f.exists()) {
       //System.out.println(dirPath + " not exists");
-      utilLogger.error("文件地址: " + dirPath + "不存在！");
+      logger.error("文件地址: " + dirPath + "不存在！");
     }
     File fa[] = f.listFiles();
     for (int i = 0; i < fa.length; i++) {
@@ -154,7 +154,7 @@ public class SystemBuiltInParamUtils {
         }
       }
     } catch (Exception ex) {
-      utilLogger.error("读取properties配置文件异常！", ex);
+      logger.error("读取properties配置文件异常！", ex);
       ex.printStackTrace();
     } finally {
       if (input != null) {
@@ -187,7 +187,7 @@ public class SystemBuiltInParamUtils {
       //System.out.println(fileStr);
       return fileStr;
     } catch (Exception e) {
-      utilLogger.error("读取脚本文件异常！", e);
+      logger.error("读取脚本文件异常！", e);
       e.printStackTrace();
     } finally {
       if(br != null){
@@ -568,20 +568,20 @@ public class SystemBuiltInParamUtils {
     if(sAry.length > 1 && sAry.length == 2){
       String start = sAry[0];
       if(StringUtils.isNotEmpty(start)){
-        utilLogger.error("脚本替换参数适配异常！请检查脚本！");
+        logger.error("脚本替换参数适配异常！请检查脚本！");
         throw new RuntimeException("The script parameter ${" + fullParam + "} exception!Please check the script!");
       }
       String str = sAry[1];
       Pattern pattern = Pattern.compile("[0-9]*");
       if(!pattern.matcher(str).matches()){
-        utilLogger.error("脚本替换参数适配异常！请检查脚本！");
+        logger.error("脚本替换参数适配异常！请检查脚本！");
         throw new RuntimeException("The script parameter ${" + fullParam + "} exception!Please check the script!");
       }
     }else if(sAry.length > 2){//多个运算符号就报异常
-      utilLogger.error("脚本替换参数适配异常！请检查脚本！");
+      logger.error("脚本替换参数适配异常！请检查脚本！");
       throw new RuntimeException("The script parameter ${" + fullParam + "} exception!Please check the script!");
     }else if(sAry.length <= 1){//多个运算符号就报异常
-      utilLogger.error("脚本替换参数适配异常！请检查脚本！");
+      logger.error("脚本替换参数适配异常！请检查脚本！");
       throw new RuntimeException("The script parameter ${" + fullParam + "} exception!Please check the script!");
     }
 
