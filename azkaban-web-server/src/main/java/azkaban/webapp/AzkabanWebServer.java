@@ -16,6 +16,52 @@
 
 package azkaban.webapp;
 
+import azkaban.executor.Status;
+import azkaban.server.HttpRequestUtils;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+
+import com.linkedin.restli.server.RestliServlet;
+
+import joptsimple.internal.Strings;
+import org.apache.commons.lang.StringUtils;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.IPAccessHandler;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.apache.velocity.app.VelocityEngine;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.joda.time.DateTimeZone;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Constructor;
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.management.MBeanInfo;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.servlet.DispatcherType;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static java.util.Objects.requireNonNull;
 
@@ -30,7 +76,6 @@ import azkaban.executor.ExecutionControllerUtils;
 import azkaban.executor.ExecutorManager;
 import azkaban.executor.ExecutorManagerAdapter;
 import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.Status;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.jmx.JmxExecutionController;
@@ -73,9 +118,6 @@ import azkaban.webapp.servlet.ScheduleServlet;
 import azkaban.webapp.servlet.StatsServlet;
 import azkaban.webapp.servlet.StatusServlet;
 import azkaban.webapp.servlet.TriggerManagerServlet;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.linkedin.restli.server.RestliServlet;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutorManagerHA;
 import com.webank.wedatasphere.schedulis.common.jmx.JmxExecutorManagerAdapter;
@@ -83,17 +125,6 @@ import com.webank.wedatasphere.schedulis.common.system.common.TransitionService;
 import com.webank.wedatasphere.schedulis.web.webapp.LocaleFilter;
 import com.webank.wedatasphere.schedulis.web.webapp.servlet.CycleServlet;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.management.ManagementFactory;
-import java.lang.reflect.Constructor;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.charset.StandardCharsets;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -101,24 +132,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.management.MBeanInfo;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import javax.servlet.DispatcherType;
-import joptsimple.internal.Strings;
-import org.apache.commons.lang.StringUtils;
 
-import org.apache.velocity.app.VelocityEngine;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.joda.time.DateTimeZone;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 
 /**
  * The Azkaban Jetty server class
@@ -330,8 +344,7 @@ public class AzkabanWebServer extends AzkabanServer {
     final ArrayList<String> jarPaths = new ArrayList<>();
     for (final File pluginDir : pluginDirs) {
       if (!pluginDir.exists()) {
-        logger.error("Error viewer plugin path " + pluginDir.getPath()
-            + " doesn't exist.");
+        logger.error("Error viewer plugin path " + pluginDir.getPath() + " doesn't exist.");
         continue;
       }
 
@@ -801,6 +814,41 @@ public class AzkabanWebServer extends AzkabanServer {
     getTriggerManager().start();
 
     root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, this);
+
+    try {
+      if(this.props.getBoolean(ConfigurationKeys.IP_WHITELIST_ENABLED,false)){
+        String whiteListStr = this.props.getString(ConfigurationKeys.IP_WHITELIST, "");
+        String[] whiteListArr = whiteListStr.split(",");
+        IPAccessHandler ipAccessHandler = new IPAccessHandler(){
+          @Override
+          public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+            HttpChannel channel = baseRequest.getHttpChannel();
+            if (channel != null) {
+              EndPoint endp = channel.getEndPoint();
+              if (endp != null) {
+                InetSocketAddress address = endp.getRemoteAddress();
+                if("/executor".equals(baseRequest.getMetaData().getURI().getDecodedPath())
+                        && HttpRequestUtils.hasParam(request, "ajax")
+                        && "executeFlowCycleFromExecutor".equals(HttpRequestUtils.getParam(request,"ajax"))){
+                  if (address != null && !this.isAddrUriAllowed(address.getHostString(), baseRequest.getMetaData().getURI().getDecodedPath())) {
+                    logger.warn("Illegal access detected , ip >> {} , path >> {}",address.getHostString(),baseRequest.getMetaData().getURI());
+                    response.sendError(403);
+                    baseRequest.setHandled(true);
+                    return;
+                  }
+                }
+              }
+            }
+            this.getHandler().handle(target, baseRequest, request, response);
+          }
+        };
+        ipAccessHandler.setWhite(whiteListArr);
+        ipAccessHandler.setHandler(root);
+        server.setHandler(ipAccessHandler);
+      }
+    }catch (Exception e){
+      logger.error("setting Executor whiteList failed ,caused by {}" , e);
+    }
   }
 
   public AlerterHolder getAlerterHolder() {
