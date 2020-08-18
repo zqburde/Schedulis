@@ -1,6 +1,5 @@
 #!/bin/bash
 
-export JAVA_HOME="/nemo/jdk8"
 verify_java_home() {
   if [ -z "$JAVA_HOME" ]; then
     cat 1>&2 <<EOF
