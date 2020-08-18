@@ -420,6 +420,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                 }else if (ajaxName.equals("checkRunningPageKillFlowPermission")) {
                     // 检查用户Kill运行中的工作流权限
                     ajaxCheckRunningPageKillFlowPermission(req, resp, ret, session);
+                } else if (ajaxName.equals("checkUserSwitchScheduleFlowPermission")) {
+                    // 检查用户开启或关闭定时调度权限
+                    ajaxcheckUserSwitchScheduleFlowPermission(req, resp, ret, session);
                 } else {
                     ret.put("error", "Cannot execute command " + ajaxName);
                 }
@@ -700,6 +703,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                 final User user = session.getUser();
                 if (wtss_project_privilege_check) {
                     int deleteScheduleFlowFlag = checkUserOperatorFlag(user);
+                    resultMap.put("deleteScheduleFlowFlag", deleteScheduleFlowFlag);
                     logger.info("current user delete schedule flow permission flag is deleteScheduleFlowFlag=" + deleteScheduleFlowFlag);
                 } else {
                     resultMap.put("deleteScheduleFlowFlag", 1);
@@ -891,6 +895,59 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
     }
 
+
+    /**
+     * 检查用户开启或关闭定时调度权限
+     *
+     * @param req
+     * @param resp
+     * @param resultMap
+     * @param session   wtss_project_privilege_check
+     */
+    private void ajaxcheckUserSwitchScheduleFlowPermission(HttpServletRequest req, HttpServletResponse resp,
+        HashMap<String, Object> resultMap, Session session) {
+
+        try {
+            if (session != null) {
+                final String projectName = getParam(req, "project");
+                final User user = session.getUser();
+                final Project project = getProjectAjaxByPermission(resultMap, projectName, user, Type.SCHEDULE);
+                Map<String, String> stringStringMap = loadProjectManagerServletI18nData();
+                if (project == null) {
+                    resultMap.put("error", stringStringMap.get("permissionForAction") + projectName);
+                    resultMap.put("switchScheduleFlowFlag", 3);
+                    return;
+                }
+                if (wtss_project_privilege_check) {
+                    int switchScheduleFlowFlag = checkUserOperatorFlag(user);
+                    resultMap.put("switchScheduleFlowFlag", switchScheduleFlowFlag);
+                    logger.info("current user active schedule flow permission flag is switchScheduleFlowFlag=" + switchScheduleFlowFlag);
+                } else {
+                    resultMap.put("switchScheduleFlowFlag", 1);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Failed to find current user active schedule flow flow permission flag, caused by:{}", e);
+        }
+    }
+
+    protected Project getProjectAjaxByPermission(final Map<String, Object> ret, final String projectName,
+                                                 final User user, final Permission.Type type) {
+        final Project project = this.projectManager.getProject(projectName);
+
+        Map<String, String> dataMap = loadProjectManagerServletI18nData();
+
+        if (project == null) {
+            ret.put("error", dataMap.get("project") + projectName + dataMap.get("notExist"));
+        } else if (!hasPermission(project, user, type)) {
+            ret.put("error", "User " + user.getUserId() + " doesn't have " + project.getName() + " of " + type.name()
+                    + " permissions, please contact with the project creator.");
+        } else {
+            return project;
+        }
+
+        return null;
+    }
 
     /**
      * 检查用户KILL正在运行页面flow权限
