@@ -23,8 +23,6 @@ import azkaban.Constants;
 import azkaban.utils.Props;
 import javax.inject.Inject;
 import com.google.inject.Provider;
-import java.util.List;
-
 //import org.mortbay.jetty.Connector;
 //import org.mortbay.jetty.Server;
 //import org.mortbay.jetty.bio.SocketConnector;
@@ -40,6 +38,7 @@ public class WebServerProvider implements Provider<Server> {
 
   private static final Logger logger = LoggerFactory.getLogger(WebServerProvider.class);
   private static final int MAX_HEADER_BUFFER_SIZE = 10 * 1024 * 1024;
+  private static final boolean JETTY_SEND_SERVER_VERSION = false;
 
   @Inject
   private Props props;
@@ -87,6 +86,7 @@ public class WebServerProvider implements Provider<Server> {
 
     HttpConfiguration httpConfig = new HttpConfiguration();
     setHeaderBufferSize(httpConfig);
+    setSendServerVersion(httpConfig);
 
     int port = this.props.getInt("jetty.port", Constants.DEFAULT_PORT_NUMBER);
     String bindAddress = this.props.getString("jetty.hostname", "0.0.0.0");
@@ -122,6 +122,11 @@ public class WebServerProvider implements Provider<Server> {
     configuration.setRequestHeaderSize(MAX_HEADER_BUFFER_SIZE);
   }
 
+  private void setSendServerVersion(HttpConfiguration configuration) {
+    final boolean sendServerVersion = props.getBoolean("jetty.send.server.version", JETTY_SEND_SERVER_VERSION);
+    configuration.setSendServerVersion(sendServerVersion);
+  }
+
   private ServerConnector createHttpsConnector(Server jettyServer) {
 
     SslContextFactory sslContextFactory = new SslContextFactory();
@@ -135,6 +140,7 @@ public class WebServerProvider implements Provider<Server> {
 
     HttpConfiguration httpConfig = new HttpConfiguration();
     setHeaderBufferSize(httpConfig);
+    setSendServerVersion(httpConfig);
     httpConfig.addCustomizer(new SecureRequestCustomizer());
     final int port = this.props.getInt("jetty.ssl.port", Constants.DEFAULT_SSL_PORT_NUMBER);
 

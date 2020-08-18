@@ -97,7 +97,7 @@ public class SystemUserManager implements UserManager {
         initUserAuthority(wtssUser, user);
 
       } catch (Exception e) {
-        logger.error("登录失败！异常信息：" + e);
+        logger.error("登录失败！异常信息：", e);
         throw new UserManagerException("Error User Name Or Password.");
       }
     }
