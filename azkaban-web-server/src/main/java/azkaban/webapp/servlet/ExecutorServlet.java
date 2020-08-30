@@ -458,8 +458,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     private void ajaxFetchscheduledflowgraphNew(final String projectName, final String flowName,
         final HashMap<String, Object> ret, final User user) throws ServletException {
         final Project project = getProjectAjaxByPermission(ret, projectName, user, Type.EXECUTE);
+        Map<String, String> stringStringMap = loadExecutorServletI18nData();
         if (project == null) {
-            ret.put("error", "Project '" + projectName + "' doesn't exist.");
+            ret.put("error", stringStringMap.get("permissionForAction") + projectName);
             return;
         }
         try {
@@ -2359,10 +2360,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         List<Long> runDateTimeList = GsonUtils.jsonToJavaObject(jsonObject.getAsJsonArray("runDateTimeList"), new TypeToken<List<Long>>() {}.getType());
         timeList.addAll(runDateTimeList);
         try {
-//      String month = getParam(req, "month");
-//      String day = getParam(req, "day");
-//      String hour = "0";//getParam(req, "hour");
-//      String min = "0";//getParam(req, "min");
             String recoverNum = jsonObject.get("recoverNum").getAsString();
             String recoverInterval = jsonObject.get("recoverInterval").getAsString();
 

@@ -19,6 +19,12 @@
     <groupId>com.webank.wedatasphere.schedulis</groupId>
     <artifactId>az-core</artifactId>
     <version>${schedulis.version}</version>
+    <exclusions>
+      <exclusion>
+        <groupId>*</groupId>
+        <artifactId>*</artifactId>
+      </exclusion>
+    </exclusions>
   </dependency>
   <dependency>
     <groupId>com.webank.wedatasphere.schedulis</groupId>
@@ -26,16 +32,8 @@
     <version>${schedulis.version}</version>
     <exclusions>
       <exclusion>
-        <artifactId>netty</artifactId>
-        <groupId>io.netty</groupId>
-      </exclusion>
-      <exclusion>
-        <artifactId>log4j</artifactId>
-        <groupId>log4j</groupId>
-      </exclusion>
-      <exclusion>
-        <artifactId>slf4j-log4j12</artifactId>
-        <groupId>org.slf4j</groupId>
+        <groupId>*</groupId>
+        <artifactId>*</artifactId>
       </exclusion>
     </exclusions>
   </dependency>
@@ -44,12 +42,24 @@
     <groupId>com.webank.wedatasphere.schedulis</groupId>
     <artifactId>azkaban-spi</artifactId>
     <version>${schedulis.version}</version>
+    <exclusions>
+      <exclusion>
+        <groupId>*</groupId>
+        <artifactId>*</artifactId>
+      </exclusion>
+    </exclusions>
   </dependency>
 
   <dependency>
     <groupId>com.webank.wedatasphere.schedulis</groupId>
     <artifactId>azkaban-db</artifactId>
     <version>${schedulis.version}</version>
+    <exclusions>
+      <exclusion>
+        <groupId>*</groupId>
+        <artifactId>*</artifactId>
+      </exclusion>
+    </exclusions>
   </dependency>
   <dependency>
     <groupId>com.webank.wedatasphere.schedulis</groupId>
@@ -57,44 +67,8 @@
     <version>${schedulis.version}</version>
     <exclusions>
       <exclusion>
-        <artifactId>jetty-all</artifactId>
-        <groupId>org.eclipse.jetty.aggregate</groupId>
-      </exclusion>
-      <exclusion>
-        <artifactId>hive-common</artifactId>
-        <groupId>org.apache.hive</groupId>
-      </exclusion>
-      <exclusion>
-        <artifactId>log4j-api</artifactId>
-        <groupId>org.apache.logging.log4j</groupId>
-      </exclusion>
-      <exclusion>
-        <artifactId>log4j-1.2-api</artifactId>
-        <groupId>org.apache.logging.log4j</groupId>
-      </exclusion>
-      <exclusion>
-        <artifactId>log4j-core</artifactId>
-        <groupId>org.apache.logging.log4j</groupId>
-      </exclusion>
-      <exclusion>
-        <artifactId>log4j-slf4j-impl</artifactId>
-        <groupId>org.apache.logging.log4j</groupId>
-      </exclusion>
-      <exclusion>
-        <artifactId>log4j-web</artifactId>
-        <groupId>org.apache.logging.log4j</groupId>
-      </exclusion>
-      <exclusion>
-        <artifactId>netty</artifactId>
-        <groupId>io.netty</groupId>
-      </exclusion>
-      <exclusion>
-        <artifactId>log4j</artifactId>
-        <groupId>log4j</groupId>
-      </exclusion>
-      <exclusion>
-        <artifactId>slf4j-log4j12</artifactId>
-        <groupId>org.slf4j</groupId>
+        <groupId>*</groupId>
+        <artifactId>*</artifactId>
       </exclusion>
     </exclusions>
   </dependency>
@@ -128,21 +102,6 @@
   <dependency>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-servlet</artifactId>
-    <version>${jetty.version}</version>
-  </dependency>
-  <dependency>
-    <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-http</artifactId>
-    <version>${jetty.version}</version>
-  </dependency>
-  <dependency>
-    <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-io</artifactId>
-    <version>${jetty.version}</version>
-  </dependency>
-  <dependency>
-    <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-webapp</artifactId>
     <version>${jetty.version}</version>
   </dependency>
 
@@ -233,30 +192,31 @@
     <version>${jsr305.version}</version>
   </dependency>
   <dependency>
-    <groupId>org.apache.kafka</groupId>
-    <artifactId>kafka-log4j-appender</artifactId>
-    <version>${kafkaLog4jAppender.version}</version>
-    <exclusions>
-      <exclusion>
-        <artifactId>log4j</artifactId>
-        <groupId>log4j</groupId>
-      </exclusion>
-      <exclusion>
-        <artifactId>slf4j-log4j12</artifactId>
-        <groupId>org.slf4j</groupId>
-      </exclusion>
-    </exclusions>
-  </dependency>
-  <dependency>
     <groupId>org.quartz-scheduler</groupId>
     <artifactId>quartz</artifactId>
     <version>${quartz.version}</version>
+    <exclusions>
+      <exclusion>
+        <artifactId>c3p0</artifactId>
+        <groupId>c3p0</groupId>
+      </exclusion>
+      <exclusion>
+        <artifactId>slf4j-api</artifactId>
+        <groupId>org.slf4j</groupId>
+      </exclusion>
+    </exclusions>
   </dependency>
 
   <dependency>
     <groupId>io.dropwizard.metrics</groupId>
     <artifactId>metrics-core</artifactId>
     <version>${dropwizard.core.version}</version>
+    <exclusions>
+      <exclusion>
+        <artifactId>slf4j-api</artifactId>
+        <groupId>org.slf4j</groupId>
+      </exclusion>
+    </exclusions>
     <!--<exclusions>-->
       <!--<exclusion>-->
         <!--<groupId>org.slf4j</groupId>-->
@@ -268,6 +228,12 @@
     <groupId>io.dropwizard.metrics</groupId>
     <artifactId>metrics-jvm</artifactId>
     <version>${dropwizard.core.version}</version>
+    <exclusions>
+      <exclusion>
+        <artifactId>slf4j-api</artifactId>
+        <groupId>org.slf4j</groupId>
+      </exclusion>
+    </exclusions>
     <!--<exclusions>-->
       <!--<exclusion>-->
         <!--<groupId>org.slf4j</groupId>-->
@@ -289,20 +255,6 @@
     <groupId>org.apache.velocity</groupId>
     <artifactId>velocity</artifactId>
     <version>${velocity.version}</version>
-    <exclusions>
-      <exclusion>
-        <groupId>org.apache.struts</groupId>
-        <artifactId>struts-core</artifactId>
-      </exclusion>
-      <exclusion>
-        <groupId>org.apache.struts</groupId>
-        <artifactId>struts-taglib</artifactId>
-      </exclusion>
-      <exclusion>
-        <groupId>org.apache.struts</groupId>
-        <artifactId>struts-tiles</artifactId>
-      </exclusion>
-    </exclusions>
   </dependency>
   <dependency>
     <groupId>org.slf4j</groupId>
@@ -317,7 +269,6 @@
     <scope>test</scope>
   </dependency>
 
-
   <dependency>
     <groupId>com.squareup.okhttp3</groupId>
     <artifactId>okhttp</artifactId>
@@ -327,7 +278,53 @@
   <dependency>
     <groupId>com.webank.wedatasphere.dss</groupId>
     <artifactId>dss-linkis-node-execution</artifactId>
-    <version>0.7.0</version>
+    <version>${dss.version}</version>
+    <exclusions>
+      <exclusion>
+        <artifactId>jackson-annotations</artifactId>
+        <groupId>com.fasterxml.jackson.core</groupId>
+      </exclusion>
+      <exclusion>
+        <artifactId>jackson-core</artifactId>
+        <groupId>com.fasterxml.jackson.core</groupId>
+      </exclusion>
+      <exclusion>
+        <artifactId>jackson-databind</artifactId>
+        <groupId>com.fasterxml.jackson.core</groupId>
+      </exclusion>
+      <exclusion>
+        <artifactId>log4j</artifactId>
+        <groupId>log4j</groupId>
+      </exclusion>
+      <exclusion>
+        <artifactId>jetty-servlet</artifactId>
+        <groupId>org.eclipse.jetty</groupId>
+      </exclusion>
+      <exclusion>
+        <artifactId>ooxml-schemas</artifactId>
+        <groupId>org.apache.poi</groupId>
+      </exclusion>
+      <exclusion>
+        <artifactId>poi</artifactId>
+        <groupId>org.apache.poi</groupId>
+      </exclusion>
+      <exclusion>
+        <artifactId>poi-ooxml-schemas</artifactId>
+        <groupId>org.apache.poi</groupId>
+      </exclusion>
+      <exclusion>
+        <artifactId>poi-ooxml</artifactId>
+        <groupId>org.apache.poi</groupId>
+      </exclusion>
+      <exclusion>
+        <artifactId>gson</artifactId>
+        <groupId>com.google.code.gson</groupId>
+      </exclusion>
+      <exclusion>
+        <artifactId>slf4j-api</artifactId>
+        <groupId>org.slf4j</groupId>
+      </exclusion>
+    </exclusions>
   </dependency>
 
 </dependencies>

@@ -16,13 +16,45 @@
 
 package azkaban.execapp;
 
-import static azkaban.Constants.ConfigurationKeys;
-import static azkaban.Constants.DEFAULT_EXECUTOR_PORT_FILE;
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-import static azkaban.execapp.ExecJettyServerModule.EXEC_JETTY_SERVER;
-import static azkaban.execapp.ExecJettyServerModule.EXEC_ROOT_CONTEXT;
-import static com.google.common.base.Preconditions.checkState;
-import static java.util.Objects.requireNonNull;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+
+import org.apache.commons.lang.StringUtils;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.IPAccessHandler;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Constructor;
+import java.net.InetAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.security.Permission;
+import java.security.Policy;
+import java.security.ProtectionDomain;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.TimeZone;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import javax.management.MBeanInfo;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.servlet.DispatcherType;
 
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
@@ -48,41 +80,18 @@ import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.StdOutErrRedirect;
 import azkaban.utils.Utils;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.management.ManagementFactory;
-import java.lang.reflect.Constructor;
-import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-import java.security.Permission;
-import java.security.Policy;
-import java.security.ProtectionDomain;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TimeZone;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-import javax.management.MBeanInfo;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-import org.joda.time.DateTimeZone;
+
+import static azkaban.Constants.ConfigurationKeys;
+import static azkaban.Constants.DEFAULT_EXECUTOR_PORT_FILE;
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+import static azkaban.execapp.ExecJettyServerModule.EXEC_JETTY_SERVER;
+import static azkaban.execapp.ExecJettyServerModule.EXEC_ROOT_CONTEXT;
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.Objects.requireNonNull;
+
 //import org.mortbay.jetty.Connector;
 //import org.mortbay.jetty.Server;
 //import org.mortbay.jetty.servlet.Context;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 
 @Singleton
 public class AzkabanExecutorServer {
@@ -243,7 +252,9 @@ public class AzkabanExecutorServer {
 
   private void start() throws Exception {
     this.root.setAttribute(Constants.AZKABAN_SERVLET_CONTEXT_KEY, this);
-
+    if(this.props.getBoolean(ConfigurationKeys.IP_WHITELIST_ENABLED,false)) {
+      root.addFilter(new FilterHolder(ExecutorAccessFilter.class), "/*", EnumSet.of(DispatcherType.REQUEST));
+    }
     JmxJobMBeanManager.getInstance().initialize(this.props);
 
     // make sure this happens before
@@ -253,6 +264,19 @@ public class AzkabanExecutorServer {
     configureMetricReports();
 
     loadCustomJMXAttributeProcessor(this.props);
+
+    try {
+      if(this.props.getBoolean(ConfigurationKeys.IP_WHITELIST_ENABLED,false)){
+        String whiteListStr = this.props.getString(ConfigurationKeys.IP_WHITELIST, "");
+        String[] whiteListArr = whiteListStr.split(",");
+        IPAccessHandler ipAccessHandler = new IPAccessHandler();
+        ipAccessHandler.setWhite(whiteListArr);
+        ipAccessHandler.setHandler(root);
+        server.setHandler(ipAccessHandler);
+      }
+    }catch (Exception e){
+      logger.error("setting Executor whiteList failed ,caused by {}" , e);
+    }
 
     try {
       this.server.start();

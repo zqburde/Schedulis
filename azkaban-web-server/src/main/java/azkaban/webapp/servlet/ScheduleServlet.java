@@ -1022,6 +1022,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       otherOptions.put("successAlertLevel", json.get("successAlertLevel").getAsString());
     }
 
+    otherOptions.put("activeFlag", true);
+
     try {
       //设置告警用户部门信息
       String userDep = transitionService.getUserDepartmentByUsername(user.getUserId());
