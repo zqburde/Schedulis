@@ -27,11 +27,14 @@ logFile=/appcom/logs/azkaban/webServerLog_`date +%F+%T`.out
 
 
 function preCheck(){
-  LOG INFO "checking AzkabanWebServer process status..."
-  if [ -f $azkaban_dir/currentpid ]
+  LOG INFO "checking AzkabanWebServer status..."
+  processName=`jps|grep AzkabanWebServer`
+  if [ -n "$processName" ]
   then
-    LOG INFO "AzkabanWebServer already started."
-    return 1
+      LOG INFO "AzkabanWebServer already started."
+      return 1
+  else
+      return 0
   fi
 }
 
@@ -99,7 +102,15 @@ function start(){
     LOG INFO "starting AzkabanWebServer..."
     java $AZKABAN_OPTS $JAVA_LIB_PATH -cp $CLASSPATH azkaban.webapp.AzkabanWebServer -conf $conf $cycle_stop $@ >> $logFile 2>&1 &
     echo $! > $azkaban_dir/currentpid
-    LOG INFO "AzkabanWebServer started successfully."
+    sleep 3s
+    processName=`jps|grep AzkabanWebServer`
+    if [ ! -n "$processName" ]
+    then
+        LOG INFO "AzkabanWebServer startup failed"
+        return 1
+    else
+        return 0
+    fi
 }
 
 function LOG(){
