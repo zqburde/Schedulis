@@ -112,6 +112,13 @@ $(function () {
 
 });
 
+var todayFormat = function () {
+  var date = new Date();
+  var year = date.getFullYear();
+  var month = getTwoDigitStr(date.getMonth() + 1);
+  var day = getTwoDigitStr(date.getDate());
+  return month + "/" + day + "/" + year;
+}
 
 function getTodayExecFlowData (myChart) {
   var requestURL = contextURL + "/homepage";
@@ -146,12 +153,14 @@ function getTodayExecFlowData (myChart) {
         averageTime = "Average Time";
         totalTasks = "Total Jobs";
       }
+      var begin = todayFormat() + " 12:00 AM";
+      var end = todayFormat() + " 11:59 PM";
       $("#success-td").html(
         "<div><span class='glyphicon glyphicon-record' style='color:#4cae4c'/><font style='font-size:16px;'>&nbsp;&nbsp;" + workflowCompleted + ": " + data.todayFlowExecuteData[0].value + "</font></div>"
         +
         "<div><span class='glyphicon glyphicon-record' style='color:#39b3d7'/><font style='font-size:16px;'>&nbsp;&nbsp;" + runningWorkflow2 + ": " + data.todayFlowExecuteData[1].value + "</font></div>"
         +
-        "<div><span class='glyphicon glyphicon-record' style='color:#d2322d'/><font style='font-size:16px;'>&nbsp;&nbsp;" + errorWorkflow + ": " + data.todayFlowExecuteData[2].value + "</font></div>"
+        "<div><span class='glyphicon glyphicon-record' style='color:#d2322d'/> <a href='/history?advfilter=true&projcontain=&flowcontain=&execIdcontain=&usercontain=&status=70&begin=" + begin + "&end=" + end + "&flowType=3'><font style='font-size:16px;'>&nbsp;&nbsp;" + errorWorkflow + ": " + data.todayFlowExecuteData[2].value + "</font></a></div>"
         +
         "<div><span class='glyphicon glyphicon-record' style='color:#660066'/><font style='font-size:16px;'>&nbsp;&nbsp;" + killWorkflow + ": " + data.todayFlowExecuteData[3].value + "</font></div>"
         +
