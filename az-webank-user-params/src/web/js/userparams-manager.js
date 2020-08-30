@@ -657,6 +657,9 @@ azkaban.UpdateDepartmentGroupView = Backbone.View.extend({
         };
         var model = this.model;
         var successHandler = function (data) {
+            if (data.status && data.status == 'error') {
+                return false
+            }
             if (data.error) {
                 $("#update-department-group-modal-error-msg").show();
                 $("#update-department-group-modal-error-msg").text(data.error);

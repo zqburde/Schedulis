@@ -24,7 +24,7 @@
     "invalidAddRealNameUserProxy": "新增用户失败,实名用户仅可添加自己作为代理,请将代理用户选项置为空,或者将代理用户设置为:",
     "invalidUpdateRealNameUserProxy": "更新用户失败,实名用户仅可添加自己作为代理,请将代理用户选项置为空,或者将代理用户设置为:",
     "invalidUpdateSystemUserProxy": "更新用户失败,系统用户仅可添加自己作为代理,请将代理用户选项置为空,或者将代理用户设置为:",
-    "invalidName": "]输入不合法,合法用户名示例如下(大小写敏感):运维账号:WTSS_纯英文部门代码_编号(WTSS_DBDP_01); 普通系统账号:hduser编号(hduser01).",
+    "invalidName": "]输入不合法,合法用户名示例如下(大小写敏感):运维账号:WTSS_纯英文部门代码_编号(WTSS_DBDP_01); 普通系统账号:hduser编号(hduser01)",
     "existDep": "该部门已存在.",
     "noParentDep": "父部门不存在.",
     "plsInputDepId": "请输入部门ID.",

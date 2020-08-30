@@ -122,7 +122,7 @@ public class UserParamsService {
         try {
             cout = jdbcExecutorLoader.findWtssUserByName(name);
         }catch (ExecutorManagerException e){
-            logger.error("can not found wtssuser by" + name + ", " + e);
+            logger.error("can not found wtssuser by" + name + ", ", e);
         }
         if(cout == 0){
             return false;

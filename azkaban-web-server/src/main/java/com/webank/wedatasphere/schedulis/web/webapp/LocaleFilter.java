@@ -89,7 +89,7 @@ public class LocaleFilter implements Filter {
                 req.getSession().setAttribute("TRANS_I18N_LOCALE", languageType);
                 LoadJsonUtils.setLanguageType(languageType);
             } catch (Exception e) {
-                logger.error("a fatal error had happen when init locale");
+                logger.error("a fatal error had happen when init locale languageType, caused by:" , e);
                 LoadJsonUtils.setLanguageType("zh_CN");
             }
         }
