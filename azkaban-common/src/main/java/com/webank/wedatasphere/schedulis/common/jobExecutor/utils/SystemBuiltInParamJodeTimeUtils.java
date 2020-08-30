@@ -17,7 +17,8 @@
 package com.webank.wedatasphere.schedulis.common.jobExecutor.utils;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 
@@ -41,7 +42,7 @@ import org.joda.time.format.DateTimeFormatter;
 
 public class SystemBuiltInParamJodeTimeUtils {
 
-  private static final Logger utilLogger = Logger.getLogger(SystemBuiltInParamJodeTimeUtils.class);
+  private static final Logger utilLogger = LoggerFactory.getLogger(SystemBuiltInParamJodeTimeUtils.class);
   public static final String RUN_TODAY = "run_today";
   public static final String RUN_TODAY_STD = "run_today_std";
   public static final String RUN_DATE = "run_date";

@@ -18,7 +18,8 @@ package com.webank.wedatasphere.schedulis.jobtype.util;
 
 import com.webank.wedatasphere.schedulis.jobtype.connectors.druid.WBEventCheckerDao;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.management.ManagementFactory;
 import java.util.Properties;
@@ -27,6 +28,8 @@ import java.util.regex.Pattern;
 
 import com.webank.wedatasphere.schedulis.eventcheck.AbstractEventCheck;
 import azkaban.utils.Props;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EventChecker {
 	public final static String WAIT_TIME = "wait.time";
@@ -50,7 +53,7 @@ public class EventChecker {
 	private String jobId;
 	private WBEventCheckerDao wbDao=null;
 
-	private static final Logger logger = Logger.getRootLogger();
+	private static final Logger logger = LoggerFactory.getLogger(EventChecker.class);
 
 	public EventChecker(String jobName, Properties p) {
 		this.p = p;

@@ -28,7 +28,8 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 
 /**
@@ -38,7 +39,7 @@ import org.apache.log4j.Logger;
 @Singleton
 public class HdfsAuth {
 
-  private static final Logger log = Logger.getLogger(HdfsAuth.class);
+  private static final Logger logger = LoggerFactory.getLogger(HdfsAuth.class);
 
   private final boolean isSecurityEnabled;
 
@@ -51,7 +52,7 @@ public class HdfsAuth {
     UserGroupInformation.setConfiguration(conf);
     this.isSecurityEnabled = UserGroupInformation.isSecurityEnabled();
     if (this.isSecurityEnabled) {
-      log.info("The Hadoop cluster has enabled security");
+      logger.info("The Hadoop cluster has enabled security");
       this.keytabPath = requireNonNull(props.getString(AZKABAN_KEYTAB_PATH));
       this.keytabPrincipal = requireNonNull(props.getString(AZKABAN_KERBEROS_PRINCIPAL));
     }
@@ -66,7 +67,7 @@ public class HdfsAuth {
       try {
         login(this.keytabPrincipal, this.keytabPath);
       } catch (final IOException e) {
-        log.error(e);
+        logger.error("", e);
         throw new AzkabanException(String.format(
             "Error: Unable to authorize to Hadoop. Principal: %s Keytab: %s", this.keytabPrincipal,
             this.keytabPath));
@@ -76,14 +77,14 @@ public class HdfsAuth {
 
   private void login(final String keytabPrincipal, final String keytabPath) throws IOException {
     if (this.loggedInUser == null) {
-      log.info(
+      logger.info(
           String.format("Logging in using Principal: %s Keytab: %s", keytabPrincipal, keytabPath));
 
       UserGroupInformation.loginUserFromKeytab(keytabPrincipal, keytabPath);
       this.loggedInUser = UserGroupInformation.getLoginUser();
-      log.info(String.format("User %s logged in.", this.loggedInUser));
+      logger.info(String.format("User %s logged in.", this.loggedInUser));
     } else {
-      log.info(String.format("User %s already logged in. Refreshing TGT", this.loggedInUser));
+      logger.info(String.format("User %s already logged in. Refreshing TGT", this.loggedInUser));
       this.loggedInUser.checkTGTAndReloginFromKeytab();
     }
   }

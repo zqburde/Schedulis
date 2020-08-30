@@ -30,7 +30,8 @@ import com.webank.wedatasphere.schedulis.common.executor.UserVariable;
 import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
 import com.webank.wedatasphere.schedulis.common.system.entity.WtssUser;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,7 +47,7 @@ import java.util.stream.Collectors;
  */
 public class MockExecutorLoader implements ExecutorLoader {
 
-  private static final Logger logger = Logger.getLogger(MockExecutorLoader.class);
+  private static final Logger logger = LoggerFactory.getLogger(MockExecutorLoader.class);
 
   Map<Integer, Integer> executionExecutorMapping = new ConcurrentHashMap<>();
   Map<Integer, ExecutableFlow> flows = new ConcurrentHashMap<>();

@@ -19,7 +19,7 @@ package azkaban;
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.utils.Props;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
 
 import java.io.File;
 import java.util.Collection;

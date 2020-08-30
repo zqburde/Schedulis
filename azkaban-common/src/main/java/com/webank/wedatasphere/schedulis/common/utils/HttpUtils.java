@@ -19,7 +19,7 @@ package com.webank.wedatasphere.schedulis.common.utils;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.Status;
 import azkaban.utils.Props;
-import com.alibaba.fastjson.JSON;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -33,7 +33,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import okhttp3.Call;
 import okhttp3.FormBody;
 import okhttp3.MediaType;
@@ -48,7 +49,7 @@ import org.joda.time.format.DateTimeFormat;
  */
 public class HttpUtils {
 
-  private static final Logger logger = Logger.getLogger(HttpUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
 
   public static Map<String, String> getReturnMap(String dataStr){
     Map<String, String> dataMap = new HashMap<>();
@@ -144,7 +145,7 @@ public class HttpUtils {
       dataMap.put("groupName", executableFlow.getProjectName());
       dataMap.put("number", getValue(flowPros, "dcnNumber"));
       dataList.add(dataMap);
-      request = JSON.toJSON(dataList).toString();
+      request = GsonUtils.toJson(dataList);
       actionUrl = azkabanProps.getString("ims.job.register.url", null);
       if(actionUrl == null){
         logger.error("获取注册接口失败");

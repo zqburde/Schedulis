@@ -28,7 +28,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import com.webank.wedatasphere.schedulis.common.utils.XmlResolveUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -44,6 +45,8 @@ import org.xml.sax.SAXException;
  */
 public class XmlUserManager implements UserManager {
 
+  private static final Logger logger = LoggerFactory.getLogger(XmlUserManager.class);
+
   public static final String XML_FILE_PARAM = "user.manager.xml.file";
   public static final String AZKABAN_USERS_TAG = "azkaban-users";
   public static final String USER_TAG = "user";
@@ -58,8 +61,7 @@ public class XmlUserManager implements UserManager {
   public static final String PROXY_ATTR = "proxy";
   public static final String GROUPS_ATTR = "groups";
   public static final String GROUPNAME_ATTR = "name";
-  private static final Logger logger = Logger.getLogger(XmlUserManager.class
-      .getName());
+
   private final String xmlPath;
 
   private HashMap<String, User> users;

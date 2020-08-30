@@ -16,7 +16,6 @@
 
 package com.webank.wedatasphere.schedulis.jobtype.util;
 
-import com.alibaba.fastjson.JSONObject;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -28,7 +27,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Export {
 
@@ -41,7 +41,7 @@ public class Export {
 
   private Properties p;
 
-  private static final Logger logger = Logger.getRootLogger();
+  private static final Logger logger = LoggerFactory.getLogger(Export.class);
 
   public Export(String jobName, Properties p) {
     this.p = p;
@@ -125,16 +125,6 @@ public class Export {
     return checkFlag;
   }
 
-  public boolean isJson(String content) {
-    try {
-      JSONObject jsonStr = JSONObject.parseObject(content);
-      logger.info("Message is Json Format ");
-      return true;
-    } catch (Exception e) {
-      logger.error("Message isn't Json Format ");
-      return false;
-    }
-  }
 
   /**
    * 从 HDFS 下载文件

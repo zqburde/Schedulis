@@ -54,7 +54,6 @@ import azkaban.utils.Props;
 import azkaban.utils.ThreadPoolExecutingListener;
 import azkaban.utils.TrackingThreadPool;
 import azkaban.utils.UndefinedPropertyException;
-import com.alibaba.fastjson.JSONObject;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycleDao;
@@ -81,8 +80,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Execution manager for the server side execution.
@@ -106,7 +108,7 @@ import org.apache.log4j.Logger;
 public class FlowRunnerManager implements EventListener,
     ThreadPoolExecutingListener {
 
-  private static final Logger logger = Logger.getLogger(FlowRunnerManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(FlowRunnerManager.class);
 
   private static final String EXECUTOR_USE_BOUNDED_THREADPOOL_QUEUE = "executor.use.bounded.threadpool.queue";
   private static final String EXECUTOR_THREADPOOL_WORKQUEUE_SIZE = "executor.threadpool.workqueue.size";
@@ -565,7 +567,7 @@ public class FlowRunnerManager implements EventListener,
     runner.pause(user);
   }
 
-  public void setFlowFailed(final int execId, final JSONObject json) throws ExecutorManagerException {
+  public void setFlowFailed(final int execId, final JsonObject json) throws ExecutorManagerException {
     final FlowRunner runner = this.runningFlows.get(execId);
 
     if (runner == null) {
@@ -973,7 +975,7 @@ public class FlowRunnerManager implements EventListener,
       try {
         result = this.executorService.awaitTermination(1, TimeUnit.MINUTES);
       } catch (final InterruptedException e) {
-        logger.error(e);
+        logger.error("", e);
       }
     }
     logger.warn("Shutdown FlowRunnerManager complete.");
@@ -1013,7 +1015,7 @@ public class FlowRunnerManager implements EventListener,
           break;
         }
       } catch (final InterruptedException e) {
-        logger.error(e);
+        logger.error("", e);
       }
     }
     logger.warn("Shutdown FlowRunnerManager complete, now executing flows size: " + getNumRunningFlows());
@@ -1027,7 +1029,7 @@ public class FlowRunnerManager implements EventListener,
     try {
       FileUtils.deleteDirectory(this.executionDirectory);
     } catch (final IOException e) {
-      logger.error(e);
+      logger.error("", e);
     }
   }
 

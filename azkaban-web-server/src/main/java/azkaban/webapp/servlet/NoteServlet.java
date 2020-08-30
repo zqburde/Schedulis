@@ -21,6 +21,8 @@ import azkaban.server.session.Session;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.webapp.AzkabanWebServer;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import java.io.IOException;
 import java.util.HashMap;
@@ -29,12 +31,11 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
 
 public class NoteServlet extends LoginAbstractAzkabanServlet {
 
   private static final long serialVersionUID = 1L;
-  private static final Logger logger = Logger.getLogger(NoteServlet.class);
+  private static final Logger logger = LoggerFactory.getLogger(NoteServlet.class);
 
   public static String type = null;
   public static String message = null;

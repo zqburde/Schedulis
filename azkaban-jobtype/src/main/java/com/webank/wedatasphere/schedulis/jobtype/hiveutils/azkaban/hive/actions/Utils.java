@@ -20,13 +20,14 @@ import com.webank.wedatasphere.schedulis.jobtype.hiveutils.azkaban.HiveViaAzkaba
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 
 class Utils {
-  private final static Logger LOG = Logger.getLogger(Utils.class);
+  private final static Logger LOG = LoggerFactory.getLogger(Utils.class);
 
   static ArrayList<String> fetchDirectories(FileSystem fs, String location,
       boolean returnFullPath) throws IOException, HiveViaAzkabanException {

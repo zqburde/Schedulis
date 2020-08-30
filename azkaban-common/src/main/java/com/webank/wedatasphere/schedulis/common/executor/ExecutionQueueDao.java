@@ -21,7 +21,8 @@ import azkaban.executor.ExecutionReference;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -44,7 +45,7 @@ import azkaban.utils.Pair;
  * @Description: TODO
  */
 public class ExecutionQueueDao {
-    private static final Logger logger = Logger.getLogger(ExecutionQueueDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExecutionQueueDao.class);
     private final DatabaseOperator dbOperator;
 
     @Inject

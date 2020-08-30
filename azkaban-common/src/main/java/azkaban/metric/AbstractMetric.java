@@ -16,7 +16,9 @@
 
 package azkaban.metric;
 
-import org.apache.log4j.Logger;
+
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Abstract class for Metric
@@ -25,7 +27,7 @@ import org.apache.log4j.Logger;
  */
 public abstract class AbstractMetric<T> implements IMetric<T>, Cloneable {
 
-  protected static final Logger logger = Logger.getLogger(MetricReportManager.class);
+  protected static final Logger logger = LoggerFactory.getLogger(MetricReportManager.class);
   protected String name;
   protected T value;
   protected String type;

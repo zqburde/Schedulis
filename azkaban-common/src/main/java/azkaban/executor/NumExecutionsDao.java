@@ -22,12 +22,13 @@ import java.sql.SQLException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class NumExecutionsDao {
 
-  private static final Logger logger = Logger.getLogger(NumExecutionsDao.class);
+  private static final Logger logger = LoggerFactory.getLogger(NumExecutionsDao.class);
   private final DatabaseOperator dbOperator;
 
   @Inject

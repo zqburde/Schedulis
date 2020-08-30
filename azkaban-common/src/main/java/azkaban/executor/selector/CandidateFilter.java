@@ -16,10 +16,12 @@
 
 package azkaban.executor.selector;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.log4j.Logger;
 
 
 /**
@@ -29,7 +31,7 @@ import org.apache.log4j.Logger;
  */
 public abstract class CandidateFilter<T, V> {
 
-  protected static Logger logger = Logger.getLogger(CandidateFilter.class);
+  protected static final Logger logger = LoggerFactory.getLogger(CandidateFilter.class);
 
   // internal repository of the registered filters .
   private final Map<String, FactorFilter<T, V>> factorFilterList =

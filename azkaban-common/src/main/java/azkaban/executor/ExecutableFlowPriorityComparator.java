@@ -17,8 +17,10 @@
 package azkaban.executor;
 
 import azkaban.utils.Pair;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.util.Comparator;
-import org.apache.log4j.Logger;
 
 /**
  * Comparator implicitly used in priority queue for QueuedExecutions.
@@ -26,8 +28,7 @@ import org.apache.log4j.Logger;
 public final class ExecutableFlowPriorityComparator implements
     Comparator<Pair<ExecutionReference, ExecutableFlow>> {
 
-  private static final Logger logger = Logger
-      .getLogger(ExecutableFlowPriorityComparator.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExecutableFlowPriorityComparator.class);
 
   /**
    * <pre>

@@ -23,7 +23,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.servlet.FilterConfig;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -41,7 +42,7 @@ public class SessionFilter extends HttpServlet implements Filter {
   private static final long serialVersionUID = 831349987977760012L;
   static ServletRequest request;
   private String url;
-  private static final Logger logger = Logger.getLogger(SessionFilter.class);
+  private static final Logger logger = LoggerFactory.getLogger(SessionFilter.class);
   public static final String NEW_SESSION_INDICATOR = "com.filter.NewSessionFilter";
 
   static HttpServletRequest request2 = (HttpServletRequest) request;
