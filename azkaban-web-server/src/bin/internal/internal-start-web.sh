@@ -80,8 +80,8 @@ function javaOption(){
     AZKABAN_OPTS="-Xmx16G -Xloggc:/appcom/logs/azkaban/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintHeapAtGC"
   fi
   # Set the log4j configuration file
-  if [ -f $conf/log4j.properties ]; then
-    AZKABAN_OPTS="$AZKABAN_OPTS -Dlog4j.configuration=file:$conf/log4j.properties -Dlog4j.log.dir=/appcom/logs/azkaban"
+  if [ -f $conf/log4j2.xml ]; then
+    AZKABAN_OPTS="$AZKABAN_OPTS -Dlog4j.configurationFile=$conf/log4j2.xml"
   else
     LOG ERROR "$conf/log4j.properties file doesn't exist."
     return 1

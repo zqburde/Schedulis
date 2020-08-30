@@ -26,6 +26,9 @@ import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,8 +38,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Loads job and properties files to flows from project directory.
@@ -47,6 +48,7 @@ public class DirectoryFlowLoader implements FlowLoader {
   private static final String JOB_SUFFIX = ".job";
 
   private static final Logger logger = LoggerFactory.getLogger(DirectoryFlowLoader.class);
+
   private final Props props;
   private final Set<String> errors = new HashSet<>();
   private final Map<String, Flow> flowMap = new HashMap<>();

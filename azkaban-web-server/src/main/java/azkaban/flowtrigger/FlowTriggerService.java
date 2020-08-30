@@ -26,6 +26,9 @@ import azkaban.project.FlowTriggerDependency;
 import azkaban.project.Project;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,8 +46,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**

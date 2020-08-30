@@ -22,7 +22,8 @@ import com.google.inject.Provides;
 
 import com.webank.wedatasphere.schedulis.common.executor.ExecutorManagerHA;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.log.Log4JLogChute;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
@@ -44,6 +45,8 @@ import azkaban.scheduler.ScheduleLoader;
 import azkaban.scheduler.TriggerBasedScheduleLoader;
 import azkaban.utils.Props;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 //import org.mortbay.jetty.Server;
 
 /**
@@ -53,7 +56,7 @@ import azkaban.utils.Props;
  */
 public class AzkabanWebServerModule extends AbstractModule {
 
-  private static final Logger log = Logger.getLogger(AzkabanWebServerModule.class);
+  private static final Logger logger = LoggerFactory.getLogger(AzkabanWebServerModule.class);
   private static final String USER_MANAGER_CLASS_PARAM = "user.manager.class";
   private static final String VELOCITY_DEV_MODE_PARAM = "velocity.dev.mode";
   private final Props props;
@@ -125,8 +128,8 @@ public class AzkabanWebServerModule extends AbstractModule {
     engine.setProperty("velocimacro.arguments.strict", true);
     engine.setProperty("runtime.log.invalid.references", devMode);
     engine.setProperty("runtime.log.logsystem.class", Log4JLogChute.class);
-    engine.setProperty("runtime.log.logsystem.log4j.logger",
-        Logger.getLogger("org.apache.velocity.Logger"));
+    // TODO: 2020/6/16 log
+    engine.setProperty("runtime.log.logsystem.log4j.logger", "velocity");
     engine.setProperty("parser.pool.size", 3);
     return engine;
   }

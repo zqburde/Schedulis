@@ -23,12 +23,13 @@ import java.util.Map;
 import org.apache.commons.jexl2.Expression;
 import org.apache.commons.jexl2.JexlEngine;
 import org.apache.commons.jexl2.MapContext;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.DateTime;
 
 public class Condition {
 
-  private static final Logger logger = Logger.getLogger(Condition.class);
+  private static final Logger logger = LoggerFactory.getLogger(Condition.class);
 
   private static final JexlEngine jexl = new JexlEngine();
   private static CheckerTypeLoader checkerLoader = null;

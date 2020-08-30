@@ -21,17 +21,19 @@ import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.log4j.Logger;
 
 public class PluginCheckerAndActionsLoader {
 
-  private static final Logger log = Logger.getLogger(PluginCheckerAndActionsLoader.class);
+  private static final Logger log = LoggerFactory.getLogger(PluginCheckerAndActionsLoader.class);
 
   public void load(final String pluginPath) {
     log.info("Loading plug-in checker and action types");
@@ -103,7 +105,7 @@ public class PluginCheckerAndActionsLoader {
             final URL url = files[i].toURI().toURL();
             urls.add(url);
           } catch (final MalformedURLException e) {
-            log.error(e);
+            log.error("MalformedURLException", e);
           }
         }
         if (extLibClasspath != null) {
@@ -113,7 +115,7 @@ public class PluginCheckerAndActionsLoader {
               final URL url = file.toURI().toURL();
               urls.add(url);
             } catch (final MalformedURLException e) {
-              log.error(e);
+              log.error("MalformedURLException", e);
             }
           }
         }

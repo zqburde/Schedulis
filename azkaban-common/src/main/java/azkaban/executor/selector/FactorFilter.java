@@ -16,7 +16,8 @@
 
 package azkaban.executor.selector;
 
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * wrapper class for a factor Filter .
@@ -26,7 +27,7 @@ import org.apache.log4j.Logger;
  */
 public final class FactorFilter<T, V> {
 
-  private static final Logger logger = Logger.getLogger(FactorFilter.class);
+  private static final Logger logger = LoggerFactory.getLogger(FactorFilter.class);
 
   private final String factorName;
   private final Filter<T, V> filter;

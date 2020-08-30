@@ -17,7 +17,8 @@
 package com.webank.wedatasphere.schedulis.common.distributelock;
 
 import com.webank.wedatasphere.schedulis.common.utils.HttpUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
@@ -35,7 +36,7 @@ import azkaban.db.DatabaseOperator;
 @Singleton
 public class DBTableDistributeLock extends AbstractDistributeLock{
 
-    private static final Logger log = Logger.getLogger(DBTableDistributeLock.class);
+    private static final Logger log = LoggerFactory.getLogger(DBTableDistributeLock.class);
 
     @Inject
     public DBTableDistributeLock(DatabaseOperator dbOperator) {

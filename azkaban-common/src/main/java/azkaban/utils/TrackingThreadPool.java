@@ -22,7 +22,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * A simple subclass of {@link ThreadPoolExecutor} to keep track of in progress tasks as well as
@@ -35,7 +36,7 @@ import org.apache.log4j.Logger;
  */
 public class TrackingThreadPool extends ThreadPoolExecutor {
 
-  private static final Logger logger = Logger.getLogger(TrackingThreadPool.class);
+  private static final Logger logger = LoggerFactory.getLogger(TrackingThreadPool.class);
 
   private final Map<Runnable, Boolean> inProgress =
       new ConcurrentHashMap<>();

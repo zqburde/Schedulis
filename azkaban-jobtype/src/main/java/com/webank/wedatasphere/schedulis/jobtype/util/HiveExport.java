@@ -27,8 +27,9 @@ import java.util.Properties;
 import com.webank.wedatasphere.schedulis.jobtype.commons.LogGobbler;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.hadoop.util.Shell;
 
 public class HiveExport {
@@ -59,7 +60,7 @@ public class HiveExport {
 
   private Properties p;
 
-  private static final Logger logger = Logger.getRootLogger();
+  private static final Logger logger = LoggerFactory.getLogger(HiveExport.class);
 
   public HiveExport(Properties p) {
     this.p = p;
@@ -188,7 +189,7 @@ public class HiveExport {
     try {
       result = Shell.execCommand(cmd);
     }catch(Exception e){
-      logger.info(e);
+      logger.info("", e);
       throw new Exception(e);
     }
     logger.info("Run Hive shell script result" + result);
@@ -210,11 +211,11 @@ public class HiveExport {
       final LogGobbler outputGobbler =
               new LogGobbler(
                       new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8),
-                      logger, Level.INFO, 30);
+                      logger, "INFO", 30);
       final LogGobbler errorGobbler =
               new LogGobbler(
                       new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8),
-                      logger, Level.ERROR, 30);
+                      logger, "ERROR", 30);
       outputGobbler.start();
       errorGobbler.start();
       int exitCode = -1;

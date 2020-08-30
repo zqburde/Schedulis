@@ -20,16 +20,16 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutableFlowBase;
 import azkaban.executor.ExecutableNode;
 import azkaban.executor.Status;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.log4j.Logger;
 
 public abstract class FlowWatcher {
 
   private final int execId;
   private final Map<String, BlockingStatus> map =
       new ConcurrentHashMap<>();
-  private Logger logger;
+  private org.slf4j.Logger logger;
   private ExecutableFlow flow;
   private boolean cancelWatch = false;
 
@@ -41,11 +41,11 @@ public abstract class FlowWatcher {
     this.flow = flow;
   }
 
-  protected Logger getLogger() {
+  protected org.slf4j.Logger getLogger() {
     return this.logger;
   }
 
-  public void setLogger(final Logger logger) {
+  public void setLogger(final org.slf4j.Logger logger) {
     this.logger = logger;
   }
 

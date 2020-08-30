@@ -28,7 +28,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
@@ -37,7 +38,7 @@ import org.codehaus.jackson.map.ObjectWriter;
 
 public class JSONUtils {
 
-  private static final Logger logger = Logger.getLogger(JSONUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(JSONUtils.class);
 
   /**
    * The constructor. Cannot construct this class.
@@ -101,7 +102,7 @@ public class JSONUtils {
     try {
       return parseJSONFromString(json);
     } catch (final IOException e) {
-      logger.error("parse error, caused by: " +e);
+      logger.error("parse error, caused by: ", e);
       return null;
     }
   }

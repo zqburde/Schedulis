@@ -30,12 +30,13 @@ import java.util.*;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class FetchActiveFlowDao {
 
-  private static final Logger logger = Logger.getLogger(FetchActiveFlowDao.class);
+  private static final Logger logger = LoggerFactory.getLogger(FetchActiveFlowDao.class);
 
   private final DatabaseOperator dbOperator;
 

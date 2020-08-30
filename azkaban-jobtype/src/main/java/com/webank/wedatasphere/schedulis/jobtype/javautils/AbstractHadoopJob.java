@@ -43,7 +43,8 @@ import org.apache.hadoop.mapred.RunningJob;
 import org.apache.hadoop.mapred.TaskReport;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.Reducer;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import azkaban.utils.Props;
 import azkaban.utils.JSONUtils;
@@ -52,8 +53,7 @@ import static azkaban.security.commons.SecurityUtils.MAPREDUCE_JOB_CREDENTIALS_B
 import static org.apache.hadoop.security.UserGroupInformation.HADOOP_TOKEN_FILE_LOCATION;
 
 public abstract class AbstractHadoopJob {
-  private static final Logger logger = Logger
-      .getLogger(AbstractHadoopJob.class);
+  private static final Logger logger = LoggerFactory.getLogger(AbstractHadoopJob.class);
 
   public static String COMMON_FILE_DATE_PATTERN = "yyyy-MM-dd-HH-mm";
   public static final String HADOOP_PREFIX = "hadoop-conf.";

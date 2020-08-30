@@ -89,7 +89,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.LocalDateTime;
 import org.quartz.SchedulerException;
 
@@ -98,8 +99,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     private static final String APPLICATION_ZIP_MIME_TYPE = "application/zip";
     private static String RE_SPACE = "(\u0020|\u3000)";
     private static final long serialVersionUID = 1;
-    private static final Logger logger = Logger
-        .getLogger(ProjectManagerServlet.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProjectManagerServlet.class);
     private static final NodeLevelComparator NODE_LEVEL_COMPARATOR =
         new NodeLevelComparator();
     private static final String LOCKDOWN_CREATE_PROJECTS_KEY = "lockdown.create.projects";
@@ -560,7 +560,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                     }
                 }
             } catch (SystemUserManagerException e) {
-                logger.error("系统用户信息不存在." + e);
+                logger.error("系统用户信息不存在.", e);
             }
         }
         return operatorFlag;
@@ -1417,7 +1417,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                 }
             }
         } catch (Exception e) {
-            logger.error(e);
+            logger.error("getSchedules failed", e);
         }
     }
 
@@ -4203,7 +4203,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                 ret.put("scheduleId", "");
             }
         } catch (ScheduleManagerException e) {
-            logger.error("Fetch running schedule failed, caused by:" + e);
+            logger.error("Fetch running schedule failed, caused by:", e);
             ret.put("error", "Fetch running schedule failed, caused by:" + e.getMessage());
         }
 

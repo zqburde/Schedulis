@@ -28,7 +28,8 @@ import com.webank.wedatasphere.dss.linkis.node.execution.listener.LinkisExecutio
 
 import com.webank.wedatasphere.schedulis.linkis.job.JobBuilder;
 import com.webank.wedatasphere.schedulis.linkis.log.AzkabanAppjointLog;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 public class AzkabanDssJobType extends AbstractJob {

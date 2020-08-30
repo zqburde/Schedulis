@@ -17,12 +17,14 @@
 package azkaban.executor.selector;
 
 import azkaban.utils.Pair;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.log4j.Logger;
 
 /**
  * <pre>
@@ -34,7 +36,7 @@ import org.apache.log4j.Logger;
  */
 public abstract class CandidateComparator<T> implements Comparator<T> {
 
-  protected static Logger logger = Logger.getLogger(CandidateComparator.class);
+  protected static final Logger logger = LoggerFactory.getLogger(CandidateComparator.class);
 
   // internal repository of the registered comparators .
   private final Map<String, FactorComparator<T>> factorComparatorList =

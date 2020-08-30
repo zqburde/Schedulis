@@ -24,14 +24,16 @@ import static azkaban.storage.StorageImplementationType.DATABASE;
 
 import azkaban.storage.StorageImplementationType;
 import azkaban.utils.Props;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import javax.inject.Inject;
 import java.net.URI;
-import org.apache.log4j.Logger;
 
 
 public class AzkabanCommonModuleConfig {
 
-  private static final Logger log = Logger.getLogger(AzkabanCommonModuleConfig.class);
+  private static final Logger logger = LoggerFactory.getLogger(AzkabanCommonModuleConfig.class);
 
   private final Props props;
   private final URI hdfsRootUri;

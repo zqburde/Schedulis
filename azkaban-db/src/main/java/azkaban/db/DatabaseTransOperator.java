@@ -21,7 +21,8 @@ import java.sql.SQLException;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 
 /**
@@ -38,7 +39,8 @@ import org.apache.log4j.Logger;
  */
 public class DatabaseTransOperator {
 
-  private static final Logger logger = Logger.getLogger(DatabaseTransOperator.class);
+  private static final Logger logger = LoggerFactory.getLogger(DatabaseTransOperator.class);
+
   private final Connection conn;
   private final QueryRunner queryRunner;
 

@@ -16,12 +16,14 @@
 
 package azkaban.metric;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.apache.log4j.Logger;
 
 
 /**
@@ -36,7 +38,7 @@ public class MetricReportManager {
    * Maximum number of metrics reporting threads
    */
   private static final int MAX_EMITTER_THREADS = 4;
-  private static final Logger logger = Logger.getLogger(MetricReportManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(MetricReportManager.class);
   // Singleton variable
   private static volatile MetricReportManager instance = null;
   private static volatile boolean isManagerEnabled;

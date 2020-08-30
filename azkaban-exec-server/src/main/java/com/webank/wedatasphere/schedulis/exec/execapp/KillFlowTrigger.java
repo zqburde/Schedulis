@@ -19,7 +19,8 @@ package com.webank.wedatasphere.schedulis.exec.execapp;
 import azkaban.execapp.FlowRunner;
 import azkaban.execapp.JobRunner;
 import azkaban.executor.Status;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
