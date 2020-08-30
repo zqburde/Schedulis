@@ -35,7 +35,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.DateTimeZone;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
@@ -53,7 +54,7 @@ import static java.util.Objects.requireNonNull;
 public class ScheduleManager implements TriggerAgent {
 
     public static final String SIMPLE_TIME_TRIGGER = "SimpleTimeTrigger";
-    private static final Logger logger = Logger.getLogger(ScheduleManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(ScheduleManager.class);
     private final DateTimeFormatter _dateFormat = DateTimeFormat.forPattern("MM-dd-yyyy HH:mm:ss:SSS");
     private final ScheduleLoader loader;
 
@@ -187,7 +188,7 @@ public class ScheduleManager implements TriggerAgent {
         try {
             this.loader.removeSchedule(sched);
         } catch (final ScheduleManagerException e) {
-            logger.error(e);
+            logger.error("", e);
         }
     }
 
@@ -291,7 +292,7 @@ public class ScheduleManager implements TriggerAgent {
                     internalSchedule(s);//更新缓存
                 }
             } catch (final ScheduleManagerException e) {
-                logger.error(e);
+                logger.error("", e);
             }
         } else {
             logger.error("The provided schedule is non-recurring and the scheduled time already passed. " + s.getScheduleName());

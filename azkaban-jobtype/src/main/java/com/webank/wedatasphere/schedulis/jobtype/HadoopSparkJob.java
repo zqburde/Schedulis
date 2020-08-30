@@ -29,7 +29,8 @@ import java.util.Map.Entry;
 import java.util.StringTokenizer;
 
 import org.apache.commons.lang.math.NumberUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.JavaProcessJob;
@@ -286,7 +287,7 @@ public class HadoopSparkJob extends JavaProcessJob {
       Logger log) {
 
     // if we ever need to recreate a failure scenario in the test case
-    log.debug(jobProps);
+    log.debug(jobProps.toString());
     log.debug(workingDir);
 
     List<String> argList = new ArrayList<String>();

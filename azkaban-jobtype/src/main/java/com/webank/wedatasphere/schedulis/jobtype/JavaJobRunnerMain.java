@@ -19,10 +19,8 @@ package com.webank.wedatasphere.schedulis.jobtype;
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Layout;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
@@ -51,7 +49,6 @@ public class JavaJobRunnerMain {
     "azkaban.common.utils.Props"
   };
 
-  private static final Layout DEFAULT_LAYOUT = new PatternLayout("%p %m\n");
 
   public final Logger _logger;
 
@@ -77,11 +74,7 @@ public class JavaJobRunnerMain {
       _jobName = System.getenv(ProcessJob.JOB_NAME_ENV);
       String propsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
 
-      _logger = Logger.getRootLogger();
-      _logger.removeAllAppenders();
-      ConsoleAppender appender = new ConsoleAppender(DEFAULT_LAYOUT);
-      appender.activateOptions();
-      _logger.addAppender(appender);
+      _logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
       Properties props = new Properties();
       props.load(new BufferedReader(new FileReader(propsFile)));

@@ -34,11 +34,12 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpUtils {
 
-  private static final Logger logger = Logger.getLogger(HttpUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
 
   /**
    * HTTP异步远程执行方法

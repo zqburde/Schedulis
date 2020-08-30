@@ -49,15 +49,15 @@ import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 
 @Singleton
 public class JdbcFlowTriggerInstanceLoaderImpl implements FlowTriggerInstanceLoader {
 
-  private static final Logger logger = LoggerFactory
-      .getLogger(JdbcFlowTriggerInstanceLoaderImpl.class);
+  private static final Logger logger = LoggerFactory.getLogger(JdbcFlowTriggerInstanceLoaderImpl.class);
+
   private static final String[] DEPENDENCY_EXECUTIONS_COLUMNS = {"trigger_instance_id", "dep_name",
       "starttime", "endtime", "dep_status", "cancelleation_cause", "project_id", "project_version",
       "flow_id", "flow_version", "flow_exec_id"};

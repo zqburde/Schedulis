@@ -178,7 +178,7 @@ function HistoryRecoverExecute(executingData) {
 
 function repeatFlow(recoverData) {
   executeURL = contextURL + "/executor?ajax=repeatCollection";
-
+  recoverData.disabled = JSON.parse(recoverData.disabled);
   $.ajax({
     type: "POST",
     contentType: "application/json; charset=utf-8",

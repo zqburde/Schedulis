@@ -32,7 +32,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * This Guice module is currently a one place container for all bindings in the current module. This
@@ -41,7 +42,7 @@ import org.apache.log4j.Logger;
  */
 public class AzkabanExecServerModule extends AbstractModule {
 
-  private static final Logger logger = Logger.getLogger(AzkabanExecServerModule.class);
+  private static final Logger logger = LoggerFactory.getLogger(AzkabanExecServerModule.class);
 
   @Override
   protected void configure() {

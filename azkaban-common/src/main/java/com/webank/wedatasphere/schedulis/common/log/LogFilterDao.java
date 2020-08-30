@@ -29,12 +29,13 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 public class LogFilterDao {
 
-  private static final Logger logger = Logger.getLogger(LogFilterDao.class);
+  private static final Logger logger = LoggerFactory.getLogger(LogFilterDao.class);
   private final DatabaseOperator dbOperator;
 
   @Inject

@@ -32,7 +32,8 @@ import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class StorageCleaner {
@@ -49,7 +50,7 @@ public class StorageCleaner {
    */
   static final String SQL_FETCH_PVR = "SELECT resource_id FROM project_versions WHERE project_id=? AND resource_id IS NOT NULL ORDER BY version DESC";
 
-  private static final Logger log = Logger.getLogger(StorageCleaner.class);
+  private static final Logger log = LoggerFactory.getLogger(StorageCleaner.class);
   private final DatabaseOperator databaseOperator;
   private final int maxArtifactsPerProject;
   private final Storage storage;
