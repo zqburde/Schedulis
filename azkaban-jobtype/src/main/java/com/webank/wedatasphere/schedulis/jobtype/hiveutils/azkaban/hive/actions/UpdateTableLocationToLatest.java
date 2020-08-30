@@ -24,7 +24,8 @@ import com.webank.wedatasphere.schedulis.jobtype.hiveutils.util.AzkHiveAction;
 import com.webank.wedatasphere.schedulis.jobtype.hiveutils.util.AzkabanJobPropertyDescription;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,8 +46,7 @@ import java.util.Properties;
  */
 @AzkHiveAction(Constants.UPDATE_TABLE_LOCATION_TO_LATEST)
 public class UpdateTableLocationToLatest implements HiveAction {
-  private final static Logger LOG = Logger
-      .getLogger(UpdateTableLocationToLatest.class);
+  private final static Logger logger = LoggerFactory.getLogger(UpdateTableLocationToLatest.class);
 
   public static final String UPDATE_TABLE_LOCATION_TO_LATEST =
       Constants.UPDATE_TABLE_LOCATION_TO_LATEST;
@@ -87,7 +87,7 @@ public class UpdateTableLocationToLatest implements HiveAction {
       FileSystem fs = FileSystem.get(conf);
 
       for (int i = 0; i < tables.length; i++) {
-        LOG.info("Determining HQL commands for table " + tables[i]);
+        logger.info("Determining HQL commands for table " + tables[i]);
         hql.add(latestURI(fs, tablesLocations[i], tables[i]));
       }
       fs.close();

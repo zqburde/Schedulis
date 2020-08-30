@@ -18,15 +18,17 @@ package azkaban.trigger;
 
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.log4j.Logger;
 
 public class CheckerTypeLoader {
 
   public static final String DEFAULT_CONDITION_CHECKER_PLUGIN_DIR =
       "plugins/conditioncheckers";
-  private static final Logger logger = Logger.getLogger(CheckerTypeLoader.class);
+  private static final Logger logger = LoggerFactory.getLogger(CheckerTypeLoader.class);
   protected static Map<String, Class<? extends ConditionChecker>> checkerToClass =
       new HashMap<>();
 

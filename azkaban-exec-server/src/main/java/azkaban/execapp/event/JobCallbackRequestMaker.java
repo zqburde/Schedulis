@@ -31,7 +31,8 @@ import org.apache.http.impl.client.FutureRequestExecutionMetrics;
 import org.apache.http.impl.client.FutureRequestExecutionService;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpRequestFutureTask;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Responsible for making the job callback HTTP requests.
@@ -43,8 +44,7 @@ import org.apache.log4j.Logger;
  */
 public class JobCallbackRequestMaker {
 
-  private static final Logger logger = Logger
-      .getLogger(JobCallbackRequestMaker.class);
+  private static final Logger logger = LoggerFactory.getLogger(JobCallbackRequestMaker.class);
 
   private static final int DEFAULT_TIME_OUT_MS = 3000;
   private static final int DEFAULT_RESPONSE_WAIT_TIME_OUT_MS = 5000;

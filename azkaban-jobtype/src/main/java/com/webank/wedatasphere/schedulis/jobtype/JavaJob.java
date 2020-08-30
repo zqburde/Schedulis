@@ -20,7 +20,8 @@ import java.io.File;
 import java.util.List;
 import java.util.StringTokenizer;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.JavaProcessJob;
@@ -73,8 +74,8 @@ public class JavaJob extends JavaProcessJob {
 
     classPath.add(HadoopConfigurationInjector.getPath(getJobProps(),
         getWorkingDirectory()));
-
-    String loggerPath = getSourcePathFromClass(org.apache.log4j.Logger.class);
+    // todo ?
+    String loggerPath = getSourcePathFromClass(Logger.class);
     if (!classPath.contains(loggerPath)) {
       classPath.add(loggerPath);
     }

@@ -18,7 +18,8 @@ package com.webank.wedatasphere.schedulis.jobtype.util;
 
 import com.webank.wedatasphere.schedulis.jobtype.connectors.druid.WBDataCheckerDao;
 import java.util.Properties;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DataChecker {
 	public final static String SOURCE_TYPE = "source.type";
@@ -31,8 +32,8 @@ public class DataChecker {
 	public final static String MASK_APP_TOKEN = "bdp.mask.app.token";
 
 	private Properties p;
-	private static final Logger logger = Logger.getRootLogger();
-	
+	private static final Logger logger = LoggerFactory.getLogger(DataChecker.class);
+
 	public DataChecker(String jobName, Properties p) {
 		this.p = p;
 	}

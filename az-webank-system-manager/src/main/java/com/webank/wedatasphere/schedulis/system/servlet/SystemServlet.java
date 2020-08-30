@@ -26,11 +26,13 @@ import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.Page;
 import azkaban.webapp.servlet.ProjectManagerServlet;
-import com.alibaba.fastjson.JSON;
+
 import com.google.common.base.Joiner;
+import com.google.gson.JsonObject;
 import com.google.inject.Injector;
 import com.webank.wedatasphere.schedulis.common.executor.DepartmentGroup;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
+import com.webank.wedatasphere.schedulis.common.utils.GsonUtils;
 import com.webank.wedatasphere.schedulis.system.entity.WebankDepartment;
 import com.webank.wedatasphere.schedulis.system.entity.WebankUser;
 import com.webank.wedatasphere.schedulis.system.entity.WtssUser;
@@ -271,7 +273,7 @@ public class SystemServlet extends LoginAbstractAzkabanServlet {
                             boolean containResult = arrayList.contains(proxyUser);
                             if (containResult || proxyUser.equalsIgnoreCase(wtssUser.getUsername())) {
 
-                                logger.error("wtssUser=" + JSON.toJSONString(wtssUser));
+                                logger.error("wtssUser=" + wtssUser.toString());
                                 addResult = 2;
 
                             } else {
@@ -288,7 +290,7 @@ public class SystemServlet extends LoginAbstractAzkabanServlet {
                                 proxyUser = wtssUser.getProxyUsers() + "," + proxyUser;
                                 addResult = this.systemManager.updateSystemUser(userId, password, roleId, proxyUser, departmentId);
                             } else {
-                                logger.error("wtssUser=" + JSON.toJSONString(wtssUser));
+                                logger.error("wtssUser=" + wtssUser.toString());
                                 addResult = 3;
                             }
                         }
@@ -296,7 +298,7 @@ public class SystemServlet extends LoginAbstractAzkabanServlet {
                         throw new SystemUserManagerException("代理用户不存在, 请检查数据是否完整.");
                     }
                 } else {
-                    logger.error("wtssUser=" + JSON.toJSONString(wtssUser));
+                    logger.error("wtssUser=" + wtssUser.toString());
                     addResult = 4;
                 }
 
@@ -1004,8 +1006,8 @@ public class SystemServlet extends LoginAbstractAzkabanServlet {
 
     private void ajaxAddDepartmentGroup(final HttpServletRequest req, final HttpServletResponse resp, final Session session, final HashMap<String, Object> ret) throws ServletException {
 
-        com.alibaba.fastjson.JSONObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
-        DepartmentGroup departmentGroup = com.alibaba.fastjson.JSONObject.toJavaObject(jsonObject, DepartmentGroup.class);
+        JsonObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
+        DepartmentGroup departmentGroup = GsonUtils.jsonToJavaObject(jsonObject, DepartmentGroup.class);
         Map<String, String> dataMap = loadSystemServletI18nData();
         //校验名字是否已存在
         if (this.systemManager.checkGroupNameIsExist(departmentGroup)) {
@@ -1029,8 +1031,8 @@ public class SystemServlet extends LoginAbstractAzkabanServlet {
 
 
     private void ajaxDeleteDepartmentGroup(final HttpServletRequest req, final HttpServletResponse resp, final Session session, final HashMap<String, Object> ret) throws ServletException {
-        com.alibaba.fastjson.JSONObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
-        DepartmentGroup departmentGroup = com.alibaba.fastjson.JSONObject.toJavaObject(jsonObject, DepartmentGroup.class);
+        JsonObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
+        DepartmentGroup departmentGroup = GsonUtils.jsonToJavaObject(jsonObject, DepartmentGroup.class);
         Map<String, String> dataMap = loadSystemServletI18nData();
         if (this.systemManager.groupIdIsExist(departmentGroup)) {
             ret.put("error", dataMap.get("checkGroup_2"));
@@ -1045,8 +1047,8 @@ public class SystemServlet extends LoginAbstractAzkabanServlet {
 
     private void ajaxUpdateDepartmentGroup(final HttpServletRequest req, final HttpServletResponse resp, final Session session, final HashMap<String, Object> ret) throws ServletException {
 
-        com.alibaba.fastjson.JSONObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
-        DepartmentGroup departmentGroup = com.alibaba.fastjson.JSONObject.toJavaObject(jsonObject, DepartmentGroup.class);
+        JsonObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
+        DepartmentGroup departmentGroup = GsonUtils.jsonToJavaObject(jsonObject, DepartmentGroup.class);
         Map<String, String> dataMap = loadSystemServletI18nData();
         if (this.systemManager.updateDepartmentGroup(departmentGroup)) {
             ret.put("success", dataMap.get("requestSuccess"));
@@ -1057,8 +1059,8 @@ public class SystemServlet extends LoginAbstractAzkabanServlet {
 
     private void ajaxFetchDepartmentGroupById(final HttpServletRequest req, final HttpServletResponse resp, final Session session, final HashMap<String, Object> ret) throws ServletException {
 
-        com.alibaba.fastjson.JSONObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
-        DepartmentGroup departmentGroup = com.alibaba.fastjson.JSONObject.toJavaObject(jsonObject, DepartmentGroup.class);
+        JsonObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
+        DepartmentGroup departmentGroup = GsonUtils.jsonToJavaObject(jsonObject, DepartmentGroup.class);
         DepartmentGroup dg = this.systemManager.getDepartmentGroupById(departmentGroup.getId());
         Map<String, String> dataMap = loadSystemServletI18nData();
         if (dg != null) {

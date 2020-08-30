@@ -22,7 +22,8 @@ import com.webank.wedatasphere.schedulis.jobtype.hiveutils.azkaban.HiveAction;
 import com.webank.wedatasphere.schedulis.jobtype.hiveutils.azkaban.HiveViaAzkabanException;
 import com.webank.wedatasphere.schedulis.jobtype.hiveutils.azkaban.Utils;
 import com.webank.wedatasphere.schedulis.jobtype.hiveutils.util.AzkabanJobPropertyDescription;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -37,8 +38,7 @@ import java.util.Properties;
  * directly or as a pointer to a file provided with workflow.
  */
 public class ExecuteHiveQuery implements HiveAction {
-  private final static Logger LOG = Logger
-      .getLogger("com.linkedin.hive.azkaban.hive.actions.ExecuteHiveQuery");
+  private final static Logger logger = LoggerFactory.getLogger("com.linkedin.hive.azkaban.hive.actions.ExecuteHiveQuery");
   @AzkabanJobPropertyDescription("Verbatim query to execute. Can also specify hive.query.nn where nn is a series of padded numbers, which will be executed in order")
   public static final String HIVE_QUERY = "hive.query";
   @AzkabanJobPropertyDescription("File to load query from.  Should be in same zip.")
@@ -67,7 +67,7 @@ public class ExecuteHiveQuery implements HiveAction {
     if (file == null)
       return null;
 
-    LOG.info("Attempting to read query from file: " + file);
+    logger.info("Attempting to read query from file: " + file);
 
     StringBuilder contents = new StringBuilder();
     BufferedReader br = null;
@@ -88,7 +88,7 @@ public class ExecuteHiveQuery implements HiveAction {
         try {
           br.close();
         } catch (IOException e) {
-          LOG.info("IOException in close io stream, caused by: " + e);
+          logger.info("IOException in close io stream, caused by: " + e);
         }
     }
 
@@ -102,7 +102,7 @@ public class ExecuteHiveQuery implements HiveAction {
     if (url == null)
       return null;
 
-    LOG.info("Attempting to retrieve query from URL: " + url);
+    logger.info("Attempting to retrieve query from URL: " + url);
 
     StringBuilder contents = new StringBuilder();
     BufferedReader br = null;
@@ -124,7 +124,7 @@ public class ExecuteHiveQuery implements HiveAction {
         try {
           br.close();
         } catch (IOException e) {
-          LOG.info("IOException in close io stream, caused by: " + e);
+          logger.info("IOException in close io stream, caused by: " + e);
         }
     }
 
@@ -152,16 +152,16 @@ public class ExecuteHiveQuery implements HiveAction {
           + HIVE_QUERY_URL + " in properties, not more than one. Exiting.");
 
     if (singleLine != null) {
-      LOG.info("Returning " + HIVE_QUERY + " = " + singleLine);
+      logger.info("Returning " + HIVE_QUERY + " = " + singleLine);
       return singleLine;
     } else if (multiLine != null) {
-      LOG.info("Returning consolidated " + HIVE_QUERY + ".nn = " + multiLine);
+      logger.info("Returning consolidated " + HIVE_QUERY + ".nn = " + multiLine);
       return multiLine;
     } else if (queryFromFile != null) {
-      LOG.info("Returning query from file " + queryFromFile);
+      logger.info("Returning query from file " + queryFromFile);
       return queryFromFile;
     } else {
-      LOG.info("Returning query from URL " + queryFromURL);
+      logger.info("Returning query from URL " + queryFromURL);
       return queryFromURL;
     }
   }

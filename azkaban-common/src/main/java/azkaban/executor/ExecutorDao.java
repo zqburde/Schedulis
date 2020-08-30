@@ -25,12 +25,13 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @Singleton
 public class ExecutorDao {
 
-  private static final Logger logger = Logger.getLogger(ExecutorDao.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExecutorDao.class);
   private final DatabaseOperator dbOperator;
 
   @Inject

@@ -16,6 +16,9 @@
 
 package azkaban.utils;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -32,7 +35,6 @@ import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMultipart;
-import org.apache.log4j.Logger;
 
 public class EmailMessage {
 
@@ -40,7 +42,7 @@ public class EmailMessage {
   private static int _mailTimeout = 10000;
   private static int _connectionTimeout = 10000;
   private static long _totalAttachmentMaxSizeInByte = 1024 * 1024 * 1024; // 1
-  private final Logger logger = Logger.getLogger(EmailMessage.class);
+  private static final Logger logger = LoggerFactory.getLogger(EmailMessage.class);
   private final List<String> _toAddress = new ArrayList<>();
   private final int _mailPort;
   private final ArrayList<BodyPart> _attachments = new ArrayList<>();

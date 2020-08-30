@@ -35,14 +35,15 @@ import org.apache.hadoop.mapred.Reporter;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.hadoop.mapred.FileOutputFormat;
 import org.apache.hadoop.mapred.TextOutputFormat;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import com.webank.wedatasphere.schedulis.jobtype.javautils.AbstractHadoopJob;
 import azkaban.utils.Props;
 
 public class WordCount extends AbstractHadoopJob {
 
-  private static final Logger logger = Logger.getLogger(WordCount.class);
+  private static final Logger logger = LoggerFactory.getLogger(WordCount.class);
 
   private final String inputPath;
   private final String outputPath;

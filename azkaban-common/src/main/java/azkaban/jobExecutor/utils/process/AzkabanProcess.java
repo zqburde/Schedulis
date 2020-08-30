@@ -29,8 +29,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
 
 /**
  * An improved version of java.lang.Process.
@@ -103,11 +102,11 @@ public class AzkabanProcess {
       final LogGobbler outputGobbler =
           new LogGobbler(
               new InputStreamReader(this.process.getInputStream(), StandardCharsets.UTF_8),
-              this.logger, Level.INFO, 30);
+              this.logger, "INFO", 30);
       final LogGobbler errorGobbler =
           new LogGobbler(
               new InputStreamReader(this.process.getErrorStream(), StandardCharsets.UTF_8),
-              this.logger, Level.ERROR, 30);
+              this.logger, "ERROR", 30);
 
       outputGobbler.start();
       errorGobbler.start();
