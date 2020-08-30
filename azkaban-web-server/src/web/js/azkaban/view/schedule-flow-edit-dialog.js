@@ -302,29 +302,35 @@ azkaban.FlowScheduleDialogView = Backbone.View.extend({
     };
     var self = this;
     var successHandler = function (data) {
-      console.log("data fetched");
-      graphModel.addFlow(data);
+      if (data.error) {
+        $('#user-operator-schedule-flow-permit-panel').modal();
+        $('#title-user-operator-schedule-flow-permit').text(wtssI18n.view.scheduleConfigPermission);
+        $('#body-user-operator-schedule-flow-permit').html(data.error);
+      } else {
+        console.log("data fetched");
+        graphModel.addFlow(data);
 
-      if (exgraph) {
-        self.assignInitialStatus(data, exgraph);
-      }
+        if (exgraph) {
+          self.assignInitialStatus(data, exgraph);
+        }
 
-      // Auto disable jobs that are finished.
-      disableFinishedJobs(data);
-      executingSvgGraphView = new azkaban.SvgGraphView({
-        el: $('#schedule-flow-executing-graph'),
-        model: graphModel,
-        render: false,
-        rightClick: {
-          "node": expanelNodeClickCallback,
-          "edge": expanelEdgeClickCallback,
-          "graph": expanelGraphClickCallback
-        },
-        tooltipcontainer: "#schedule-svg-div-custom"
-      });
+        // Auto disable jobs that are finished.
+        disableFinishedJobs(data);
+        executingSvgGraphView = new azkaban.SvgGraphView({
+          el: $('#schedule-flow-executing-graph'),
+          model: graphModel,
+          render: false,
+          rightClick: {
+            "node": expanelNodeClickCallback,
+            "edge": expanelEdgeClickCallback,
+            "graph": expanelGraphClickCallback
+          },
+          tooltipcontainer: "#schedule-svg-div-custom"
+        });
 
-      if (callback) {
-        callback.call(this);
+        if (callback) {
+          callback.call(this);
+        }
       }
     };
     $.get(requestURL, requestData, successHandler, "json");

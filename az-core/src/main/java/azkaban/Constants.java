@@ -17,8 +17,6 @@
 package azkaban;
 
 import java.time.Duration;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Constants used in configuration files or shared among classes.
@@ -37,7 +35,6 @@ import java.util.concurrent.TimeUnit;
  * azkaban.job.some_key</p>
  */
 public class Constants {
-
 
   public static final String FLOW_PAUSED_MAX_TIME_MS = "flow.paused.max.time.ms";
 
@@ -162,6 +159,9 @@ public class Constants {
     public static final String METRICS_SERVER_URL = "azkaban.metrics.server.url";
 
     public static final String IS_METRICS_ENABLED = "azkaban.is.metrics.enabled";
+
+    public static final String IP_WHITELIST_ENABLED = "azkaban.ip.whiteList.enabled";
+    public static final String IP_WHITELIST = "azkaban.ip.whiteList";
 
     // User facing web server configurations used to construct the user facing server URLs. They are useful when there is a reverse proxy between Azkaban web servers and users.
     // enduser -> myazkabanhost:443 -> proxy -> localhost:8081

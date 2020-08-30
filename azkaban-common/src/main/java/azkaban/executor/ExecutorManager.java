@@ -23,6 +23,7 @@ import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
 import com.webank.wedatasphere.schedulis.common.jobExecutor.utils.SystemBuiltInParamJodeTimeUtils;
 import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
 
+import com.webank.wedatasphere.schedulis.common.utils.JwtTokenUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -1086,6 +1087,17 @@ public class ExecutorManager extends EventHandler implements
     }
   }
 
+  private String getToken(){
+    String token = "";
+    try {
+      String dss_secret = azkProps.getString("dss.secret", "dws-wtss|WeBankBDPWTSS&DWS@2019");
+      token = JwtTokenUtils.getToken(null,false,dss_secret,300);
+    }catch (RuntimeException e){
+      logger.error("getToken failed when execute httppost ,caused by {}",e);
+    }
+    return token;
+  }
+
   // FIXME You can close running tasks for execution.
   @Override
   public String setJobDisabled(ExecutableFlow exFlow, String userId, String request) throws Exception {
@@ -1097,8 +1109,9 @@ public class ExecutorManager extends EventHandler implements
                 + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
                 + " isn't running.");
       }
+
       String url = "http://" + pair.getFirst().getExecutor().get().getHost() + ":" + pair.getFirst().getExecutor().get().getPort() + "/executor?"
-              + "action=" + ConnectorParams.DISABLE_JOB_ACTION + "&execid=" + exFlow.getExecutionId() + "&user=" + userId;
+              + "action=" + ConnectorParams.DISABLE_JOB_ACTION + "&execid=" + exFlow.getExecutionId() + "&user=" + userId + "&token=" + getToken();
 
       return this.apiGateway.httpPost(url, request);
     }
@@ -1115,8 +1128,9 @@ public class ExecutorManager extends EventHandler implements
                 + exFlow.getExecutionId() + " of flow " + exFlow.getFlowId()
                 + " isn't running.");
       }
+
       String url = "http://" + pair.getFirst().getExecutor().get().getHost() + ":" + pair.getFirst().getExecutor().get().getPort() + "/executor?"
-              + "action=" + ConnectorParams.RETRY_FAILED_JOBS_ACTION + "&execid=" + exFlow.getExecutionId() + "&user=" + userId;
+              + "action=" + ConnectorParams.RETRY_FAILED_JOBS_ACTION + "&execid=" + exFlow.getExecutionId() + "&user=" + userId + "&token=" + getToken();
 
       return this.apiGateway.httpPost(url, request);
     }
@@ -1134,11 +1148,13 @@ public class ExecutorManager extends EventHandler implements
                 + " isn't running.");
       }
       String url = "http://" + pair.getFirst().getExecutor().get().getHost() + ":" + pair.getFirst().getExecutor().get().getPort() + "/executor?"
-              + "action=" + ConnectorParams.SKIP_FAILED_JOBS_ACTION + "&execid=" + exFlow.getExecutionId() + "&user=" + userId;
+              + "action=" + ConnectorParams.SKIP_FAILED_JOBS_ACTION + "&execid=" + exFlow.getExecutionId() + "&user=" + userId + "&token=" + getToken();
 
       return this.apiGateway.httpPost(url, request);
     }
   }
+
+
 
   @Override
   public void pauseFlow(final ExecutableFlow exFlow, final String userId)
