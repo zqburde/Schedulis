@@ -225,9 +225,9 @@ public class EventChecker {
 //		p.put("msg.body","msg.body");
 
 		p.put("msg.eventchecker.jdo.option.name","msg");
-		p.put("msg.eventchecker.jdo.option.url","jdbc:mysql://127.0.0.1:3306/database?useUnicode=true&characterEncoding=UTF-8");
-		p.put("msg.eventchecker.jdo.option.username","root");
-		p.put("msg.eventchecker.jdo.option.password","YmRwI3Jvb3RAMjAxOQ==");
+		p.put("msg.eventchecker.jdo.option.url","jdbc:mysql://locahost:port/database?useUnicode=true&characterEncoding=UTF-8");
+		p.put("msg.eventchecker.jdo.option.username","username");
+		p.put("msg.eventchecker.jdo.option.password","password");
 
 		EventChecker ec = new EventChecker("AA",p);
 		ec.run();
