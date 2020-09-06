@@ -11,8 +11,8 @@ v_hosts=/data/change/client/hdp_client.hosts${UUID}
 echo >$v_hosts
 cat >$v_hosts <<EOF
 [all:vars]
-ansible_ssh_port=36000
-ansible_ssh_pass=passwd
+ansible_ssh_port=[#ssh_port]
+ansible_ssh_pass=[#ssh_password]
 
 [all_nodes]
 EOF

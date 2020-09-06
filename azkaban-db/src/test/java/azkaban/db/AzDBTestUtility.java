@@ -56,11 +56,11 @@ public class AzDBTestUtility {
 
     public EmbeddedMysqlDataSource() {
       super();
-      final String url = "jdbc:mysql://127.0.0.1:3306/database?useUnicode=true&characterEncoding=UTF-8";
+      final String url = "jdbc:mysql://localhost:port/database?useUnicode=true&characterEncoding=UTF-8";
       setDriverClassName("com.mysql.jdbc.Driver");
       setUrl(url);
-      setUsername("bdpscheduler");
-      setPassword("bdp@2017");
+      setUsername("username");
+      setPassword("password");
     }
 
     @Override
