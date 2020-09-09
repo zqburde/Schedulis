@@ -261,14 +261,14 @@ public class WebUtils {
    * @param timezone is always UTC (after 3.1.0)
    * @return the First Scheduled DateTime to run this flow.
    */
-  public static DateTime getNextCronRuntime(final long scheduleTime, final DateTimeZone timezone,
+  public static Optional<DateTime> getNextCronRuntime(final long scheduleTime, final DateTimeZone timezone,
       final CronExpression ce) {
 
     Date date = new DateTime(scheduleTime).withZone(timezone).toDate();
     if (ce != null) {
       date = ce.getNextValidTimeAfter(date);
     }
-    return new DateTime(date);
+    return date == null ? Optional.empty() : Optional.of(new DateTime(date));
   }
 
 }
