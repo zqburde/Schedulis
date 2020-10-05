@@ -100,7 +100,7 @@ function javaOption(){
 
 function start(){
     LOG INFO "starting AzkabanWebServer..."
-    java $AZKABAN_OPTS $JAVA_LIB_PATH -cp $CLASSPATH azkaban.webapp.AzkabanWebServer -conf $conf $cycle_stop $@ >> $logFile 2>&1 &
+    java $AZKABAN_OPTS $JAVA_LIB_PATH -cp $CLASSPATH azkaban.webapp.AzkabanWebServer -conf $conf $@ >> $logFile 2>&1 &
     echo $! > $azkaban_dir/currentpid
     sleep 3s
     processName=`jps|grep AzkabanWebServer`

@@ -70,7 +70,7 @@
         <velocity.version>1.7</velocity.version>
         <velocity.tools.version>2.0</velocity.tools.version>
         <grizzly.version>3.0.0</grizzly.version>
-        <opendjcore.version>3.0.0</opendjcore.version>
+        <opendjcore.version>4.4.7</opendjcore.version>
         <log4j-api.version>2.13.3</log4j-api.version>
         <poi.version>4.1.2</poi.version>
         <c3p0.version>0.9.5.5</c3p0.version>
@@ -144,7 +144,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.forgerock.opendj</groupId>
+            <groupId>org.openidentityplatform.opendj</groupId>
             <artifactId>opendj-core</artifactId>
             <version>${opendjcore.version}</version>
         </dependency>
@@ -221,6 +221,13 @@
                     <target>1.8</target>
                     <testSource>1.8</testSource>
                     <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <includeSystemScope>true</includeSystemScope>
                 </configuration>
             </plugin>
             <plugin>
