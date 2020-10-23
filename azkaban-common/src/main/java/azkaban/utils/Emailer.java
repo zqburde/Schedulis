@@ -136,13 +136,19 @@ public class Emailer extends AbstractMailer implements Alerter {
   }
 
   @Override
-  public void alertOnIMSRegistStart(ExecutableFlow exflow,Map<String, Props> sharedProps,Logger logger) throws Exception { }
+  public void alertOnIMSRegistStart(ExecutableFlow exflow,Map<String, Props> sharedProps,Logger logger) throws Exception {
+    logger.warn("not implement.");
+  }
 
   @Override
-  public void alertOnIMSRegistFinish(ExecutableFlow exflow,Map<String, Props> sharedProps,Logger logger) throws Exception { }
+  public void alertOnIMSRegistFinish(ExecutableFlow exflow,Map<String, Props> sharedProps,Logger logger) throws Exception {
+    logger.warn("not implement.");
+  }
 
   @Override
-  public void alertOnIMSRegistError(ExecutableFlow exflow,Map<String, Props> sharedProps,Logger logger) throws Exception { }
+  public void alertOnIMSRegistError(ExecutableFlow exflow,Map<String, Props> sharedProps,Logger logger) throws Exception {
+    logger.warn("not implement.");
+  }
 
   @Override
   public void alertOnSuccess(final ExecutableFlow flow) {
@@ -404,17 +410,17 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   @Override
   public void alertOnFlowPaused(ExecutableFlow exflow, String nodePath) throws Exception {
-    throw new Exception("undefine...");
+    logger.warn("not implement.");
   }
 
   @Override
   public void alertOnFlowPausedSla(SlaOption slaOption, ExecutableFlow exflow, String nodePath) throws Exception {
-    throw new Exception("undefine...");
+    logger.warn("not implement.");
   }
 
   @Override
   public void alertOnCycleFlowInterrupt(ExecutableFlow flow, ExecutionCycle cycleFlow, List<String> emails, String alertLevel, String... extraReasons) throws Exception {
-
+    logger.warn("not implement.");
   }
 
 }

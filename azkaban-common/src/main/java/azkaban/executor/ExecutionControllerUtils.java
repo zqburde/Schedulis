@@ -109,7 +109,7 @@ public class ExecutionControllerUtils {
       }
       if (options.getFlowParameters().containsKey("alert.type")) {
         final String alertType = options.getFlowParameters().get("alert.type");
-        final Alerter alerter = alerterHolder.get(alertType);
+        final Alerter alerter = alerterHolder.get(alertType) == null? alerterHolder.get("default") : alerterHolder.get(alertType);
         if (alerter != null) {
           try {
             // FIXME Job stream failure alarm, relying on third-party services.
@@ -135,7 +135,7 @@ public class ExecutionControllerUtils {
       }
       if (options.getFlowParameters().containsKey("alert.type")) {
         final String alertType = options.getFlowParameters().get("alert.type");
-        final Alerter alerter = alerterHolder.get(alertType);
+        final Alerter alerter = alerterHolder.get(alertType) == null? alerterHolder.get("default"): alerterHolder.get(alertType);
         if (alerter != null) {
           try {
             // FIXME The job stream runs successfully and relies on third-party services.
@@ -178,7 +178,7 @@ public class ExecutionControllerUtils {
 
       if (options.getFlowParameters().containsKey("alert.type")) {
         final String alertType = options.getFlowParameters().get("alert.type");
-        final Alerter alerter = alerterHolder.get(alertType);
+        final Alerter alerter = alerterHolder.get(alertType) == null? alerterHolder.get("default"): alerterHolder.get(alertType);
         if (alerter != null) {
           try {
             // FIXME Job stream failure alarm, relying on third-party services.
