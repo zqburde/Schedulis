@@ -150,6 +150,7 @@ public class Emailer extends AbstractMailer implements Alerter {
     logger.warn("not implement.");
   }
 
+
   @Override
   public void alertOnSuccess(final ExecutableFlow flow) {
     final EmailMessage message = this.messageCreator.createMessage();
@@ -410,17 +411,23 @@ public class Emailer extends AbstractMailer implements Alerter {
 
   @Override
   public void alertOnFlowPaused(ExecutableFlow exflow, String nodePath) throws Exception {
+
     logger.warn("not implement.");
+
   }
 
   @Override
   public void alertOnFlowPausedSla(SlaOption slaOption, ExecutableFlow exflow, String nodePath) throws Exception {
+
     logger.warn("not implement.");
+
   }
 
   @Override
   public void alertOnCycleFlowInterrupt(ExecutableFlow flow, ExecutionCycle cycleFlow, List<String> emails, String alertLevel, String... extraReasons) throws Exception {
+
     logger.warn("not implement.");
+
   }
 
 }

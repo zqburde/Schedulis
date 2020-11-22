@@ -328,6 +328,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       // 注册并上报作业流开始
       Alerter mailAlerter = ServiceProvider.SERVICE_PROVIDER.getInstance(AlerterHolder.class).get("email");
       if(mailAlerter == null){
+
         mailAlerter = ServiceProvider.SERVICE_PROVIDER.getInstance(AlerterHolder.class).get("default");
       }
       mailAlerter.alertOnIMSRegistStart(this.flow, this.sharedProps, logger);
@@ -344,7 +345,6 @@ public class FlowRunner extends EventHandler implements Runnable {
         mailAlerter = ServiceProvider.SERVICE_PROVIDER.getInstance(AlerterHolder.class).get("default");
       }
       mailAlerter.alertOnIMSRegistFinish(this.flow, this.sharedProps, this.logger);
-
     }catch (Exception e) {
       logger.error("The flow report IMS faild in the end {} "+e);
     }
@@ -2312,6 +2312,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   private void handelJobFinishAlter(JobRunner runner){
     final ExecutableNode node = runner.getNode();
     logger.info("SLA 定时任务告警处理开始,当前节点状态为 {} "+node.getStatus());
+
 
     Alerter mailAlerter = ServiceProvider.SERVICE_PROVIDER.getInstance(AlerterHolder.class).get("email") == null?
         ServiceProvider.SERVICE_PROVIDER.getInstance(AlerterHolder.class).get("default"):

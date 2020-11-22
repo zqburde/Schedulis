@@ -30,11 +30,13 @@ import azkaban.utils.Props;
 
 public interface Alerter {
 
+
   void alertOnSuccess(ExecutableFlow exflow) throws Exception;
 
   void alertOnError(ExecutableFlow exflow, String... extraReasons) throws Exception;
 
   void alertOnFirstError(ExecutableFlow exflow) throws Exception;
+
 
   void alertOnSla(SlaOption slaOption, String slaMessage) throws Exception;
 
@@ -47,6 +49,7 @@ public interface Alerter {
   void alertOnIMSRegistFinish(ExecutableFlow exflow,Map<String, Props> sharedProps,Logger logger) throws Exception;
 
   void alertOnIMSRegistError(ExecutableFlow exflow,Map<String, Props> sharedProps,Logger logger) throws Exception;
+
 
   void alertOnFinishSla(SlaOption slaOption, ExecutableFlow exflow) throws Exception;
 

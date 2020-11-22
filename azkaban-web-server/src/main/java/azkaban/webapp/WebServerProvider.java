@@ -32,8 +32,10 @@ import org.slf4j.Logger;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
 import java.util.ArrayList;
 import java.util.List;
+
 
 
 public class WebServerProvider implements Provider<Server> {
@@ -134,6 +136,7 @@ public class WebServerProvider implements Provider<Server> {
     SslContextFactory sslContextFactory = new SslContextFactory();
     sslContextFactory.setKeyStorePath(this.props.getString("jetty.keystore"));
     sslContextFactory.setKeyManagerPassword(this.props.getString("jetty.password"));
+
     sslContextFactory.setKeyStorePassword(this.props.getString("jetty.keypassword"));
     sslContextFactory.setTrustStorePath(this.props.getString("jetty.truststore"));
     sslContextFactory.setTrustStorePassword(this.props.getString("jetty.trustpassword"));
@@ -143,6 +146,7 @@ public class WebServerProvider implements Provider<Server> {
     if (cipherSuitesToExclude != null && !cipherSuitesToExclude.isEmpty()) {
       sslContextFactory.setExcludeCipherSuites(cipherSuitesToExclude.toArray(new String[cipherSuitesToExclude.size()]));
     }
+
 
     HttpConfiguration httpConfig = new HttpConfiguration();
     setHeaderBufferSize(httpConfig);
