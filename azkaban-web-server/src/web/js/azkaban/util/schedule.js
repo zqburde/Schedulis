@@ -152,7 +152,6 @@ function switchScheduleClick (index, scheduleId, projectName, flowName, cronExpr
       }
     }
   });
-
 }
 
 $(function () {

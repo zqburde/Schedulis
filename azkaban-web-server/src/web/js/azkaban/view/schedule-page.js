@@ -196,6 +196,12 @@ azkaban.ScheduleListView = Backbone.View.extend({
       $(tdCronExpression).text(scheduleList[i].cronExpression ? scheduleList[i].cronExpression : wtssI18n.view.notApplicable);
       row.appendChild(tdCronExpression);
 
+      //组装 是否调度有效
+      var scheduleActive = document.createElement("td");
+      var currentSchActiveFlag = scheduleList[i].otherOption.activeFlag;
+      $(scheduleActive).text(currentSchActiveFlag);
+      row.appendChild(scheduleActive);
+
       //组装 是否是有效工作流
       var validFlow = document.createElement("td");
       $(validFlow).text(scheduleList[i].otherOption.validFlow ? true : false);
@@ -214,7 +220,11 @@ azkaban.ScheduleListView = Backbone.View.extend({
 
       //组装 是否设置告警
       var tdSlaOptions = document.createElement("td");
-      $(tdSlaOptions).text(scheduleList[i].slaOptions ? true : false);
+      var slaConfFlag = false;
+      if ((scheduleList[i].slaOptions) && (scheduleList[i].slaOptions.length != 0)) {
+        slaConfFlag = true;
+      }
+      $(tdSlaOptions).text(slaConfFlag);
       row.appendChild(tdSlaOptions);
 
       //组装 删除定时调度按钮
@@ -241,6 +251,19 @@ azkaban.ScheduleListView = Backbone.View.extend({
       $(editSchedBtn).text(schConfig);
       tdEditSchedBtn.appendChild(editSchedBtn);
       row.appendChild(tdEditSchedBtn);
+
+      //组装 开启调度/关闭调度
+      var tdSwitchSchedBtn = document.createElement("td");
+      var switchSchedBtn = document.createElement("button");
+      $(switchSchedBtn).attr("class", "btn btn-success").attr("type", "button")
+          .attr("onclick", "switchScheduleClick(" + i + "," + scheduleList[i].scheduleId + ",'" + scheduleList[i].projectName + "','" + scheduleList[i].flowName + "','" + scheduleList[i].cronExpression + "')");
+      if (currentSchActiveFlag) {
+        $(switchSchedBtn).text(wtssI18n.view.inactiveSchedule);
+      } else {
+        $(switchSchedBtn).text(wtssI18n.view.activeSchedule);
+      }
+      tdSwitchSchedBtn.appendChild(switchSchedBtn);
+      row.appendChild(tdSwitchSchedBtn);
 
       scheduleTbody.append(row);
 

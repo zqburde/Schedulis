@@ -212,6 +212,11 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     final List<Schedule> schedules = new ArrayList<>();
     for (final Trigger t : triggers) {
       this.lastUpdateTime = Math.max(this.lastUpdateTime, t.getLastModifyTime());
+
+      // 避免actions为0,抛异常报错
+      if (t.getActions().size() == 0) {
+        continue;
+      }
       final Schedule s = triggerToSchedule(t);
       schedules.add(s);
       logger.info("loaded schedule for " + s.getProjectName() + " (project_ID: " + s.getProjectId() + ")");

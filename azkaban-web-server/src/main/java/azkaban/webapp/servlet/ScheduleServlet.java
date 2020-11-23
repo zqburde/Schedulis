@@ -125,6 +125,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 	  // FIXME Added interface to get information about all scheduled tasks.
     } else if(ajaxName.equals("ajaxFetchAllSchedules")){
       ajaxFetchAllSchedules(req, ret, session);
+    } else if(ajaxName.equals("setScheduleActiveFlag")){
+      ajaxSetScheduleActiveFlag(req, ret, session.getUser());
     }
 
     if (ret != null) {
@@ -271,6 +273,16 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       }
 
       sched.setSlaOptions(slaOptions);
+
+      Map<String, Object> otherOptions = sched.getOtherOption();
+      Boolean activeFlag = (Boolean)otherOptions.get("activeFlag");
+      logger.info("setSla, current flow schedule[" + scheduleId + "] active switch status, flowLevel=" + activeFlag);
+      if (null == activeFlag) {
+        activeFlag = true;
+      }
+      otherOptions.put("activeFlag", activeFlag);
+      sched.setOtherOption(otherOptions);
+
       this.scheduleManager.insertSchedule(sched);
       this.projectManager.postProjectEvent(project, EventType.SLA,
           user.getUserId(), "SLA for flow " + sched.getFlowName()
@@ -408,6 +420,16 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
                 + " doesn't exist");
         return;
       }
+
+      // 为历史数据初始化
+      Map<String, Object> otherOption = sched.getOtherOption();
+      Boolean activeFlag = (Boolean)otherOption.get("activeFlag");
+      logger.info("Load SlaInfo, current flow schedule[" + scheduleId + "] active switch status, flowLevel=" + activeFlag);
+      if (null == activeFlag) {
+        activeFlag = true;
+      }
+      otherOption.put("activeFlag", activeFlag);
+      sched.setOtherOption(otherOption);
 
       final Project project =
           getProjectAjaxByPermission(ret, sched.getProjectId(), user, Type.READ);
@@ -685,6 +707,46 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     ret.put("schedules", subList);
   }
 
+  private void ajaxSetScheduleActiveFlag(final HttpServletRequest req,
+                                         final HashMap<String, Object> ret, final User user) throws ServletException {
+
+    final int scheduleId = getIntParam(req, "scheduleId");
+    final String activeFlagParam = getParam(req, "activeFlag");
+    Boolean activeFlag = Boolean.valueOf(activeFlagParam);
+    try {
+      final Schedule schedule = this.scheduleManager.getSchedule(scheduleId);
+
+      if (schedule != null) {
+        final Map<String, Object> jsonObj = new HashMap<>();
+        jsonObj.put("scheduleId", Integer.toString(schedule.getScheduleId()));
+        jsonObj.put("submitUser", schedule.getSubmitUser());
+        jsonObj.put("firstSchedTime", utils.formatDateTime(schedule.getFirstSchedTime()));
+        jsonObj.put("nextExecTime", utils.formatDateTime(schedule.getNextExecTime()));
+        jsonObj.put("period", utils.formatPeriod(schedule.getPeriod()));
+        jsonObj.put("cronExpression", schedule.getCronExpression());
+        jsonObj.put("executionOptions", HttpRequestUtils.parseWebOptions(schedule.getExecutionOptions()));
+
+        Map<String, Object> otherOption = schedule.getOtherOption();
+        logger.info("SetScheduleActiveFlag, current flow schedule[" + scheduleId + "] active switch status is set to flowLevel=" + activeFlag);
+        otherOption.put("activeFlag", activeFlag);
+        schedule.setOtherOption(otherOption);
+
+        jsonObj.put("otherOptions", otherOption);
+
+        jsonObj.put("projectName", schedule.getProjectName());
+        jsonObj.put("flowId", schedule.getFlowName());
+
+        // 更新缓存
+        scheduleManager.insertSchedule(schedule);
+
+        ret.put("schedule", jsonObj);
+      }
+    } catch (final ScheduleManagerException e) {
+      logger.error(e.getMessage(), e);
+      ret.put("error", e);
+    }
+  }
+
   /**
    * 匹配查询参数
    * @param searchTerm
@@ -734,10 +796,23 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     int startIndex = (pageNum-1) * pageSize;
     int endIndex = pageNum * pageSize;
     try {
+
+      // 对于旧的定时调度的初始化
+      List<Schedule> scheduleList = schedules.stream().map(schedule -> {
+        Map<String, Object> otherOption = schedule.getOtherOption();
+        Object activeFlag = otherOption.get("activeFlag");
+        if (null == activeFlag) {
+          logger.info("schedule activeFlag is null, current flow scheduleId=" + schedule.getScheduleId());
+          otherOption.put("activeFlag", true);
+          schedule.setOtherOption(otherOption);
+        }
+        return schedule;
+      }).collect(Collectors.toList());
+
       if(endIndex <= total) {
-        list = schedules.subList((pageNum - 1) * pageSize, pageNum * pageSize);
+        list = scheduleList.subList((pageNum - 1) * pageSize, pageNum * pageSize);
       } else if(startIndex < total){
-        list = schedules.subList((pageNum - 1) * pageSize, total);
+        list = scheduleList.subList((pageNum - 1) * pageSize, total);
       }
     } catch (Exception e){
       logger.error("截取schedule list失败 " + e);
@@ -1167,6 +1242,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       jobRetryList.add(jobOption);
     }
     otherOptions.put("jobFailedRetryOptions", jobRetryList);
+
+    // 初始化为激活状态
+    otherOptions.put("activeFlag", true);
 
     //设置失败跳过配置
     Map<String, String> jobSkipFailedSettings = getParamGroup(req, "jobSkipFailedOptions");
