@@ -23,6 +23,9 @@ import azkaban.executor.ExecutableFlow;
 import azkaban.executor.ExecutorLoader;
 import azkaban.sla.SlaOption;
 import azkaban.trigger.TriggerAction;
+
+import azkaban.utils.Emailer;
+
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -99,13 +102,18 @@ public class SlaAlertAction implements TriggerAction {
     final Map<String, Object> alert = this.slaOption.getInfo();
     if (alert.containsKey(SlaOption.ALERT_TYPE)) {
       final String alertType = (String) alert.get(SlaOption.ALERT_TYPE);
-      final Alerter alerter = this.alerters.get(alertType);
+
+      final Alerter alerter = this.alerters.get(alertType) == null? this.alerters.get("default"): this.alerters.get(alertType);
       if (alerter != null) {
         try {
           final ExecutableFlow flow = this.executorLoader.fetchExecutableFlow(this.execId);
-//          alerter.alertOnSla(this.slaOption, SlaOption.createSlaMessage(this.slaOption, flow));
-          // FIXME Job flow event alerts, relying on third-party services.
-          alerter.alertOnSla(this.slaOption, flow);
+          if(alerter instanceof Emailer) {
+            alerter.alertOnSla(this.slaOption, SlaOption.createSlaMessage(this.slaOption, flow));
+          } else {
+            // FIXME Job flow event alerts, relying on third-party services.
+            alerter.alertOnSla(this.slaOption, flow);
+          }
+
         } catch (final Exception e) {
           e.printStackTrace();
           logger.error("Failed to alert by " + alertType);

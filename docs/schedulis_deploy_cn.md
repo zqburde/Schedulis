@@ -31,6 +31,7 @@ HA 部署模式，即多个 WebServer 组合一个及以上 ExecutorServer 的�
 2. 下载jobtype插件的依赖和配置，链接: https://pan.baidu.com/s/1V0pyhzwRCNdVgDhkNYWUhQ 提取码: hcnk ；（由于文件大小较大，所以放在网盘进行管理）
 3. 进入项目文件的根目录下，将第二步中下载的jobtypes文件解压后，将整个jobtypes文件夹放入项目module（azkaban-jobtyope）的根目录，然后使用 Maven 来编译打包整个项目 ```mvn clean install -Dmaven.test.skip=true```    
 待整个项目编译打包成功后，用户可以在这两个服务(azkaban-web-server 和 azkaban-exec-server)各自的 target 目录下找到相应的 .ZIP 安装包(schedulis_***_web.zip 和 schedulis_***_exec.zip)。<font color="red">这里需要注意：打包完成后一定要确认安装包内是否有plugins目录，如发现安装包没有plugins，或者plugins为空，则分别进入 WebServer 和 ExecServer 目录，为它们单独再次编译即可,如果没有打包进来则无法使用插件</font>。
+
 4. 将以下文件复制到需要部署的 Executor 或者 WebServer 服务器:    
     - Executor 或者 WebServer 安装包 
     - 项目文件根目录下的 bin/construct 目录中的数据库初始化脚本 hdp\_wtss\_deploy\_script.sql    
@@ -55,6 +56,7 @@ executor1_hostname=1
 executor2_hostname=2
 executor3_hostname=3
 ```
+
 其中executor1_hostname，executor2_hostname，executor3_hostname 为Executor节点所在机器的真实主机名。
 
 ### 2. 初始化数据库
@@ -88,7 +90,9 @@ sudo chown root execute-as-user
 sudo chmod 6050 execute-as-user
 ```
 
+
 #### plugins/jobtypes/commonprivate.properties
+
 此配置文件存放于 ExecServer 安装包下的 plugins/jobtypes 目录下   
 此配置文件主要设置程序启动所需要加载的一些 lib 和 classpath
 
@@ -105,7 +109,9 @@ azkaban.native.lib=/appcom/Install/AzkabanInstall/wtss-exec/lib
 
 ```
 
+
 #### plugins/jobtypes/common.properties
+
 此配置文件存放于 ExecServer 安装包下的 plugins/jobtypes 目录下    
 此配置文件主要是设置 DataChecker 和 EventChecker 插件的数据库地址，如不需要这两个插件可不用配置
 ```
@@ -121,15 +127,19 @@ msg.eventchecker.jdo.option.url=jdbc:mysql://host:3306/db_name?useUnicode=true&c
 msg.eventchecker.jdo.option.username=username
 msg.eventchecker.jdo.option.password=password
 
+
 #此部分依赖于第三方脱敏服务mask，暂未开源，将配置写为和job类型一样即可（密码用 base64 加密） 
+
 bdp.datachecker.jdo.option.name="bdp"
 bdp.datachecker.jdo.option.url=jdbc:mysql://host:3306/db_name?useUnicode=true&amp;characterEncoding=UTF-8
 bdp.datachecker.jdo.option.username=username
 bdp.datachecker.jdo.option.password=password
 
+
 ```
 
 #### conf/azkaban.properties
+
 此配置文件是 ExecServer 的核心配置文件， 该配置文件存放在 ExecServer 安装包下的 conf 目录下    
 
 ```
@@ -156,7 +166,9 @@ azkaban.webserver.url=http://webserver_ip:webserver_port
 
 ```
 
+
 #### plugins/alerter/WeBankIMS/conf/plugin.properties
+
 此配置文件存放在 ExecServer 安装包下的 plugins/alerter/WeBankIMS/conf 目录下    
 该配置文件主要是设置 Executor 告警插件地址， 请用户基于自己公司的告警系统来设置    
 此部分依赖于第三方告警服务，如不需要可跳过配置
@@ -172,7 +184,9 @@ alarm.reciver=root
 alarm.toEcc=0
 ```
 
+
 #### conf/global.properties
+
 该配置文件存放在 ExecServer 安装包下的 conf 目录下，该配置文件主要存放一些 Executor 的全局属性
 ```
 #azkaban.native.lib，执行项目的 lib 目录，请修改成本机解压后的 ExecServer 安装包下 lib 的所在路径
@@ -180,14 +194,18 @@ execute.as.user=true
 azkaban.native.lib=/appcom/Install/AzkabanInstall/wtss-exec/lib
 
 ```
+
 #### plugins/jobtypes/linkis/private.properties
+
 该配置文件存放在 ExecServer 安装包下的 plugins/jobtypes/linkis 目录下，主要是设置 jobtype 所需的 lib 所在位置
 ```
 #将该值修改为 ExecServer 安装包目录下的 /plugins/jobtypes/linkis/extlib
 jobtype.lib.dir=/appcom/Install/AzkabanInstall/wtss-exec/plugins/jobtypes/linkis/extlib
 ```
 
+
 #### plugins/jobtypes/linkis/plugin.properties （按需修改）
+
 若用户安装了 Linkis，则修改此配置文件来对接 Linkis，该配置文件存放在 ExecServer 安装包下的 plugins/jobtypes/linkis 目录下
 ```
 #将该值修改为 Linkis 的gateway地址
@@ -196,7 +214,9 @@ wds.linkis.gateway.url=
 
 ### 4. Web Server 配置文件
 
+
 #### conf/azkaban.properties
+
 此配置文件是 WebServer 的核心配置文件， 该配置文件存放在 WebServer 安装包下的 conf 目录下
 
 ```
@@ -342,6 +362,7 @@ nginx -s reload
 - ExecServer：schedulis_version_exec
 
 ### 四）、修改配置
+
 1. 新建 ```/appcom/config/wtss-config``` 目录，用于集中管理配置，并将项目bin/config目录下的目录全部复制到新建的wtss-config目录
 2. 修改wtss-exec下的配置，其下为ExecServer的配置文件，具体配置请参考普通版部署模式
 3. 修改wtss-web下的配置，其下为WebServer的配置文件，具体配置请参考普通版部署模式
