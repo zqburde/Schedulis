@@ -17,7 +17,7 @@
 package azkaban.alert;
 
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Map;
@@ -30,24 +30,25 @@ import azkaban.utils.Props;
 
 public interface Alerter {
 
-  void alertOnIMSRegistStart(ExecutableFlow exflow, Map<String, Props> sharedProps,Logger logger) throws Exception;
-
-  void alertOnIMSRegistFinish(ExecutableFlow exflow,Map<String, Props> sharedProps,Logger logger) throws Exception;
-
-  void alertOnIMSRegistError(ExecutableFlow exflow,Map<String, Props> sharedProps,Logger logger) throws Exception;
 
   void alertOnSuccess(ExecutableFlow exflow) throws Exception;
 
   void alertOnError(ExecutableFlow exflow, String... extraReasons) throws Exception;
 
   void alertOnFirstError(ExecutableFlow exflow) throws Exception;
-  
+
+
   void alertOnSla(SlaOption slaOption, String slaMessage) throws Exception;
 
-  void alertOnSla(SlaOption slaOption, ExecutableFlow exflow) throws Exception;
-  
   void alertOnFailedUpdate(Executor executor, List<ExecutableFlow> executions,
       ExecutorManagerException e);
+
+  void alertOnSla(SlaOption slaOption, ExecutableFlow exflow) throws Exception;
+  void alertOnIMSRegistStart(ExecutableFlow exflow, Map<String, Props> sharedProps,Logger logger) throws Exception;
+
+  void alertOnIMSRegistFinish(ExecutableFlow exflow,Map<String, Props> sharedProps,Logger logger) throws Exception;
+
+  void alertOnIMSRegistError(ExecutableFlow exflow,Map<String, Props> sharedProps,Logger logger) throws Exception;
 
 
   void alertOnFinishSla(SlaOption slaOption, ExecutableFlow exflow) throws Exception;

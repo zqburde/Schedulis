@@ -37,14 +37,16 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 public class FlowTriggerInstanceServlet extends LoginAbstractAzkabanServlet {
 
   private static final long serialVersionUID = 1L;
-  private static final Logger logger = Logger.getLogger(FlowTriggerInstanceServlet.class);
+  private static final Logger logger = LoggerFactory.getLogger(FlowTriggerInstanceServlet.class);
   private FlowTriggerService triggerService;
   private ProjectManager projectManager;
 

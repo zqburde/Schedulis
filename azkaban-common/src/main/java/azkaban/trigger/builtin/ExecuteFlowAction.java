@@ -32,7 +32,8 @@ import azkaban.trigger.TriggerManager;
 
 import java.util.*;
 
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class ExecuteFlowAction implements TriggerAction {
 
@@ -44,7 +45,7 @@ public class ExecuteFlowAction implements TriggerAction {
   private static TriggerManager triggerManager;
   private static ProjectManager projectManager;
   private static SystemManager systemManager;
-  private static Logger logger = Logger.getLogger(ExecuteFlowAction.class);
+  private static Logger logger = LoggerFactory.getLogger(ExecuteFlowAction.class);
   private final String actionId;
   private final String projectName;
   private int projectId;

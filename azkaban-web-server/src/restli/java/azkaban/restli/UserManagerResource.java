@@ -27,13 +27,13 @@ import com.linkedin.restli.server.annotations.RestLiActions;
 import com.linkedin.restli.server.resources.ResourceContextHolder;
 import java.util.UUID;
 import javax.servlet.ServletException;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 @RestLiActions(name = "user", namespace = "azkaban.restli")
 public class UserManagerResource extends ResourceContextHolder {
 
-  private static final Logger logger = Logger
-      .getLogger(UserManagerResource.class);
+  private static final Logger logger = LoggerFactory.getLogger(UserManagerResource.class);
 
   public AzkabanWebServer getAzkaban() {
     return AzkabanWebServer.getInstance();

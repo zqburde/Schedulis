@@ -89,7 +89,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.LocalDateTime;
 import org.quartz.SchedulerException;
 
@@ -98,8 +99,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     private static final String APPLICATION_ZIP_MIME_TYPE = "application/zip";
     private static String RE_SPACE = "(\u0020|\u3000)";
     private static final long serialVersionUID = 1;
-    private static final Logger logger = Logger
-        .getLogger(ProjectManagerServlet.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProjectManagerServlet.class);
     private static final NodeLevelComparator NODE_LEVEL_COMPARATOR =
         new NodeLevelComparator();
     private static final String LOCKDOWN_CREATE_PROJECTS_KEY = "lockdown.create.projects";
@@ -420,6 +420,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                 }else if (ajaxName.equals("checkRunningPageKillFlowPermission")) {
                     // 检查用户Kill运行中的工作流权限
                     ajaxCheckRunningPageKillFlowPermission(req, resp, ret, session);
+                } else if (ajaxName.equals("checkUserSwitchScheduleFlowPermission")) {
+                    // 检查用户开启或关闭定时调度权限
+                    ajaxcheckUserSwitchScheduleFlowPermission(req, resp, ret, session);
                 } else {
                     ret.put("error", "Cannot execute command " + ajaxName);
                 }
@@ -560,7 +563,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                     }
                 }
             } catch (SystemUserManagerException e) {
-                logger.error("系统用户信息不存在." + e);
+                logger.error("系统用户信息不存在.", e);
             }
         }
         return operatorFlag;
@@ -892,6 +895,59 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
     }
 
+
+    /**
+     * 检查用户开启或关闭定时调度权限
+     *
+     * @param req
+     * @param resp
+     * @param resultMap
+     * @param session   wtss_project_privilege_check
+     */
+    private void ajaxcheckUserSwitchScheduleFlowPermission(HttpServletRequest req, HttpServletResponse resp,
+        HashMap<String, Object> resultMap, Session session) {
+
+        try {
+            if (session != null) {
+                final String projectName = getParam(req, "project");
+                final User user = session.getUser();
+                final Project project = getProjectAjaxByPermission(resultMap, projectName, user, Type.SCHEDULE);
+                Map<String, String> stringStringMap = loadProjectManagerServletI18nData();
+                if (project == null) {
+                    resultMap.put("error", stringStringMap.get("permissionForAction") + projectName);
+                    resultMap.put("switchScheduleFlowFlag", 3);
+                    return;
+                }
+                if (wtss_project_privilege_check) {
+                    int switchScheduleFlowFlag = checkUserOperatorFlag(user);
+                    resultMap.put("switchScheduleFlowFlag", switchScheduleFlowFlag);
+                    logger.info("current user active schedule flow permission flag is switchScheduleFlowFlag=" + switchScheduleFlowFlag);
+                } else {
+                    resultMap.put("switchScheduleFlowFlag", 1);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Failed to find current user active schedule flow flow permission flag, caused by:{}", e);
+        }
+    }
+
+    protected Project getProjectAjaxByPermission(final Map<String, Object> ret, final String projectName,
+                                                 final User user, final Permission.Type type) {
+        final Project project = this.projectManager.getProject(projectName);
+
+        Map<String, String> dataMap = loadProjectManagerServletI18nData();
+
+        if (project == null) {
+            ret.put("error", dataMap.get("project") + projectName + dataMap.get("notExist"));
+        } else if (!hasPermission(project, user, type)) {
+            ret.put("error", "User " + user.getUserId() + " doesn't have " + project.getName() + " of " + type.name()
+                    + " permissions, please contact with the project creator.");
+        } else {
+            return project;
+        }
+
+        return null;
+    }
 
     /**
      * 检查用户KILL正在运行页面flow权限
@@ -1418,7 +1474,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                 }
             }
         } catch (Exception e) {
-            logger.error(e);
+            logger.error("getSchedules failed", e);
         }
     }
 
@@ -4204,7 +4260,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                 ret.put("scheduleId", "");
             }
         } catch (ScheduleManagerException e) {
-            logger.error("Fetch running schedule failed, caused by:" + e);
+            logger.error("Fetch running schedule failed, caused by:", e);
             ret.put("error", "Fetch running schedule failed, caused by:" + e.getMessage());
         }
 

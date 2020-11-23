@@ -48,8 +48,7 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 import javax.inject.Inject;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +58,7 @@ import org.slf4j.LoggerFactory;
 class AzkabanProjectLoader {
 
   private static final Logger log = LoggerFactory.getLogger(AzkabanProjectLoader.class);
+
   private static final String DIRECTORY_FLOW_REPORT_KEY = "Directory Flow";
 
   private final Props props;
@@ -202,19 +202,20 @@ class AzkabanProjectLoader {
   private File unzipProject(final File archive, final String fileType)
       throws ProjectManagerException {
     final File file;
-    try {
+
       if (fileType == null) {
         throw new ProjectManagerException("Unknown file type for "
             + archive.getName());
       } else if ("zip".equals(fileType)) {
-        file = unzipFile(archive);
+        try {
+          file = unzipFile(archive);
+        } catch (final Exception e) {
+          throw new ProjectManagerException("Error unzipping file:" + archive.getName() + ", Please check if there are Chinese characters in the file name.", e);
+        }
       } else {
         throw new ProjectManagerException("Unsupported archive type for file "
             + archive.getName());
       }
-    } catch (final IOException e) {
-      throw new ProjectManagerException("Error unzipping file.", e);
-    }
     return file;
   }
 

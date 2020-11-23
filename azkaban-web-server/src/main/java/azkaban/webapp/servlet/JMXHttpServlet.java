@@ -33,7 +33,9 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Limited set of jmx calls for when you cannot attach to the jvm
@@ -45,7 +47,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
    */
   private static final long serialVersionUID = 1L;
 
-  private static final Logger logger = Logger.getLogger(JMXHttpServlet.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger(JMXHttpServlet.class.getName());
 
   private AzkabanWebServer server;
   private ExecutorManagerAdapter executorManagerAdapter;
@@ -99,7 +101,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
             ret.put("attributes", info.getAttributes());
             ret.put("description", info.getDescription());
           } catch (final Exception e) {
-            logger.error(e);
+            logger.error("", e);
             ret.put("error", "'" + mbeanName + "' is not a valid mBean name");
           }
         } else {
@@ -117,7 +119,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
             final Object obj = this.server.getMBeanAttribute(name, attribute);
             ret.put("value", obj);
           } catch (final Exception e) {
-            logger.error(e);
+            logger.error("", e);
             ret.put("error", "'" + mbeanName + "' is not a valid mBean name");
           }
         }
@@ -140,7 +142,7 @@ public class JMXHttpServlet extends LoginAbstractAzkabanServlet implements Conne
 
             ret.put("attributes", attributes);
           } catch (final Exception e) {
-            logger.error(e);
+            logger.error("", e);
             ret.put("error", "'" + mbeanName + "' is not a valid mBean name");
           }
         }

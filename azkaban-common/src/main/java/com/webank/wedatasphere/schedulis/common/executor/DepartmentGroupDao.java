@@ -21,7 +21,8 @@ import azkaban.db.SQLTransaction;
 import azkaban.executor.Executor;
 import azkaban.executor.ExecutorManagerException;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -36,7 +37,7 @@ import java.util.*;
 @Singleton
 public class DepartmentGroupDao {
 
-    private static final Logger logger = Logger.getLogger(DepartmentGroupDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(DepartmentGroupDao.class);
     private final DatabaseOperator dbOperator;
     // todo:wtss_user还是cfg_webank_all_users
     private static final String FETCH_EXECUTORS_IDS_BY_SUBMIT_USER = "" +

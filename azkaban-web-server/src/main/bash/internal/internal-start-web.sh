@@ -27,11 +27,14 @@ logFile=/appcom/logs/azkaban/webServerLog_`date +%F+%T`.out
 
 
 function preCheck(){
-  LOG INFO "checking AzkabanWebServer process status..."
-  if [ -f $azkaban_dir/currentpid ]
+  LOG INFO "checking AzkabanWebServer status..."
+  processName=`jps|grep AzkabanWebServer`
+  if [ -n "$processName" ]
   then
-    LOG INFO "AzkabanWebServer already started."
-    return 1
+      LOG INFO "AzkabanWebServer already started."
+      return 1
+  else
+      return 0
   fi
 }
 
@@ -80,26 +83,34 @@ function javaOption(){
     AZKABAN_OPTS="-Xmx16G -Xloggc:/appcom/logs/azkaban/gc.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintHeapAtGC"
   fi
   # Set the log4j configuration file
-  if [ -f $conf/log4j.properties ]; then
-    AZKABAN_OPTS="$AZKABAN_OPTS -Dlog4j.configuration=file:$conf/log4j.properties -Dlog4j.log.dir=/appcom/logs/azkaban"
+  if [ -f $conf/log4j2.xml ]; then
+    AZKABAN_OPTS="$AZKABAN_OPTS -Dlog4j.configurationFile=$conf/log4j2.xml"
   else
     LOG ERROR "$conf/log4j.properties file doesn't exist."
     return 1
   fi
 
   executorport=`cat $conf/azkaban.properties | grep executor.port | awk -F '=' '{print($NF)}'`
-  
+
   AZKABAN_OPTS="$AZKABAN_OPTS -server -Dcom.sun.management.jmxremote -Djava.io.tmpdir=$tmpdir -Dexecutorport=$executorport -Dserverpath=$azkaban_dir"
 
   #AZKABAN_OPTS="$AZKABAN_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006"
-  
+
 }
 
 function start(){
     LOG INFO "starting AzkabanWebServer..."
-    java $AZKABAN_OPTS $JAVA_LIB_PATH -cp $CLASSPATH azkaban.webapp.AzkabanWebServer -conf $conf $cycle_stop $@ >> $logFile 2>&1 &
+    java $AZKABAN_OPTS $JAVA_LIB_PATH -cp $CLASSPATH azkaban.webapp.AzkabanWebServer -conf $conf $@ >> $logFile 2>&1 &
     echo $! > $azkaban_dir/currentpid
-    LOG INFO "AzkabanWebServer started successfully."
+    sleep 3s
+    processName=`jps|grep AzkabanWebServer`
+    if [ ! -n "$processName" ]
+    then
+        LOG INFO "AzkabanWebServer startup failed"
+        return 1
+    else
+        return 0
+    fi
 }
 
 function LOG(){

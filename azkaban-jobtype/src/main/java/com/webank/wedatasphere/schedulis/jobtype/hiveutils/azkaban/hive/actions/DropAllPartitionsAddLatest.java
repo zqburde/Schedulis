@@ -24,7 +24,8 @@ import com.webank.wedatasphere.schedulis.jobtype.hiveutils.util.AzkHiveAction;
 import com.webank.wedatasphere.schedulis.jobtype.hiveutils.util.AzkabanJobPropertyDescription;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -57,8 +58,7 @@ import java.util.Properties;
 @AzkHiveAction(Constants.DROP_ALL_PARTITIONS_AND_ADD_LATEST)
 public class DropAllPartitionsAddLatest implements HiveAction {
   private final static Logger LOG =
-      Logger
-          .getLogger("com.linkedin.hive.azkaban.hive.actions.DropAllPartitionsAddLatest");
+      LoggerFactory.getLogger("com.linkedin.hive.azkaban.hive.actions.DropAllPartitionsAddLatest");
 
   public static final String DROP_AND_ADD = Constants.DROP_ALL_PARTITIONS_AND_ADD_LATEST;
 

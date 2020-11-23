@@ -37,16 +37,14 @@ import java.util.Properties;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Layout;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
 
 import azkaban.jobExecutor.ProcessJob;
 import azkaban.security.commons.HadoopSecurityManager;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Props;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class HadoopJavaJobRunnerMain {
 
@@ -63,8 +61,6 @@ public class HadoopJavaJobRunnerMain {
   public static final String RUN_METHOD_PARAM = "method.run";
   public static final String[] PROPS_CLASSES = new String[] {
       "azkaban.utils.Props", "azkaban.common.utils.Props" };
-
-  private static final Layout DEFAULT_LAYOUT = new PatternLayout("%p %m\n");
 
   public final Logger _logger;
 
@@ -92,12 +88,7 @@ public class HadoopJavaJobRunnerMain {
       _jobName = System.getenv(ProcessJob.JOB_NAME_ENV);
       String propsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
 
-      _logger = Logger.getRootLogger();
-      _logger.removeAllAppenders();
-      ConsoleAppender appender = new ConsoleAppender(DEFAULT_LAYOUT);
-      appender.activateOptions();
-      _logger.addAppender(appender);
-      _logger.setLevel(Level.INFO); //Explicitly setting level to INFO
+      _logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
       Properties props = new Properties();
       props.load(new BufferedReader(new FileReader(propsFile)));

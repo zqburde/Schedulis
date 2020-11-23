@@ -78,8 +78,9 @@ import org.apache.hadoop.yarn.factories.RecordFactory;
 import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
 import org.apache.hadoop.yarn.ipc.YarnRPC;
 import org.apache.hadoop.yarn.util.ConverterUtils;
-import org.apache.log4j.Logger;
 import org.apache.thrift.TException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
 
@@ -125,8 +126,7 @@ public class HadoopSecurityManager_H_2_0 extends HadoopSecurityManager {
   private static final String AZKABAN_PRINCIPAL = "proxy.user";
   private static final String OBTAIN_JOBHISTORYSERVER_TOKEN =
       "obtain.jobhistoryserver.token";
-  private final static Logger logger = Logger
-      .getLogger(HadoopSecurityManager_H_2_0.class);
+  private final static org.slf4j.Logger logger = LoggerFactory.getLogger(HadoopSecurityManager_H_2_0.class);
   private static volatile HadoopSecurityManager hsmInstance = null;
   private static URLClassLoader ucl;
 

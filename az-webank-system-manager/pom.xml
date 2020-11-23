@@ -83,7 +83,7 @@
     <dependency>
       <groupId>com.alibaba</groupId>
       <artifactId>easyexcel</artifactId>
-      <version>1.1.1</version>
+      <version>2.2.3</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -91,12 +91,6 @@
       <version>${guava.version}</version>
     </dependency>
 
-
-    <dependency>
-      <groupId>com.alibaba</groupId>
-      <artifactId>fastjson</artifactId>
-      <version>1.2.61</version>
-    </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>

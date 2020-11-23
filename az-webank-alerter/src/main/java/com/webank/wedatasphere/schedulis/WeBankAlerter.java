@@ -43,14 +43,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 
 public class WeBankAlerter implements Alerter {
-  private static Logger logger = Logger.getLogger(WeBankAlerter.class);
+  private static Logger logger = LoggerFactory.getLogger(WeBankAlerter.class);
   private Props props;
   private String alarmServer;
   private String alarmPort;

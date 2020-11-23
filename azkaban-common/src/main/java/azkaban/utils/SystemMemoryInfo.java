@@ -1,7 +1,9 @@
 package azkaban.utils;
 
-import javax.inject.Inject;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
+import javax.inject.Inject;
 
 
 /**
@@ -16,7 +18,8 @@ import org.slf4j.LoggerFactory;
  */
 public class SystemMemoryInfo {
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(SystemMemoryInfo.class);
+  private static final Logger logger = LoggerFactory.getLogger(SystemMemoryInfo.class);
+
   private static final long LOW_MEM_THRESHOLD = 3L * 1024L * 1024L; //3 GB
   private final OsMemoryUtil util;
 

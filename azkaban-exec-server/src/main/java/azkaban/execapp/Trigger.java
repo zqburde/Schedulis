@@ -21,12 +21,13 @@ import azkaban.executor.*;
 import azkaban.trigger.Condition;
 import azkaban.trigger.TriggerAction;
 import java.util.List;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 
 public class Trigger implements Runnable {
 
-  private static final Logger logger = Logger.getLogger(azkaban.execapp.Trigger.class);
+  private static final Logger logger = LoggerFactory.getLogger(azkaban.execapp.Trigger.class);
   private final int execId;
 //  private final ExecutorLoader executorLoader ;
 

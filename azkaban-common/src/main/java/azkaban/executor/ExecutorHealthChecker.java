@@ -18,6 +18,9 @@ package azkaban.executor;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,8 +33,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Periodically checks the health of executors. Finalizes flows or sends alert emails when needed.
@@ -41,6 +42,7 @@ import org.slf4j.LoggerFactory;
 public class ExecutorHealthChecker {
 
   private static final Logger logger = LoggerFactory.getLogger(ExecutorHealthChecker.class);
+
   // Max number of executor failures before sending out alert emails.
   private static final int DEFAULT_EXECUTOR_MAX_FAILURE_COUNT = 6;
   // Web server checks executor health every 5 min by default.

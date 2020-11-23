@@ -31,14 +31,15 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.joining;
 
 @Singleton
 public class ExecutionRecoverDao {
 
-  private static final Logger logger = Logger.getLogger(ExecutionRecoverDao.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExecutionRecoverDao.class);
   private final DatabaseOperator dbOperator;
 
   @Inject

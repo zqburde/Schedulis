@@ -21,7 +21,8 @@ import azkaban.db.SQLTransaction;
 import azkaban.executor.ExecutorManagerException;
 import com.webank.wedatasphere.schedulis.common.system.entity.WtssUser;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -36,7 +37,7 @@ import java.util.*;
 @Singleton
 public class UserVariableDao {
 
-    private static final Logger logger = Logger.getLogger(UserVariableDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(UserVariableDao.class);
     private final DatabaseOperator dbOperator;
 
     private final static String INSERT_USER_VARIABLE = "INSERT INTO user_variable (`key`, `description`, `value`, `owner`, `create_time`, `update_time`) VALUES (?, ?, ?, ?, ?, ?);";

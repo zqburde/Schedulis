@@ -24,7 +24,8 @@ import azkaban.executor.Status;
 import azkaban.utils.GZIPUtils;
 import azkaban.utils.JSONUtils;
 import org.apache.commons.dbutils.ResultSetHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -42,7 +43,7 @@ import static java.util.stream.Collectors.joining;
 @Singleton
 public class ExecutionCycleDao {
 
-    private static final Logger logger = Logger.getLogger(ExecutionCycleDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExecutionCycleDao.class);
 
     private final DatabaseOperator dbOperator;
 

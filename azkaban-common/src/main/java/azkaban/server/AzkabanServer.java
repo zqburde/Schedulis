@@ -30,13 +30,14 @@ import java.util.Arrays;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.apache.velocity.app.VelocityEngine;
 
 
 public abstract class AzkabanServer {
 
-  private static final Logger logger = Logger.getLogger(AzkabanServer.class);
+  private static final Logger logger = LoggerFactory.getLogger(AzkabanServer.class);
   private static Props azkabanProperties = null;
 
   public static Props loadProps(final String[] args) {

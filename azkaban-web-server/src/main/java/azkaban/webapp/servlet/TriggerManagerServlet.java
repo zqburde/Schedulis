@@ -22,6 +22,8 @@ import azkaban.trigger.TriggerManager;
 import azkaban.trigger.TriggerManagerException;
 import azkaban.user.User;
 import azkaban.webapp.AzkabanWebServer;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import java.io.IOException;
 import java.util.HashMap;
@@ -31,13 +33,12 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
 
 public class TriggerManagerServlet extends LoginAbstractAzkabanServlet {
 
+  private static final Logger logger = LoggerFactory.getLogger(TriggerManagerServlet.class);
+
   private static final long serialVersionUID = 1L;
-  private static final Logger logger = Logger
-      .getLogger(TriggerManagerServlet.class);
   private TriggerManager triggerManager;
 
   @Override

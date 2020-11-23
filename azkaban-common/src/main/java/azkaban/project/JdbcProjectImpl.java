@@ -62,7 +62,8 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 
 /**
@@ -73,7 +74,7 @@ import org.apache.log4j.Logger;
 @Singleton
 public class JdbcProjectImpl implements ProjectLoader {
 
-  private static final Logger logger = Logger.getLogger(JdbcProjectImpl.class);
+  private static final Logger logger = LoggerFactory.getLogger(JdbcProjectImpl.class);
 
   private static final int CHUCK_SIZE = 1024 * 1024 * 10;
   // Flow yaml files are usually small, set size limitation to 10 MB should be sufficient for now.
@@ -229,7 +230,7 @@ public class JdbcProjectImpl implements ProjectLoader {
             "Active project with name " + name + " already exists in db.");
       }
     } catch (final SQLException ex) {
-      logger.error(ex);
+      logger.error("", ex);
       throw new ProjectManagerException("Checking for existing project failed. " + name, ex);
     }
 
@@ -527,7 +528,7 @@ public class JdbcProjectImpl implements ProjectLoader {
             .createTempFile(projHandler.getFileName(), String.valueOf(version), this.tempDir);
         bStream = new BufferedOutputStream(new FileOutputStream(file));
       } catch (final IOException e) {
-        throw new ProjectManagerException("Error creating temp file for stream.", e);
+        throw new ProjectManagerException("Error creating temp file for stream.");
       }
 
       final int collect = 5;
@@ -542,7 +543,7 @@ public class JdbcProjectImpl implements ProjectLoader {
                   projectId,
                   version, fromChunk, toChunk);
         } catch (final SQLException e) {
-          logger.error(e);
+          logger.error("", e);
           throw new ProjectManagerException("Query for uploaded file for " + projectId + " failed.",
               e);
         }
@@ -787,7 +788,7 @@ public class JdbcProjectImpl implements ProjectLoader {
       project.setLastModifiedTimestamp(updateTime);
       project.setLastModifiedUser(user);
     } catch (final SQLException e) {
-      logger.error(e);
+      logger.error("", e);
       throw new ProjectManagerException("Error update Description, project " + project.getName(),
           e);
     }
@@ -799,7 +800,7 @@ public class JdbcProjectImpl implements ProjectLoader {
     try {
       return this.dbOperator.query(IntHandler.SELECT_LATEST_VERSION, handler, project.getId());
     } catch (final SQLException e) {
-      logger.error(e);
+      logger.error("", e);
       throw new ProjectManagerException(
           "Error marking project " + project.getName() + " as inactive", e);
     }
@@ -1143,7 +1144,7 @@ public class JdbcProjectImpl implements ProjectLoader {
       return this.dbOperator.query(IntHandler.SELECT_LATEST_FLOW_VERSION, handler, projectId,
           projectVersion, flowName);
     } catch (final SQLException e) {
-      logger.error(e);
+      logger.error("", e);
       throw new ProjectManagerException(
           "Error selecting latest flow version from project " + projectId + ", version " +
               projectVersion + ", flow " + flowName + ".", e);
@@ -1161,7 +1162,7 @@ public class JdbcProjectImpl implements ProjectLoader {
           .query(FlowFileResultHandler.SELECT_ALL_FLOW_FILES, handler,
               projectId, projectVersion);
     } catch (final SQLException e) {
-      logger.error(e);
+      logger.error("", e);
       throw new ProjectManagerException("Failed to query uploaded flow files ", e);
     }
 
@@ -1297,7 +1298,7 @@ public class JdbcProjectImpl implements ProjectLoader {
         }
       });
     } catch (final SQLException ex) {
-      logger.error(ex);
+      logger.error("", ex);
       throw new ProjectManagerException("查找当日新建项目列表SQL执行异常！", ex);
     }
     return projects;
@@ -1336,7 +1337,7 @@ public class JdbcProjectImpl implements ProjectLoader {
     try {
       return this.dbOperator.query(serchSQL, handler, params.toArray());
     } catch (final SQLException e) {
-      logger.error(e);
+      logger.error("", e);
       throw new ProjectManagerException(
           "Statistics Program " + projectId + " Flow " + flowName + " Exception number of execute SQL in a day ", e);
     }

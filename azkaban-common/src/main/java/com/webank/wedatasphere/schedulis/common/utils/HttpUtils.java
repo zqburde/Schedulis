@@ -19,7 +19,7 @@ package com.webank.wedatasphere.schedulis.common.utils;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.Status;
 import azkaban.utils.Props;
-import com.alibaba.fastjson.JSON;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -33,7 +33,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import okhttp3.Call;
 import okhttp3.FormBody;
 import okhttp3.MediaType;
@@ -48,7 +49,7 @@ import org.joda.time.format.DateTimeFormat;
  */
 public class HttpUtils {
 
-  private static final Logger logger = Logger.getLogger(HttpUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
 
   public static Map<String, String> getReturnMap(String dataStr){
     Map<String, String> dataMap = new HashMap<>();
@@ -144,7 +145,7 @@ public class HttpUtils {
       dataMap.put("groupName", executableFlow.getProjectName());
       dataMap.put("number", getValue(flowPros, "dcnNumber"));
       dataList.add(dataMap);
-      request = JSON.toJSON(dataList).toString();
+      request = GsonUtils.toJson(dataList);
       actionUrl = azkabanProps.getString("ims.job.register.url", null);
       if(actionUrl == null){
         logger.error("获取注册接口失败");
@@ -331,53 +332,6 @@ public class HttpUtils {
   }
 
   public static void main(String[] args) {
-
-    Map resultMap = new HashMap();
-    String maskUrl = "http://10.255.10.90:8087/api/v1/mask-status?";
-
-    RequestBody requestBody = new FormBody.Builder()
-        .add("targetDb", "bdp_test_ods_mask")
-        .add("targetTable", "ccpd_dump")
-        .add("partition", "dcn_id=UA0/type_id=6042/ip=10.240.228.31/ds=2015-04-06")
-        .build();
-
-    FormBody.Builder formBuilder = new FormBody.Builder();
-
-    Map<String, String> map = new HashMap<>();
-    map.put("targetDb", "bdp_test_ods_mask");
-    map.put("targetTable", "ccpd_dump");
-    //map.put("partition", "ds=20180925");
-    map.put("partition", "ds\\=20180925");
-
-    //String params = gson.toJson(map);
-    MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-
-    Iterator<String> iterator = map.keySet().iterator();
-    String key = "";
-    while(iterator.hasNext()){
-      key = iterator.next().toString();
-      formBuilder.add(key, map.get(key));
-    }
-
-    RequestBody requestBody2 = formBuilder.build();
-
-    Properties props = new Properties();
-//    props.put(DataChecker.MASK_APP_ID, "wtss");
-//    props.put(DataChecker.MASK_APP_TOKEN, "20a0ccdfc0");
-//
-//    Map<String, String> dataMap = HttpUtils.initSelectParams(props);
-//
-//    try {
-//      String result = HttpUtils.httpClientHandle(maskUrl, requestBody, dataMap);
-//      System.out.println(result);
-//      Map resulMap = HttpUtils.getReturnMap(result);
-//      if("200".equals(resulMap.get("code"))){
-//        System.out.println("数据查找成功变更datacheck状态");
-//      }
-//    } catch (Exception e) {
-//      e.printStackTrace();
-//      System.out.println(e.getMessage());
-//    }
 
   }
 

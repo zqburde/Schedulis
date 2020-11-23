@@ -16,12 +16,12 @@
 
 package com.webank.wedatasphere.schedulis.jobtype.connectors.druid;
 
-import org.apache.log4j.Logger;
 
 import java.util.Properties;
 
 import com.webank.wedatasphere.schedulis.eventcheck.DefaultEventcheckReceiver;
 import com.webank.wedatasphere.schedulis.eventcheck.EventCheckSender;
+import org.slf4j.Logger;
 
 
 public class WBEventCheckerDao {

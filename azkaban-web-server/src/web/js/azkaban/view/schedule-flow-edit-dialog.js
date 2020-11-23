@@ -302,7 +302,6 @@ azkaban.FlowScheduleDialogView = Backbone.View.extend({
     };
     var self = this;
     var successHandler = function (data) {
-
       if (data.error) {
         $('#user-operator-schedule-flow-permit-panel').modal();
         $('#title-user-operator-schedule-flow-permit').text(wtssI18n.view.scheduleConfigPermission);
@@ -314,7 +313,7 @@ azkaban.FlowScheduleDialogView = Backbone.View.extend({
         if (exgraph) {
           self.assignInitialStatus(data, exgraph);
         }
-
+        
         // Auto disable jobs that are finished.
         disableFinishedJobs(data);
         executingSvgGraphView = new azkaban.SvgGraphView({

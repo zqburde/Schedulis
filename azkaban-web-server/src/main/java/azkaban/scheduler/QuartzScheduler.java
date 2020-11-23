@@ -24,6 +24,9 @@ import azkaban.utils.Props;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.quartz.CronExpression;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobBuilder;
@@ -35,8 +38,6 @@ import org.quartz.Trigger;
 import org.quartz.Trigger.TriggerState;
 import org.quartz.TriggerBuilder;
 import org.quartz.impl.StdSchedulerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Manages Quartz schedules. Azkaban regards QuartzJob and QuartzTrigger as an one-to-one
