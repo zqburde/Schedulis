@@ -171,6 +171,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       if (hasParam(req, "ajax")) {
         final HashMap<String, String> retVal = new HashMap<>();
         retVal.put("error", "session");
+        //处理ajax请求， session超时
+        resp.setHeader("session-status", "timeout");
         this.writeJSON(resp, retVal);
       } else if ("/toL".equals(req.getRequestURI())){
         handleLogin(req, resp);
@@ -319,6 +321,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     String setCookie = resp.getHeader("Set-Cookie");
     if(null != setCookie){
       resp.setHeader("Set-Cookie", setCookie + ";Secure");
+      resp.setHeader("Set-Cookie", setCookie + ";HttpOnly");
     }
     final Page page = newPage(req, resp, "azkaban/webapp/servlet/velocity/login.vm");
 
@@ -491,6 +494,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
                   createJsonResponse("error", "Invalid Session. Please login in again.",
                           "login", null);
           resp.setCharacterEncoding("utf-8");
+          //处理ajax请求， session超时
+          resp.setHeader("session-status", "timeout");
           writeResponse(resp, response);
         } else {
           handleLogin(req, resp, "Enter username and password");
@@ -689,6 +694,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 //      }
       String setCookie = resp.getHeader("Set-Cookie");
       resp.setHeader("Set-Cookie", setCookie + ";Secure");
+      resp.setHeader("Set-Cookie", setCookie + ";HttpOnly");
     }
 
     if (hasParam(req, "username") && hasParam(req, "userpwd")) {
@@ -711,6 +717,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         //限制web页面程序的browser端script程序读取cookie 开启可能会影响测试工具工作
         cookie.setHttpOnly(true);
       }
+      cookie.setHttpOnly(true);
       resp.addCookie(cookie);
 
       ret.put("status", "success");
