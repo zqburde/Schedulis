@@ -45,7 +45,11 @@
     "retryAllFailTitle": "Retry All Failed Job",
     "tipsRetry": "Retry all failed job, please confirm whether to continue !",
     "skipAllFailedJob": "Skip All Failed Job",
-    "tipsSkipFailed": "Skip all failed job, please confirm whether to continue !"
+    "tipsSkipFailed": "Skip all failed job, please confirm whether to continue !",
+    "confirm": "confirm",
+    "pausedFlow": "Paused flow",
+    "pausedFlowMsg": "If the flow is paused, the job in ready status will not be submitted for execution, and the job already running will continue to execute. Are you sure you want to pause?",
+    "pause": "Pause"
   },
   "azkaban.webapp.servlet.velocity.executionspage.vm": {
     "runningFlow": "Running Flow",

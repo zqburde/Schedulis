@@ -37,11 +37,12 @@ import java.util.List;
 import java.util.Set;
 import javax.inject.Inject;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SystemUserManager implements UserManager {
 
-  private static final Logger logger = Logger.getLogger(SystemUserManager.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger(SystemUserManager.class.getName());
 
   private HashMap<String, User> users;
   private HashMap<String, String> userPassword;
@@ -96,7 +97,7 @@ public class SystemUserManager implements UserManager {
         initUserAuthority(wtssUser, user);
 
       } catch (Exception e) {
-        logger.error("登录失败！异常信息：" + e);
+        logger.error("登录失败！异常信息：", e);
         throw new UserManagerException("Error User Name Or Password.");
       }
     }

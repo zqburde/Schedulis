@@ -37,6 +37,7 @@ import com.webank.wedatasphere.dss.appjoint.auth.RedirectMsg;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import com.webank.wedatasphere.schedulis.common.system.SystemManager;
 import com.webank.wedatasphere.schedulis.common.user.SystemUserManager;
+import com.webank.wedatasphere.schedulis.common.utils.RSAUtils;
 import com.webank.wedatasphere.schedulis.common.utils.XSSFilterUtils;
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -58,7 +59,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ObjectUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Abstract Servlet that handles auto login when the session hasn't been verified.
@@ -67,7 +69,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
   private static final long serialVersionUID = 1L;
 
-  private static final Logger logger = Logger.getLogger(LoginAbstractAzkabanServlet.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger("LoginAccessLogger");
   private static final String SESSION_ID_NAME = "azkaban.browser.session.id";
 
   private static final int DEFAULT_UPLOAD_DISK_SPOOL_SIZE = 20 * 1024 * 1024;
@@ -136,7 +138,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     }
 
     if("/api/v1/redirect".equals(req.getRequestURI())){
-      logger.info("ingore the auth of DSS request: {}" +  req.getRequestURI());
+      logger.info("ingore the auth of DSS request: {}",  req.getRequestURI());
       handleDssRequest(req,resp,session);
     }
 
@@ -155,7 +157,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         }
       }
       if (logger.isDebugEnabled() && session != null) {
-        logger.debug("Found session " + session.getUser());
+        logger.debug("Found session {}", session.getUser());
       }
       if (handleFileGet(req, resp)) {
         return;
@@ -169,6 +171,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       if (hasParam(req, "ajax")) {
         final HashMap<String, String> retVal = new HashMap<>();
         retVal.put("error", "session");
+        //处理ajax请求， session超时
+        resp.setHeader("session-status", "timeout");
         this.writeJSON(resp, retVal);
       } else if ("/toL".equals(req.getRequestURI())){
         handleLogin(req, resp);
@@ -317,6 +321,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     String setCookie = resp.getHeader("Set-Cookie");
     if(null != setCookie){
       resp.setHeader("Set-Cookie", setCookie + ";Secure");
+      resp.setHeader("Set-Cookie", setCookie + ";HttpOnly");
     }
     final Page page = newPage(req, resp, "azkaban/webapp/servlet/velocity/login.vm");
 
@@ -358,8 +363,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
           RedirectMsg redirectMsg = appJointAuth.getRedirectMsg(req);
           String redirectUrl = redirectMsg.getRedirectUrl();
           String username = redirectMsg.getUser();
-          logger.info("Succeed to get redirect url: {}, and username: {}" + redirectUrl + "," + username);
-          // 通过用户名，完成无密码登录（将用户信息写入HttpSession）
+          logger.info("Succeed to get redirect url: {}, and username: {}", redirectUrl, username);
+          // 通过用户名，在你的系统完成无密码登录（将用户信息写入HttpSession）
           if(session == null){
             handleDssLoginAction(username, req,resp);
           }
@@ -434,11 +439,36 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         final String password  = (String) params.get("userpwd");
         final String ip = getRealClientIpAddr(req);
 
-        try {
-          session = createSession(username, password, ip);
-        } catch (final UserManagerException e) {
-          writeResponse(resp, "Login error: " + e.getMessage());
-          return;
+        String wtss_secret_de = props.getString("dss.secret", "");
+        String wtss_private_key = props.getString("wtss.private.key", "");
+        String from_dss_secret_de = "";
+        if(params.containsKey("dss_secret")){
+          String from_dss_secret_en = (String)params.get("dss_secret");
+          logger.info("handle dss login , secret > {}" , from_dss_secret_en);
+          try {
+            if(from_dss_secret_en!=null){
+              from_dss_secret_en = from_dss_secret_en.replaceAll(" ","+");
+            }
+            from_dss_secret_de = RSAUtils.decrypt(from_dss_secret_en,wtss_private_key);
+          } catch (Exception e) {
+            logger.error("parse dss.secret failed , caused by {} " , e);
+          }
+        }
+        if(wtss_secret_de.equals(from_dss_secret_de)){
+          logger.info("handle dss login , dss_secret pass check" );
+          try{
+              session = createSession(username, password, ip, wtss_secret_de);
+            } catch(final Exception e){
+              writeResponse(resp, "Login error: " + e.getMessage());
+              return;
+            }
+        }else{
+          try {
+            session = createSession(username, password, ip);
+          } catch (final UserManagerException e) {
+            writeResponse(resp, "Login error: " + e.getMessage());
+            return;
+          }
         }
       }
       handleMultiformPost(req, resp, params, session);
@@ -464,6 +494,8 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
                   createJsonResponse("error", "Invalid Session. Please login in again.",
                           "login", null);
           resp.setCharacterEncoding("utf-8");
+          //处理ajax请求， session超时
+          resp.setHeader("session-status", "timeout");
           writeResponse(resp, response);
         } else {
           handleLogin(req, resp, "Enter username and password");
@@ -515,8 +547,61 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   private Session createSession(final HttpServletRequest req)
           throws UserManagerException, ServletException, IOException {
     final String username = getParam(req, "username");
-    final String password = getParam(req, "userpwd");
+    String password = getParam(req, "userpwd");
+
+    final Props props = this.application.getServerProps();
+
+    if (hasParam(req, "encryption") && "true".equals(getParam(req, "encryption"))){
+      String wtss_private_key = props.getString("wtss.private.key", "");
+      logger.debug("encryption is enable , decode password {}" , password);
+      try {
+        if(password!=null){
+          password = password.replaceAll(" ","+");
+        }
+        password = RSAUtils.decrypt(password,wtss_private_key);
+      } catch (Exception e) {
+        throw new RuntimeException("parse encryption secret info failed , caused by {} " + e.getMessage());
+      }
+    }
+
     final String ip = getRealClientIpAddr(req);
+
+    try{
+      String wtss_secret_de = props.getString("dss.secret", "");
+      String wtss_private_key = props.getString("wtss.private.key", "");
+      String from_dss_secret_de = "";
+      if(hasParam(req, "dss_secret")){
+        String from_dss_secret_en = (String)getParam(req, "dss_secret");
+        logger.debug("handle dss login , secret > {}" , from_dss_secret_en);
+        try {
+          if(from_dss_secret_en!=null){
+            from_dss_secret_en = from_dss_secret_en.replaceAll(" ","+");
+          }
+          from_dss_secret_de = RSAUtils.decrypt(from_dss_secret_en,wtss_private_key);
+        } catch (Exception e) {
+          throw new RuntimeException("parse dss.secret failed , caused by " , e);
+        }
+      }
+
+      if(wtss_secret_de.equals(from_dss_secret_de)){
+        logger.debug("handle dss login , dss_secret pass check" );
+        //如果超级用户用户名和密码都是对的，那么我们直接放行
+        if(!StringUtils.isFromBrowser(req.getHeader("User-Agent"))){
+          logger.info("not browser.");
+          Session cacheSession = this.application.getSessionCache().getSessionByUsername(username);
+          if(cacheSession != null){
+            logger.info("session not found.");
+            return cacheSession;
+          }
+        }
+        Session newSession = createSession(username, password, ip, wtss_secret_de);
+        getApplication().getSessionCache().addSession(newSession);
+        return newSession;
+      }
+    }catch(final Exception e){
+      logger.error("no super user", e);
+      //没有超级用户，直接ignore
+    }
     return createSession(username, password, ip, req);
   }
 
@@ -554,6 +639,26 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
     return session;
   }
 
+
+  private Session createSession(final String username, final String password, final String ip,
+                                final String superUser) throws UserManagerException{
+
+    UserManager manager = getApplication().getTransitionService().getUserManager();
+    if (manager instanceof SystemUserManager){
+      //不改接口，直接改SystemUserManager，这样做到少侵入
+      SystemUserManager userManager = (SystemUserManager)manager;
+      final User user = userManager.getUser(username, password, superUser);
+      logger.info("User is {}", user.toString());
+      final String uuid = UUID.randomUUID().toString();
+      return new Session(uuid, user, ip);
+    }else{
+      logger.warn("user manager 不是 WebankXmlUserManager 实例，不能进行创建session");
+      return null;
+    }
+  }
+
+
+
   protected boolean hasPermission(final Project project, final User user, final Permission.Type type) {
     if (project.hasPermission(user, type)) {
       return true;
@@ -589,6 +694,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 //      }
       String setCookie = resp.getHeader("Set-Cookie");
       resp.setHeader("Set-Cookie", setCookie + ";Secure");
+      resp.setHeader("Set-Cookie", setCookie + ";HttpOnly");
     }
 
     if (hasParam(req, "username") && hasParam(req, "userpwd")) {
@@ -599,6 +705,11 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         ret.put("error", "Login in error. " + e.getMessage());
         return;
       }
+      if (null == session){
+        logger.error("session is null");
+        ret.put("error","Login in error, session is null.");
+        return;
+      }
       final Cookie cookie = new Cookie(SESSION_ID_NAME, session.getSessionId());
       cookie.setPath("/");
       if("open".equals(nginxSSL)) {
@@ -606,6 +717,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         //限制web页面程序的browser端script程序读取cookie 开启可能会影响测试工具工作
         cookie.setHttpOnly(true);
       }
+      cookie.setHttpOnly(true);
       resp.addCookie(cookie);
 
       ret.put("status", "success");
@@ -646,7 +758,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       try {
         session = createDssSession(username,req);
       } catch (final UserManagerException | IOException e) {
-        logger.error("Dss Login in error. " + e.getMessage());
+        logger.error("Dss Login in error.", e);
         return;
       }
       if (null == session){
@@ -656,9 +768,9 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       final Cookie cookie = new Cookie(SESSION_ID_NAME, session.getSessionId());
       cookie.setPath("/");
       resp.addCookie(cookie);
-      logger.info("session.id {} " + session.getSessionId());
+      logger.info("session.id {} ", session.getSessionId());
     } else {
-      logger.error("Login in error,invalid username {}" + username);
+      logger.error("Login in error,invalid username {}", username);
     }
   }
 
@@ -671,7 +783,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
   protected boolean isAjaxCall(final HttpServletRequest req) throws ServletException {
     final String value = req.getHeader("X-Requested-With");
     if (value != null) {
-      logger.info("has X-Requested-With " + value);
+      logger.info("has X-Requested-With {}", value);
       return value.equals("XMLHttpRequest");
     }
     final String ajaxString = req.getParameter("ajax");

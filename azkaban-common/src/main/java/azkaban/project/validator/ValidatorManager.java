@@ -5,7 +5,8 @@ import azkaban.utils.Props;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * ValidatorManager is responsible for loading the list of validators specified in the Azkaban

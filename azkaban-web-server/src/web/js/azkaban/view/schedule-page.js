@@ -137,7 +137,7 @@ azkaban.ScheduleListView = Backbone.View.extend({
     var scheduleTbody = $("#schedules-tbody");
     scheduleTbody.empty();
 
-    var scheduleList = this.model.get("scheduleList");
+    var scheduleList = this.model.get("scheduleList") || [];
     var schConfig = this.model.get("schConfig");
     var slaSetting = this.model.get("slaSetting");
     var deleteSch = this.model.get("deleteSch");

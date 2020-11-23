@@ -106,56 +106,52 @@ function editScheduleClick(scheduleId, projectName, flowName, cronExpression) {
 }
 
 // 定时调度页面, 定时调度工作流列表, 对显示的调度任务点击调度开启关闭
-function switchScheduleClick(index, scheduleId, projectName, flowName, cronExpression) {
+function switchScheduleClick (index, scheduleId, projectName, flowName, cronExpression) {
 
-    // 需要校验是否具有修改项目调度权限 1:允许, 2:不允许
-    var requestURL = contextURL + "/manager?ajax=checkUserSwitchScheduleFlowPermission&project=" + projectName;
-    $.ajax({
-        url: requestURL,
-        type: "get",
-        async: false,
-        dataType: "json",
-        success: function(data){
-            if(data["switchScheduleFlowFlag"] == 1){
-                console.log("click switch schedule button.");
-                var currentActiveFlag = document.getElementById("schedules-tbody").rows[index].cells[8].innerHTML;
-                console.log("currentActiveFlag=" + currentActiveFlag);
-                var destActiveFlag = false;
-                if (currentActiveFlag == "false"){
-                    destActiveFlag = true;
-                }
-
-                var scheduleActiveData = {
-                    scheduleId: scheduleId,
-                    ajax: "setScheduleActiveFlag",
-                    activeFlag: destActiveFlag
-                };
-
-                var scheduleURL = contextURL + "/schedule"
-                var successHandler = function (data) {
-                    if (data.error) {
-                        alert(data.error);
-                    } else {
-                        // 触发变更就行, 不是刷新所有页面
-                        scheduleListView.handlePageChange();
-                    }
-                };
-
-                $.post(scheduleURL, scheduleActiveData, successHandler, "json");
-
-
-            }else if(data["switchScheduleFlowFlag"] == 2){
-                $('#user-operator-schedule-flow-permit-panel').modal();
-                $('#title-user-operator-schedule-flow-permit').text(wtssI18n.view.scheduleActivePermission);
-                $('#body-user-operator-schedule-flow-permit').html(wtssI18n.view.noScheSwitchConfigPermission);
-            } else if(data["switchScheduleFlowFlag"] == 3){
-                $('#user-operator-schedule-flow-permit-panel').modal();
-                $('#title-user-operator-schedule-flow-permit').text(wtssI18n.view.scheduleActivePermission);
-                $('#body-user-operator-schedule-flow-permit').html(data.error);
-            }
+  // 需要校验是否具有修改项目调度权限 1:允许, 2:不允许
+  var requestURL = "/manager?ajax=checkUserSwitchScheduleFlowPermission&project=" + projectName;
+  $.ajax({
+    url: requestURL,
+    type: "get",
+    async: false,
+    dataType: "json",
+    success: function (data) {
+      if (data["switchScheduleFlowFlag"] == 1) {
+        console.log("click switch schedule button.");
+        var currentActiveFlag = document.getElementById("schedules-tbody").rows[index].cells[8].innerHTML;
+        console.log("currentActiveFlag=" + currentActiveFlag);
+        var destActiveFlag = false;
+        if (currentActiveFlag == "false") {
+          destActiveFlag = true;
         }
-    });
 
+        var scheduleActiveData = {
+          scheduleId: scheduleId,
+          ajax: "setScheduleActiveFlag",
+          activeFlag: destActiveFlag
+        };
+
+        var scheduleURL = "/schedule"
+        var successHandler = function (data) {
+          if (data.error) {
+            alert(data.error);
+          } else {
+            // 触发变更就行, 不是刷新所有页面
+            scheduleListView.handlePageChange();
+          }
+        };
+        $.post(scheduleURL, scheduleActiveData, successHandler, "json");
+      } else if (data["switchScheduleFlowFlag"] == 2) {
+          $('#user-operator-schedule-flow-permit-panel').modal();
+          $('#title-user-operator-schedule-flow-permit').text(wtssI18n.view.scheduleActivePermission);
+          $('#body-user-operator-schedule-flow-permit').html(wtssI18n.view.noScheSwitchConfigPermission);
+      } else if(data["switchScheduleFlowFlag"] == 3){
+          $('#user-operator-schedule-flow-permit-panel').modal();
+          $('#title-user-operator-schedule-flow-permit').text(wtssI18n.view.scheduleActivePermission);
+          $('#body-user-operator-schedule-flow-permit').html(data.error);
+      }
+    }
+  });
 }
 
 $(function () {

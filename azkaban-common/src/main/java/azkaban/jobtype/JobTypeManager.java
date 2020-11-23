@@ -24,6 +24,9 @@ import azkaban.jobExecutor.utils.JobExecutionException;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import azkaban.utils.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -31,7 +34,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.log4j.Logger;
 
 public class JobTypeManager {
 
@@ -44,7 +46,7 @@ public class JobTypeManager {
   private static final String COMMONCONFFILE = "common.properties";
   // common private properties for multiple plugins
   private static final String COMMONSYSCONFFILE = "commonprivate.properties";
-  private static final Logger logger = Logger.getLogger(JobTypeManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(JobTypeManager.class);
   private final String jobTypePluginDir; // the dir for jobtype plugins
   private final ClassLoader parentLoader;
   private final Props globalProperties;
@@ -224,8 +226,9 @@ public class JobTypeManager {
       final Props fakeSysProps = new Props(pluginLoadProps);
       final Props fakeJobProps = new Props(pluginJobProps);
       final Job job =
-          (Job) Utils.callConstructor(clazz, "dummy", fakeSysProps,
-              fakeJobProps, logger);
+          (Job) Utils.newConstructor(clazz,
+              new Class[]{String.class, Props.class, Props.class, Logger.class},
+              "dummy", fakeSysProps, fakeJobProps, logger);;
     } catch (final Throwable t) {
       logger.info("Jobtype " + jobTypeName + " failed test!", t);
       throw new JobExecutionException(t);
@@ -362,8 +365,9 @@ public class JobTypeManager {
       }
 
       job =
-          (Job) Utils.callConstructor(executorClass, jobId, pluginLoadProps,
-              jobProps, logger);
+          (Job) Utils.newConstructor(executorClass,
+              new Class[]{String.class, Props.class, Props.class, Logger.class},
+              jobId, pluginLoadProps, jobProps, logger);
     } catch (final Exception e) {
       logger.error("Failed to build job executor for job " + jobId
           + e.getMessage());

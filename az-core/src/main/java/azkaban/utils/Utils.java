@@ -16,8 +16,26 @@
 
 package azkaban.utils;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.IOUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Days;
@@ -33,38 +51,13 @@ import org.quartz.CronExpression;
 import org.quartz.TriggerUtils;
 import org.quartz.impl.triggers.CronTriggerImpl;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Random;
-import java.util.TimeZone;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
-
 /**
  * A util helper class full of static methods that are commonly used.
  */
 public class Utils {
 
   public static final Random RANDOM = new Random();
-  private static final Logger logger = Logger.getLogger(Utils.class);
+  private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
   private static final String TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
   private static final String DATE_PATTERN = "yyyy-MM-dd";
@@ -284,6 +277,21 @@ public class Utils {
 
   public static Object callConstructor(final Class<?> c, final Object... args) {
     return callConstructor(c, getTypes(args), args);
+  }
+
+  public static Object newConstructor(final Class<?> c, final Class<?>[] classes, final Object... args) {
+    try {
+      final Constructor<?> cons = c.getConstructor(classes);
+      return cons.newInstance(args);
+    } catch (final InvocationTargetException e) {
+      throw getCause(e);
+    } catch (final IllegalAccessException e) {
+      throw new IllegalStateException(e);
+    } catch (final NoSuchMethodException e) {
+      throw new IllegalStateException(e);
+    } catch (final InstantiationException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   /**
@@ -525,7 +533,7 @@ public class Utils {
     try {
       cronTriggerImpl.setCronExpression(cron);
     } catch (ParseException pe){
-      logger.error("parsing cron expression falied, " + pe);
+      logger.error("parsing cron expression falied: {}", pe);
       return timeList;
     }
     List<Date> dates = TriggerUtils.computeFireTimesBetween(cronTriggerImpl, null, startDate, endDate);

@@ -37,8 +37,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Loads yaml files to flows from project directory.
@@ -137,7 +137,8 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
           }
         }
       } catch (final Exception e) {
-        this.errors.add("Error loading flow yaml file " + file.getName() + ":"
+        logger.error("Error loading flow yaml file {}, cause by:", file.getName(), e);
+        this.errors.add("Error loading flow yaml file " + file.getName() + ", cause by:"
             + e.getMessage());
       }
     }
@@ -224,7 +225,7 @@ public class DirectoryYamlFlowLoader implements FlowLoader {
         if (recStack.contains(parent)) {
           // Cycles found, including self cycle.
           edge.setError("Cycles found.");
-          this.errors.add("Cycles found at " + edge.getId());
+          this.errors.add("Cycles found at " + edge.getId() + ", please check the dependency information.");
         } else {
           // Valid edge. Continue to process the parent node recursively.
           addEdges(azkabanFlow.getNode(parent), azkabanFlow, flowName, recStack, visited);

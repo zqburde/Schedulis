@@ -79,10 +79,10 @@ function javaOption(){
     AZKABAN_OPTS="-Xmx8G"
   fi
   # Set the log4j configuration file
-  if [ -f $conf/log4j.properties ]; then
-    AZKABAN_OPTS="$AZKABAN_OPTS -Dlog4j.configuration=file:$conf/log4j.properties -Dlog4j.log.dir=/appcom/logs/azkaban"
+  if [ -f $conf/log4j2.xml ]; then
+    AZKABAN_OPTS="$AZKABAN_OPTS -Dlog4j.configurationFile=$conf/log4j2.xml"
   else
-    LOG ERROR "$conf/log4j.properties file doesn't exist."
+    LOG ERROR "$conf/log4j2.xml file doesn't exist."
     return 1
   fi
   executorport=`cat $conf/azkaban.properties | grep executor.port | awk -F '=' '{print($NF)}'`
@@ -96,7 +96,15 @@ function start(){
   LOG INFO "Starting AzkabanExecutorServer on port $executorport ..."
   java $AZKABAN_OPTS $JAVA_LIB_PATH -cp $CLASSPATH azkaban.execapp.AzkabanExecutorServer -conf $conf $@ >> $logFile 2>&1 &
   echo $! > $azkaban_dir/currentpid
-  LOG INFO "AzkabanExecutorServer started successfully."
+  sleep 3s
+  processName=`jps|grep AzkabanExecutorServer`
+  if [ ! -n "$processName" ]
+  then
+      LOG INFO "AzkabanExecutorServer startup failed"
+      return 1
+  else
+      return 0
+  fi
 }
 
 function genServerId(){
@@ -126,27 +134,30 @@ function updataExecutorStatus(){
   runtime=0
   while [[ $start_finish != 1 ]]; do
       result=`curl -POST http://${LOCAL_HOSTNAME}:${EXECUTOR_PORT}/executor -d action=activate`
-      LOG INFO " 执行结果: ${result}"
+      LOG INFO " exectue result: ${result}"
       [[ "${result}" =~ .*success.* ]] && { break; }
-      sleep 5s
+      sleep 3s
       runtime=$(( $runtime + 1 ))
-      LOG INFO " 当前运行次数为： ${runtime}  超过30次将退出。"
-      if [ ${runtime} -gt 30 ] 
+      LOG INFO "It has been run： ${runtime}  and will exit after 10 times。"
+      if [ ${runtime} -gt 10 ]
       then
           LOG ERROR "update executor status time out."
           return 1
       fi
   done
-  LOG INFO " 执行节点启动成功，更新数据库状态。"
   LOG INFO "update executor success."
+  LOG INFO "AzkabanExecutorServer started successfully."
 }
 
 function preCheck(){
   LOG INFO "checking AzkabanExecutorServer status..."
-  if [ -f $azkaban_dir/currentpid ]
+  processName=`jps|grep AzkabanExecutorServer`
+  if [ -n "$processName" ]
   then
-    LOG INFO "AzkabanExecutorServer already started."
-    return 1
+      LOG INFO "AzkabanExecutorServer already started."
+      return 1
+  else
+      return 0
   fi
 }
 

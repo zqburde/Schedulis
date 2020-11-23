@@ -7,7 +7,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -107,8 +108,6 @@ public class TestHadoopJobUtilsFindApplicationIdFromLog {
     bw.write("28-08-2015 12:29:38 PDT Training_clickSelectFeatures INFO - INFO The url to track the job: http://eat1-nertzwp02.grid.linkedin.com:8080/proxy/application_1440264346270_3088/\n");
     bw.write("28-08-2015 12:29:38 PDT Training_clickSelectFeatures INFO - INFO See http://eat1-nertzwp02.grid.linkedin.com:8080/proxy/application_1440264346270_3088/ for details.\n");
     bw.write("28-08-2015 12:29:38 PDT Training_clickSelectFeatures INFO - INFO Running job: job_1440264346270_3088\n");
-    bw.write("28-08-2015 12:30:21 PDT Training_clickSelectFeatures INFO - INFO Closing idle connection Socket[addr=eat1-hcl5481.grid.linkedin.com/172.20.138.228,port=42492,localport=42382] to server eat1-hcl5481.grid.linkedin.com/172.20.138.228:42492\n");
-    bw.write("28-08-2015 12:30:37 PDT Training_clickSelectFeatures INFO - INFO Closing idle connection Socket[addr=eat1-nertznn01.grid.linkedin.com/172.20.158.57,port=9000,localport=30453] to server eat1-nertznn01.grid.linkedin.com/172.20.158.57:9000\n");
     bw.write("28-08-2015 12:31:09 PDT Training_clickSelectFeatures INFO - INFO Job job_1440264346270_3088 running in uber mode : false\n");
     bw.close();
 

@@ -19,8 +19,6 @@ package azkaban.trigger;
 import azkaban.trigger.builtin.ExecuteFlowAction;
 import com.webank.wedatasphere.schedulis.common.distributelock.DBTableDistributeLock;
 
-import org.apache.commons.collections4.MapUtils;
-import org.apache.log4j.Logger;
 import org.joda.time.DateTimeUtils;
 
 import java.util.ArrayList;
@@ -45,8 +43,9 @@ import azkaban.executor.ExecutorManagerException;
 import azkaban.utils.Props;
 
 import static java.util.Objects.requireNonNull;
-
-
+import org.apache.commons.collections4.MapUtils;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 /**
  * @author georgeqiao
  * @Title: TriggerManager support HA
@@ -58,7 +57,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 
   public static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
   public static final String TRIGGERS_LOCK_KEY= "triggers_lock_key";
-  private static final Logger logger = Logger.getLogger(TriggerManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(TriggerManager.class);
   private static final Map<Integer, Trigger> triggerIdMap = new ConcurrentHashMap<>();
 
   private final TriggerScannerThread runnerThread;
@@ -120,7 +119,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
         triggerIdMap.put(t.getTriggerId(), t);
       }
     } catch (final Exception e) {
-      logger.error(e);
+      logger.error("", e);
       throw new TriggerManagerException(e);
     }
 

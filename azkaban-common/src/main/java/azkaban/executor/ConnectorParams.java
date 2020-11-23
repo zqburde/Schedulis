@@ -23,6 +23,7 @@ public interface ConnectorParams {
   public static final String EXECID_PARAM = "execid";
   public static final String SHAREDTOKEN_PARAM = "token";
   public static final String USER_PARAM = "user";
+  public static final String TOKEN_PARAM = "token";
 
   public static final String UPDATE_ACTION = "update";
   public static final String STATUS_ACTION = "status";

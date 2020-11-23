@@ -16,10 +16,12 @@
 
 package azkaban.executor.selector;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import org.apache.log4j.Logger;
 
 /**
  * Implementation of the CandidateSelector.
@@ -29,7 +31,7 @@ import org.apache.log4j.Logger;
  */
 public class CandidateSelector<K extends Comparable<K>, V> implements Selector<K, V> {
 
-  private static final Logger logger = Logger.getLogger(CandidateComparator.class);
+  private static final Logger logger = LoggerFactory.getLogger(CandidateComparator.class);
 
   private final CandidateFilter<K, V> filter;
   private final CandidateComparator<K> comparator;

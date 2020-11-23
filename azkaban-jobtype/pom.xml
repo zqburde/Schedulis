@@ -257,17 +257,6 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.apache.kafka</groupId>
-      <artifactId>kafka-log4j-appender</artifactId>
-      <version>${kafkaLog4jAppender.version}</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>slf4j-log4j12</artifactId>
-          <groupId>org.slf4j</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
       <groupId>org.apache.pig</groupId>
       <artifactId>pig</artifactId>
       <version>${pig.version}</version>
@@ -284,11 +273,6 @@
       <groupId>com.alibaba</groupId>
       <artifactId>druid</artifactId>
       <version>1.1.21</version>
-    </dependency>
-    <dependency>
-      <groupId>com.alibaba</groupId>
-      <artifactId>fastjson</artifactId>
-      <version>1.2.61</version>
     </dependency>
 
     <dependency>

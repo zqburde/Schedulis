@@ -20,18 +20,18 @@ import com.google.common.base.Joiner;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+
+import org.slf4j.Logger;
 
 public class LogGobbler extends Thread {
 
   private final BufferedReader inputReader;
   private final Logger logger;
-  private final Level loggingLevel;
+  private final String loggingLevel;
   private final CircularBuffer<String> buffer;
 
   public LogGobbler(final Reader inputReader, final Logger logger,
-      final Level level, final int bufferLines) {
+      final String level, final int bufferLines) {
     this.inputReader = new BufferedReader(inputReader);
     this.logger = logger;
     this.loggingLevel = level;
@@ -57,7 +57,23 @@ public class LogGobbler extends Thread {
 
   private void log(final String message) {
     if (this.logger != null) {
-      this.logger.log(this.loggingLevel, message);
+      switch (this.loggingLevel) {
+        case "INFO":
+          this.logger.info(message);
+          break;
+        case "DEBUG":
+          this.logger.debug(message);
+          break;
+        case "ERROR":
+          this.logger.error(message);
+          break;
+        case "WARN":
+          this.logger.warn(message);
+          break;
+        default:
+          this.logger.trace(message);
+          break;
+      }
     }
   }
 

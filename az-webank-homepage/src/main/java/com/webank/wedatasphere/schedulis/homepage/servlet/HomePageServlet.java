@@ -46,6 +46,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -700,17 +701,16 @@ public class HomePageServlet extends LoginAbstractAzkabanServlet {
 
     //runCount = countTodaySchedule(cronExpression, todayLast, runCount, nowSchedTime.getMillis(), timezone);
 
-    final DateTime nextTime = WebUtils.getNextCronRuntime(todayLong
-        , timezone, Utils.parseCronExpression(cronExpression, timezone));
-    long nextExecTime = nextTime.getMillis();
+    Optional<DateTime> nextTime = WebUtils.getNextCronRuntime(todayLong
+            , timezone, Utils.parseCronExpression(cronExpression, timezone));
 
-    while(nextExecTime < todayLast){
+    while(nextTime.isPresent() && nextTime.get().getMillis() < todayLast) {
       runCount += 1;
-      nextExecTime = WebUtils.getNextCronRuntime(nextExecTime, timezone
-          , Utils.parseCronExpression(cronExpression, timezone)).getMillis();
+      nextTime = WebUtils.getNextCronRuntime(nextTime.get().getMillis(), timezone
+              , Utils.parseCronExpression(cronExpression, timezone));
     }
 
-    return runCount;
+      return runCount;
 
   }
 

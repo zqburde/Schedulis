@@ -22,6 +22,9 @@ import azkaban.utils.Emailer;
 import azkaban.utils.FileIOUtils;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.File;
@@ -36,13 +39,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.log4j.Logger;
 
 
 @Singleton
 public class AlerterHolder {
 
-  private static final Logger logger = Logger.getLogger(AlerterHolder.class);
+  private static final Logger logger = LoggerFactory.getLogger(AlerterHolder.class);
   private Map<String, Alerter> alerters;
   private final ConcurrentHashMap<Integer, Boolean> flowAlerterFlag = new ConcurrentHashMap<>();
 
@@ -51,7 +53,7 @@ public class AlerterHolder {
     try {
       this.alerters = loadAlerters(props, mailAlerter);
     } catch (final Exception ex) {
-      logger.error(ex);
+      logger.error("", ex);
       this.alerters = new HashMap<>();
     }
   }
@@ -129,7 +131,7 @@ public class AlerterHolder {
             final URL url = files[i].toURI().toURL();
             urls.add(url);
           } catch (final MalformedURLException e) {
-            logger.error(e);
+            logger.error("", e);
           }
         }
         if (extLibClasspath != null) {
@@ -139,7 +141,7 @@ public class AlerterHolder {
               final URL url = file.toURI().toURL();
               urls.add(url);
             } catch (final MalformedURLException e) {
-              logger.error(e);
+              logger.error("", e);
             }
           }
         }
@@ -175,7 +177,7 @@ public class AlerterHolder {
       try {
         obj = constructor.newInstance(pluginProps);
       } catch (final Exception e) {
-        logger.error(e);
+        logger.error("", e);
       }
 
       if (!(obj instanceof Alerter)) {

@@ -28,11 +28,12 @@ import org.apache.commons.jexl2.JexlEngine;
 import org.apache.commons.jexl2.JexlException;
 import org.apache.commons.jexl2.MapContext;
 import org.apache.commons.lang.StringUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class PropsUtils {
 
-  private static final Logger logger = Logger.getLogger(PropsUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(PropsUtils.class);
   private static final Pattern VARIABLE_REPLACEMENT_PATTERN = Pattern
       .compile("\\$\\{([a-zA-Z_.0-9]+)\\}");
 

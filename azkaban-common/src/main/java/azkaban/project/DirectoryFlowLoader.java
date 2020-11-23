@@ -26,6 +26,9 @@ import azkaban.project.FlowLoaderUtils.DirFilter;
 import azkaban.project.FlowLoaderUtils.SuffixFilter;
 import azkaban.project.validator.ValidationReport;
 import azkaban.utils.Props;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,8 +38,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Loads job and properties files to flows from project directory.
@@ -47,6 +48,7 @@ public class DirectoryFlowLoader implements FlowLoader {
   private static final String JOB_SUFFIX = ".job";
 
   private static final Logger logger = LoggerFactory.getLogger(DirectoryFlowLoader.class);
+
   private final Props props;
   private final Set<String> errors = new HashSet<>();
   private final Map<String, Flow> flowMap = new HashMap<>();
@@ -158,7 +160,8 @@ public class DirectoryFlowLoader implements FlowLoader {
         final FlowProps flowProps = new FlowProps(parent);
         this.flowPropsList.add(flowProps);
       } catch (final IOException e) {
-        this.errors.add("Error loading properties " + file.getName() + ":"
+        this.logger.error("Error loading properties {}, cause by :", file.getName(), e);
+        this.errors.add("Error loading properties " + file.getName() + ", cause by :"
             + e.getMessage());
       }
 
@@ -173,7 +176,7 @@ public class DirectoryFlowLoader implements FlowLoader {
       try {
         if (!this.duplicateJobs.contains(jobName)) {
           if (this.jobPropsMap.containsKey(jobName)) {
-            this.errors.add("Duplicate job names found '" + jobName + "'.");
+            this.errors.add("Duplicate job names found '" + file.getName() + "'.");
             this.duplicateJobs.add(jobName);
             this.jobPropsMap.remove(jobName);
             this.nodeMap.remove(jobName);
@@ -185,7 +188,7 @@ public class DirectoryFlowLoader implements FlowLoader {
             final Node node = new Node(jobName);
             final String type = prop.getString("type", null);
             if (type == null) {
-              this.errors.add("Job doesn't have type set '" + jobName + "', please check whether the file encoding is UNIX, UTF-8.");
+              this.errors.add("Job type property not found in file '" + file.getName() + "', please check whether the file encoding is UNIX, UTF-8.");
             }
 
             node.setType(type);
@@ -210,7 +213,8 @@ public class DirectoryFlowLoader implements FlowLoader {
           }
         }
       } catch (final IOException e) {
-        this.errors.add("Error loading job file " + file.getName() + ":"
+        this.logger.error("Error loading job file {}, cause by :", file.getName(), e);
+        this.errors.add("Error loading job file " + file.getName() + ", cause by : "
             + e.getMessage());
       }
     }
@@ -284,19 +288,22 @@ public class DirectoryFlowLoader implements FlowLoader {
               if (this.duplicateJobs.contains(dependencyName)) {
                 edge.setError("Ambiguous Dependency. Duplicates found.");
                 dependencies.put(dependencyName, edge);
-                this.errors.add(node.getId() + " 依赖关系不清晰 "
+                // 依赖关系不清晰
+                this.errors.add(node.getId() + " has ambiguous dependency, please check the dependency information."
                     + dependencyName);
               } else {
                 edge.setError("Dependency not found.");
                 dependencies.put(dependencyName, edge);
-                this.errors.add(node.getId() + " 找不到依赖 "
+                // 找不到依赖
+                this.errors.add(node.getId() + " cannot find dependency, please check the dependency information. "
                     + dependencyName);
               }
             } else if (dependencyNode == node) {
               // We have a self cycle
               edge.setError("Self cycle found.");
               dependencies.put(dependencyName, edge);
-              this.errors.add(node.getId() + " 有一个死循环");
+              // 有一个死循环
+              this.errors.add(node.getId() + " has a self cycle, please check the dependency information.");
             } else {
               dependencies.put(dependencyName, edge);
             }

@@ -17,7 +17,8 @@
 package com.webank.wedatasphere.schedulis.linkis.log;
 
 import com.webank.wedatasphere.dss.linkis.node.execution.log.LinkisJobExecutionLog;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by peacewong on 2019/11/3.
@@ -34,16 +35,16 @@ public class AzkabanAppjointLog extends LinkisJobExecutionLog {
 
     @Override
     public void info(Object message, Throwable t) {
-        log.info(message, t);
+        log.info(message.toString(), t);
     }
 
     @Override
     public void warn(Object message, Throwable t) {
-        log.warn(message, t);
+        log.warn(message.toString(), t);
     }
 
     @Override
     public void error(Object message, Throwable t) {
-        log.error(message, t);
+        log.error(message.toString(), t);
     }
 }

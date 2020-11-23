@@ -32,12 +32,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class TriggerBasedScheduleLoader implements ScheduleLoader {
 
-  private static final Logger logger = Logger
-      .getLogger(TriggerBasedScheduleLoader.class);
+  private static final Logger logger = LoggerFactory.getLogger(TriggerBasedScheduleLoader.class);
 
   private final TriggerManagerAdapter triggerManager;
 

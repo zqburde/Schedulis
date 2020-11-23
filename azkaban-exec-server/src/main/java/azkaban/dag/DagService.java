@@ -19,14 +19,15 @@ package azkaban.dag;
 import azkaban.utils.ExecutorServiceUtils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Thread safe and non blocking service for DAG processing.

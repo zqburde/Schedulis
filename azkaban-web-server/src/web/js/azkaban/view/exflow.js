@@ -84,6 +84,41 @@ azkaban.StatusView = Backbone.View.extend({
   }
 });
 
+var pausedTipsView;
+azkaban.PausedTipsView = Backbone.View.extend({
+
+  initialize: function (settings) {
+
+  },
+
+  render: function (evt) {
+
+  },
+
+  events: {
+    "click #paused-flow-btn": "handlePause",
+  },
+
+  handlePause: function () {
+    var requestURL = contextURL + "/executor";
+    var requestData = {"execid": execId, "ajax": "pauseFlow"};
+    var successHandler = function (data) {
+      console.log("pause clicked");
+      if (data.error) {
+        showDialog("Error", data.error);
+      }
+      else {
+        showDialog(wtssI18n.view.timeOut, wtssI18n.view.workflowSuspended);
+        setTimeout(function () {
+          updateStatus();
+        }, 1100);
+      }
+    };
+    ajaxCall(requestURL, requestData, successHandler);
+  }
+
+});
+
 var flowTabView;
 azkaban.FlowTabView = Backbone.View.extend({
   events: {
@@ -253,6 +288,7 @@ azkaban.FlowTabView = Backbone.View.extend({
       $("#cancelbtn").show();
       $("#executebtn").hide();
       $("#retrybtn").show();
+      $("#pausebtn").show();
       if (data.executionStrategy == "FAILED_PAUSE") {
         $("#skipAllFailedJobBtn").show();
       }
@@ -446,21 +482,7 @@ azkaban.FlowTabView = Backbone.View.extend({
   },
 
   handlePauseClick: function (evt) {
-    var requestURL = contextURL + "/executor";
-    var requestData = { "execid": execId, "ajax": "pauseFlow" };
-    var successHandler = function (data) {
-      console.log("pause clicked");
-      if (data.error) {
-        showDialog("Error", data.error);
-      }
-      else {
-        showDialog(wtssI18n.view.timeOut, wtssI18n.view.workflowSuspended);
-        setTimeout(function () {
-          updateStatus();
-        }, 1100);
-      }
-    };
-    ajaxCall(requestURL, requestData, successHandler);
+    $('#paused-flow-modal').modal();
   },
 
   handleResumeClick: function (evt) {
@@ -960,6 +982,11 @@ $(function () {
 
   flowTabView = new azkaban.FlowTabView({
     el: $('#headertabs'),
+    model: graphModel
+  });
+
+  pausedTipsView = new azkaban.PausedTipsView({
+    el: $('#paused-flow-modal'),
     model: graphModel
   });
 

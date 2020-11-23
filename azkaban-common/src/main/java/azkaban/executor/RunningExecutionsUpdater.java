@@ -27,7 +27,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import javax.inject.Inject;
-import org.apache.log4j.Logger;
+
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import org.joda.time.DateTime;
 
 /**
@@ -35,7 +37,7 @@ import org.joda.time.DateTime;
  */
 public class RunningExecutionsUpdater {
 
-  private static final Logger logger = Logger.getLogger(RunningExecutionsUpdater.class);
+  private static final Logger logger = LoggerFactory.getLogger(RunningExecutionsUpdater.class);
   // First email is sent after 1 minute of unresponsiveness
   final int numErrorsBeforeUnresponsiveEmail = 6;
   final long errorThreshold = 10000;
@@ -114,7 +116,7 @@ public class RunningExecutionsUpdater {
             }
           } catch (final ExecutorManagerException e) {
             final ExecutableFlow flow = e.getExecutableFlow();
-            logger.error(e);
+            logger.error("", e);
 
             if (flow != null) {
               logger.warn("Finalizing execution " + flow.getExecutionId());

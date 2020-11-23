@@ -24,12 +24,12 @@ import java.util.Arrays;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 public class AzkabanDatabaseUpdater {
 
-  private static final Logger logger = Logger
-      .getLogger(AzkabanDatabaseUpdater.class);
+  private static final Logger logger = LoggerFactory.getLogger(AzkabanDatabaseUpdater.class);
 
   public static void main(final String[] args) throws Exception {
     final OptionParser parser = new OptionParser();

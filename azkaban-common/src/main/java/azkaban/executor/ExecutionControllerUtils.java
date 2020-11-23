@@ -29,16 +29,15 @@ import azkaban.sla.SlaOption;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Utils for controlling executions.
  */
 public class ExecutionControllerUtils {
 
-  private static final Logger logger = LoggerFactory.getLogger(
-      ExecutionControllerUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExecutionControllerUtils.class);
   /**
    * If the current status of the execution is not one of the finished statuses, mark the execution
    * as failed in the DB.
@@ -110,7 +109,9 @@ public class ExecutionControllerUtils {
       }
       if (options.getFlowParameters().containsKey("alert.type")) {
         final String alertType = options.getFlowParameters().get("alert.type");
-        final Alerter alerter = alerterHolder.get(alertType);
+
+        final Alerter alerter = alerterHolder.get(alertType) == null? alerterHolder.get("default") : alerterHolder.get(alertType);
+
         if (alerter != null) {
           try {
             // FIXME Job stream failure alarm, relying on third-party services.
@@ -136,7 +137,9 @@ public class ExecutionControllerUtils {
       }
       if (options.getFlowParameters().containsKey("alert.type")) {
         final String alertType = options.getFlowParameters().get("alert.type");
-        final Alerter alerter = alerterHolder.get(alertType);
+
+        final Alerter alerter = alerterHolder.get(alertType) == null? alerterHolder.get("default"): alerterHolder.get(alertType);
+
         if (alerter != null) {
           try {
             // FIXME The job stream runs successfully and relies on third-party services.
@@ -179,7 +182,9 @@ public class ExecutionControllerUtils {
 
       if (options.getFlowParameters().containsKey("alert.type")) {
         final String alertType = options.getFlowParameters().get("alert.type");
-        final Alerter alerter = alerterHolder.get(alertType);
+
+        final Alerter alerter = alerterHolder.get(alertType) == null? alerterHolder.get("default"): alerterHolder.get(alertType);
+
         if (alerter != null) {
           try {
             // FIXME Job stream failure alarm, relying on third-party services.

@@ -26,11 +26,12 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LocaleFilter implements Filter {
 
-    private static final Logger logger = Logger.getLogger(LocaleFilter.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(LocaleFilter.class.getName());
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -88,7 +89,7 @@ public class LocaleFilter implements Filter {
                 req.getSession().setAttribute("TRANS_I18N_LOCALE", languageType);
                 LoadJsonUtils.setLanguageType(languageType);
             } catch (Exception e) {
-                logger.error("a fatal error had happen when init locale");
+                logger.error("a fatal error had happen when init locale languageType, caused by:" , e);
                 LoadJsonUtils.setLanguageType("zh_CN");
             }
         }
