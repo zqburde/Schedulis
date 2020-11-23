@@ -313,7 +313,7 @@ azkaban.FlowScheduleDialogView = Backbone.View.extend({
         if (exgraph) {
           self.assignInitialStatus(data, exgraph);
         }
-
+        
         // Auto disable jobs that are finished.
         disableFinishedJobs(data);
         executingSvgGraphView = new azkaban.SvgGraphView({
