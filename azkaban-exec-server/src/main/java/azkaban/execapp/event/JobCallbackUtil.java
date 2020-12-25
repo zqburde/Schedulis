@@ -87,6 +87,15 @@ public class JobCallbackUtil {
     return false;
   }
 
+
+  /**
+   * This method is responsible for parsing job call URL properties and convert them into a list of
+   * HttpRequestBase, which callers can use to execute.
+   *
+   * In addition to parsing, it will also replace the tokens with actual values.
+   *
+   * @return List<HttpRequestBase> - empty if no job callback related properties
+   */
   public static List<HttpRequestBase> parseJobCallbackProperties(final Props props,
       final JobCallbackStatusEnum status, final Map<String, String> contextInfo,
       final int maxNumCallback) {

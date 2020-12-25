@@ -17,6 +17,7 @@
 package azkaban.execapp;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
+import static azkaban.Constants.USER_DEFINED_PARAM;
 import static azkaban.execapp.ConditionalWorkflowUtils.FAILED;
 import static azkaban.execapp.ConditionalWorkflowUtils.PENDING;
 import static azkaban.execapp.ConditionalWorkflowUtils.checkConditionOnJobStatus;
@@ -2174,6 +2175,7 @@ public class FlowRunner extends EventHandler implements Runnable {
           FlowRunner.this.activeJobRunners.remove(jobRunner);
           // FIXME Added task processing for FAILED_WAITING status.
           failedWaitingJobHandle(node);
+          setUserDefined(node);
           node.getParentFlow().setUpdateTime(System.currentTimeMillis());
           interrupt();
           fireEventListeners(event);
@@ -2190,6 +2192,12 @@ public class FlowRunner extends EventHandler implements Runnable {
         // FIXME Added job and subflow execution timeout alarms.
         handleJobAndEmbeddedFlowExecTimeoutAlter(jobRunner, eventData);
       }
+    }
+  }
+
+  private void setUserDefined(ExecutableNode node){
+    if(node.getOutputProps() != null && node.getOutputProps().containsKey(USER_DEFINED_PARAM)) {
+      FlowRunner.this.flow.setComment(node.getOutputProps().getString(USER_DEFINED_PARAM, ""));
     }
   }
 
@@ -2301,7 +2309,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         }
       }
     } catch (Exception e){
-      logger.error("发送子flow告警失败: " + e);
+      logger.error("发送子flow告警失败: ", e);
     }
   }
 
@@ -2365,7 +2373,7 @@ public class FlowRunner extends EventHandler implements Runnable {
           }
         }
       } catch (Exception e) {
-        logger.error("发送job告警失败" + e);
+        logger.error("发送job告警失败", e);
       }
     }
   }

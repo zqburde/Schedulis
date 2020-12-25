@@ -1,8 +1,8 @@
 package com.webank.wedatasphere.schedulis.common.utils;
 
 import io.jsonwebtoken.*;
-import org.apache.commons.codec.Charsets;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.Map;
@@ -54,7 +54,7 @@ public class JwtTokenUtils {
             });
         }
         long currentTime = System.currentTimeMillis();
-        byte[] apiKeySecretBytes = encryKey.getBytes(Charsets.UTF_8);
+        byte[] apiKeySecretBytes = encryKey.getBytes(StandardCharsets.UTF_8);
         return Jwts.builder()
                 .setId(UUID.randomUUID().toString())
                 .setIssuedAt(new Date(currentTime))  //签发时间
@@ -76,7 +76,7 @@ public class JwtTokenUtils {
      * @return
      */
     private static Jws<Claims> getJws(String token, String encryKey) {
-        byte[] apiKeySecretBytes = encryKey.getBytes(Charsets.UTF_8);
+        byte[] apiKeySecretBytes = encryKey.getBytes(StandardCharsets.UTF_8);
         return Jwts.parser()
                 .setSigningKey(apiKeySecretBytes)
                 .parseClaimsJws(token);
@@ -176,7 +176,6 @@ public class JwtTokenUtils {
      *
      * @param token
      * @param encryKey
-     * @param key
      * @return
      */
     public static String getSubject(String token, String encryKey) {

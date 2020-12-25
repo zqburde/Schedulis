@@ -35,6 +35,7 @@ import azkaban.user.User;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
 
+import com.google.common.collect.Lists;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import com.webank.wedatasphere.schedulis.common.system.SystemManager;
 import com.webank.wedatasphere.schedulis.common.system.SystemUserManagerException;
@@ -56,6 +57,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.gson.JsonObject;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 import org.joda.time.DateTime;
@@ -69,6 +72,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   private static final long serialVersionUID = 1L;
   private static final Logger logger = LoggerFactory.getLogger(ScheduleServlet.class);
+  private static final String SCHEDULE_TARGET_FLOW = "all";
+  private static final String ALERT_TYPE_EVENT= "event";
+  private static final String ALERT_TYPE_TIMEOUT = "timeout";
   private ProjectManager projectManager;
   private ScheduleManager scheduleManager;
   private TransitionService transitionService;
@@ -127,6 +133,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ajaxFetchAllSchedules(req, ret, session);
     } else if(ajaxName.equals("setScheduleActiveFlag")){
       ajaxSetScheduleActiveFlag(req, ret, session.getUser());
+    } else if(ajaxName.equals("fetchAllScheduleFlowInfo")){
+      ajaxFetchAllScheduleFlowInfo(req, ret, session);
+    } else if(ajaxName.equals("batchSetSla")){
+      ajaxBatchSetSla(req, ret, session.getUser());
     }
 
     if (ret != null) {
@@ -163,8 +173,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       return;
     }
 
-    final List<HashMap<String, Object>> output =
-        new ArrayList<>();
+    final List<HashMap<String, Object>> output = new ArrayList<>();
     ret.put("items", output);
 
     for (final Schedule schedule : schedules) {
@@ -196,8 +205,792 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     output.add(data);
   }
 
-  private void ajaxSetSla(final HttpServletRequest req, final HashMap<String, Object> ret,
-      final User user) {
+  private void ajaxBatchSetSla(final HttpServletRequest req, final HashMap<String, Object> ret, final User user) {
+
+    try {
+      final String allScheduleIdStr = getParam(req,"allScheduleIdList");
+
+      List<String> allScheduleIdList = new ArrayList<>();
+      if (allScheduleIdStr.contains(",")) {
+        allScheduleIdList = Lists.newArrayList(allScheduleIdStr.split(","));
+      } else {
+        allScheduleIdList.add(allScheduleIdStr);
+      }
+
+      final Map<String, String> settings = getParamGroup(req, "settings");
+      final Map<String, String> finishSettings = getParamGroup(req, "finishSettings");
+
+      final Map<String, List<String>> targetSettings = new HashMap<>();
+      final Map<String, List<String>> targetFinishSettings = new HashMap<>();
+
+      Set<String> timeoutAlertScheduleIdIndexList = new HashSet<>();
+      for (Map.Entry<String, String> entry : settings.entrySet()) {
+        String index = entry.getValue().split(",")[0];
+
+        timeoutAlertScheduleIdIndexList.add(index);
+        if (index.equals("0")) {
+          if (targetSettings.containsKey("all")) {
+            targetSettings.get("all").add(entry.getValue());
+          } else {
+            List<String> valueList = new ArrayList<>();
+            valueList.add(entry.getValue());
+            targetSettings.put("all", valueList);
+          }
+        } else {
+          String scheduleId = allScheduleIdList.get(Integer.valueOf(index) - 1);
+          if (targetSettings.containsKey(scheduleId)) {
+            targetSettings.get(scheduleId).add(entry.getValue());
+          } else {
+            List<String> valueList = new ArrayList<>();
+            valueList.add(entry.getValue());
+            targetSettings.put(scheduleId, valueList);
+          }
+
+        }
+      }
+
+      List<String> timeoutAlertScheduleIdList = new ArrayList<>();
+      for (String index : timeoutAlertScheduleIdIndexList) {
+        if (index.equals("0")) {
+          timeoutAlertScheduleIdList.add("all");
+        }else {
+          timeoutAlertScheduleIdList.add(allScheduleIdList.get(Integer.valueOf(index) - 1));
+        }
+      }
+
+      Set<String> eventAlertScheduleIdIndexList = new HashSet<>();
+      for (Map.Entry<String, String> entry : finishSettings.entrySet()) {
+        String index = entry.getValue().split(",")[0];
+
+        eventAlertScheduleIdIndexList.add(index);
+        if (index.equals("0")) {
+          if (targetFinishSettings.containsKey("all")) {
+            targetFinishSettings.get("all").add(entry.getValue());
+          } else {
+            List<String> valueList = new ArrayList<>();
+            valueList.add(entry.getValue());
+            targetFinishSettings.put("all", valueList);
+          }
+        } else {
+          String scheduleId = allScheduleIdList.get(Integer.valueOf(index) - 1);
+          if (targetFinishSettings.containsKey(scheduleId)) {
+            targetFinishSettings.get(scheduleId).add(entry.getValue());
+          }else {
+            List<String> valueList = new ArrayList<>();
+            valueList.add(entry.getValue());
+            targetFinishSettings.put(scheduleId, valueList);
+          }
+        }
+      }
+
+      List<String> eventAlertScheduleIdList = new ArrayList<>();
+      for (String index : eventAlertScheduleIdIndexList) {
+        if (index.equals("0")) {
+          eventAlertScheduleIdList.add("all");
+        }else {
+          eventAlertScheduleIdList.add(allScheduleIdList.get(Integer.valueOf(index) - 1));
+        }
+      }
+
+      String departmentSlaInform;
+      if (hasParam(req, "departmentSlaInform")) {
+        departmentSlaInform = getParam(req, "departmentSlaInform");
+        logger.info("current batch SlaAlert via department flag is departmentSlaInform=" + departmentSlaInform);
+      } else {
+        departmentSlaInform = "false";
+      }
+
+      if (timeoutAlertScheduleIdList.size() == 1) {
+        if (timeoutAlertScheduleIdList.get(0).equals("all")) {
+          // 没有事件告警
+          Map<String, List<String>> dataTimeout = new HashMap<>();
+          Map<String, List<String>> dataEvent = new HashMap<>();
+          if (eventAlertScheduleIdList.size() == 0){
+            for (String id : allScheduleIdList) {
+              dataTimeout.put(id, targetSettings.get("all"));
+              Boolean execResult = executeSetSlaAction(req, ret, user, id, dataTimeout, null, departmentSlaInform);
+              logger.info("Via batch setSla, one timeout and event, event have no flow, scheduleId[" + id + "] sla alert set result="+ execResult);
+            }
+            // 对所有Flow执行通用的超时告警, 并判断事件告警的选择
+          } else if (eventAlertScheduleIdList.size() == 1) {
+            if (eventAlertScheduleIdList.get(0).equals("all")) {
+              for (String tempId : allScheduleIdList) {
+                dataTimeout.put(tempId, targetSettings.get("all"));
+                dataEvent.put(tempId, targetFinishSettings.get("all"));
+                Boolean execResult = executeSetSlaAction(req, ret, user, tempId, dataTimeout, dataEvent, departmentSlaInform);
+                logger.info("Via batch setSla, one timeout and event, event have all flow, scheduleId[" + tempId + "] sla alert set result="+ execResult);
+              }
+            } else {
+              // 执行通用的
+              allScheduleIdList.remove(eventAlertScheduleIdList.get(0));
+              for (String id : allScheduleIdList) {
+                dataTimeout.put(id, targetSettings.get("all"));
+                Boolean execResult = executeSetSlaAction(req, ret, user, id, dataTimeout, null, departmentSlaInform);
+                logger.info("Via batch setSla, one timeout and event, event have all flow, scheduleId[" + id + "] sla alert set result="+ execResult);
+              }
+              // 执行单独的
+
+              String eventId = eventAlertScheduleIdList.get(0);
+              dataTimeout.put(eventId, targetSettings.get("all"));
+              dataEvent.put(eventId, targetFinishSettings.get(eventId));
+              Boolean execResult = executeSetSlaAction(req, ret, user, eventId, dataTimeout, dataEvent, departmentSlaInform);
+              logger.info("Via batch setSla, one timeout and event, event have all flow, scheduleId[" + eventAlertScheduleIdList.get(0)
+                  + "] sla alert set result="+ execResult);
+            }
+          } else {
+            // 事件告警不止一条
+            // 先执行通用的
+            if (eventAlertScheduleIdList.contains("all")) {
+              allScheduleIdList.removeAll(eventAlertScheduleIdList);
+              for (String id : allScheduleIdList) {
+                dataTimeout.put(id, targetSettings.get("all"));
+                dataEvent.put(id, targetFinishSettings.get("all"));
+                Boolean execResult = executeSetSlaAction(req, ret, user, id, dataTimeout, dataEvent, departmentSlaInform);
+                logger.info("Via batch setSla, one timeout and multi event, event have all flow, scheduleId[" + id
+                    + "] sla alert set result="+ execResult);
+              }
+
+              // 执行单独设置的事件告警
+              for (String specialId : eventAlertScheduleIdList) {
+                if (!specialId.equals("all")) {
+                  dataTimeout.put(specialId, targetSettings.get("all"));
+                  Map<String, List<String>> eventMap = new HashMap<>();
+                  eventMap.put(specialId, targetFinishSettings.get(specialId));
+                  Boolean execResult = executeSetSlaAction(req, ret, user, specialId, dataTimeout, eventMap, departmentSlaInform);
+                  logger.info("Via batch setSla, one timeout and event, event have all flow, scheduleId[" + specialId
+                      + "] sla alert set result="+ execResult);
+                }
+              }
+            } else {
+
+              // 执行没有设置通用的事件告警
+              for (String specialId : eventAlertScheduleIdList) {
+                dataTimeout.put(specialId, targetSettings.get("all"));
+                Map<String, List<String>> eventMap = new HashMap<>();
+                eventMap.put(specialId, targetFinishSettings.get(specialId));
+                Boolean execResult = executeSetSlaAction(req, ret, user, specialId, dataTimeout, eventMap, departmentSlaInform);
+                logger.info("Via batch setSla, one timeout and event, event have all flow, scheduleId[" + specialId
+                    + "] sla alert set result="+ execResult);
+              }
+            }
+          }
+        } else {
+          String timeOutTempId = timeoutAlertScheduleIdList.get(0);
+
+          if (eventAlertScheduleIdList.size() == 0){
+            Map<String, List<String>> timeoutMap = new HashMap<>();
+            timeoutMap.put(timeOutTempId, targetSettings.get(timeOutTempId));
+            Boolean execResult = executeSetSlaAction(req, ret, user, timeOutTempId, timeoutMap, null, departmentSlaInform);
+            logger.info("Via batch setSla, one timeout and event, event have no flow, scheduleId[" + timeOutTempId
+                + "] sla alert set result="+ execResult);
+            // 对所有Flow执行通用的超时告警, 并判断事件告警的选择
+          } else if (eventAlertScheduleIdList.size() == 1) {
+            if (eventAlertScheduleIdList.get(0).equals("all")) {
+              Map<String, List<String>> dataEvent = new HashMap<>();
+              // 先移除这一条,后面在单独执行
+              allScheduleIdList.remove(timeOutTempId);
+              for (String tempId : allScheduleIdList) {
+                dataEvent.put(tempId, targetFinishSettings.get("all"));
+                Boolean execResult = executeSetSlaAction(req, ret, user, tempId, null, dataEvent, departmentSlaInform);
+                logger.info("Via batch setSla, one timeout and event, event have all flow, scheduleId[" + tempId
+                    + "] sla alert set result="+ execResult);
+              }
+              // 单独执行上面这一条
+              Map<String, List<String>> dataTimeout = new HashMap<>();
+              dataEvent.put(timeOutTempId, targetFinishSettings.get("all"));
+              dataTimeout.put(timeOutTempId, targetSettings.get(timeOutTempId));
+              Boolean execResult = executeSetSlaAction(req, ret, user, timeOutTempId, dataTimeout, dataEvent, departmentSlaInform);
+              logger.info("Via batch setSla, one timeout and event, event have all flow, scheduleId[" + timeOutTempId
+                  + "] sla alert set result="+ execResult);
+            } else {
+
+              // 判断是否相等,相等则一起执行,不相等,则分别执行
+              if (timeOutTempId.equals(eventAlertScheduleIdList.get(0))) {
+                Map<String, List<String>> dataTimeout = new HashMap<>();
+                dataTimeout.put(timeOutTempId, targetSettings.get(timeOutTempId));
+                Map<String, List<String>> dataEvent = new HashMap<>();
+                dataEvent.put(timeOutTempId, targetFinishSettings.get(timeOutTempId));
+                Boolean execResult = executeSetSlaAction(req, ret, user, timeOutTempId, dataTimeout, dataEvent, departmentSlaInform);
+                logger.info("Via batch setSla, one timeout and event, event have all flow, scheduleId[" + timeOutTempId
+                    + "] sla alert set result="+ execResult);
+              } else {
+                Map<String, List<String>> dataTimeout = new HashMap<>();
+                dataTimeout.put(timeOutTempId, targetSettings.get(timeOutTempId));
+                Boolean execResult = executeSetSlaAction(req, ret, user, timeOutTempId, dataTimeout, null, departmentSlaInform);
+                logger.info("Via batch setSla, one timeout and event, event have all flow, scheduleId[" + timeOutTempId
+                    + "] sla alert set result="+ execResult);
+
+                Map<String, List<String>> dataEvent = new HashMap<>();
+                dataEvent.put(timeOutTempId, targetFinishSettings.get(timeOutTempId));
+                Boolean execResult1 = executeSetSlaAction(req, ret, user, eventAlertScheduleIdList.get(0), null, dataEvent, departmentSlaInform);
+                logger.info("Via batch setSla, one timeout and event, event have all flow, scheduleId[" + eventAlertScheduleIdList.get(0)
+                    + "] sla alert set result="+ execResult1);
+
+              }
+            }
+          } else {
+            // 事件告警不止一条
+            if (eventAlertScheduleIdList.contains("all")) {
+              allScheduleIdList.removeAll(eventAlertScheduleIdList);
+              allScheduleIdList.remove(timeOutTempId);
+              // 先执行通用的
+              Map<String, List<String>> dataEvent = new HashMap<>();
+              for (String id : allScheduleIdList) {
+                dataEvent.put(id, targetFinishSettings.get("all"));
+                Boolean execResult = executeSetSlaAction(req, ret, user, id, null, dataEvent, departmentSlaInform);
+                logger.info("Via batch setSla, one timeout and event, event have no all flow, scheduleId[" + id
+                    + "] sla alert set result="+ execResult);
+              }
+
+              // 执行单独设置的告警
+              if (eventAlertScheduleIdList.contains(timeOutTempId)) {
+                Map<String, List<String>> dataTimeout = new HashMap<>();
+                dataTimeout.put(timeOutTempId, targetSettings.get(timeOutTempId));
+                Map<String, List<String>> dataEvent2 = new HashMap<>();
+                dataEvent2.put(timeOutTempId, targetFinishSettings.get(timeOutTempId));
+                Boolean execResult = executeSetSlaAction(req, ret, user, timeOutTempId, dataTimeout, dataEvent2, departmentSlaInform);
+                logger.info("Via batch setSla, one timeout and event, event have all flow, scheduleId[" + timeOutTempId
+                    + "] sla alert set result="+ execResult);
+              } else {
+                for (String specialId : eventAlertScheduleIdList) {
+                  if (!specialId.equals("all")) {
+                    Map<String, List<String>> dataEvent2 = new HashMap<>();
+                    dataEvent2.put(timeOutTempId, targetFinishSettings.get(specialId));
+                    Boolean execResult = executeSetSlaAction(req, ret, user, specialId, null, dataEvent2, departmentSlaInform);
+                    logger.info("Via batch setSla, one timeout and event, event have all flow, scheduleId[" + specialId
+                        + "] sla alert set result="+ execResult);
+                  }
+                }
+
+                // 执行单独的一条
+                Map<String, List<String>> dataTimeout = new HashMap<>();
+                dataTimeout.put(timeOutTempId, targetSettings.get(timeOutTempId));
+                dataEvent.put(timeOutTempId, targetFinishSettings.get("all"));
+                Boolean execResult = executeSetSlaAction(req, ret, user, timeOutTempId, dataTimeout, dataEvent, departmentSlaInform);
+                logger.info("Via batch setSla, one timeout and event, event have all flow, scheduleId[" + timeOutTempId
+                    + "] sla alert set result="+ execResult);
+
+              }
+
+            } else {
+
+              if (eventAlertScheduleIdList.contains(timeOutTempId)) {
+                Map<String, List<String>> finishSettings2 = new HashMap<>();
+                finishSettings2.put(timeOutTempId, targetFinishSettings.get(timeOutTempId));
+                Map<String, List<String>> dataTimeout = new HashMap<>();
+                dataTimeout.put(timeOutTempId, targetSettings.get(timeOutTempId));
+                Boolean execResult = executeSetSlaAction(req, ret, user, timeOutTempId, dataTimeout, finishSettings2, departmentSlaInform);
+                logger.info("Via batch setSla, one timeout and event, event have no all flow, scheduleId[" + timeOutTempId
+                    + "] sla alert set result="+ execResult);
+              } else {
+                for (String specialId : eventAlertScheduleIdList) {
+                  Map<String, List<String>> finishSettings1 = new HashMap<>();
+                  finishSettings1.put(specialId, targetFinishSettings.get(specialId));
+                  Boolean execResult = executeSetSlaAction(req, ret, user, specialId, null, finishSettings1, departmentSlaInform);
+                  logger.info("Via batch setSla, multi timeout and event have no all flow, scheduleId[" + specialId
+                      + "] sla alert set result="+ execResult);
+                }
+
+                // 执行单独的一条
+                Map<String, List<String>> dataTimeout = new HashMap<>();
+                dataTimeout.put(timeOutTempId, targetSettings.get(timeOutTempId));
+                Boolean execResult = executeSetSlaAction(req, ret, user, timeOutTempId, dataTimeout, null, departmentSlaInform);
+                logger.info("Via batch setSla, one timeout and event, event have all flow, scheduleId[" + timeOutTempId
+                    + "] sla alert set result="+ execResult);
+              }
+
+            }
+          }
+
+        }
+      } else {
+
+        // 超时告警有多条或者没有
+        // 包含all
+        if (timeoutAlertScheduleIdList.contains("all")) {
+
+          // 没有事件告警
+          if (eventAlertScheduleIdList.size() == 0){
+
+            allScheduleIdList.removeAll(timeoutAlertScheduleIdList);
+            Map<String, List<String>> timeoutMap = new HashMap<>();
+            // 先执行通用的超时告警
+            for (String tempId : allScheduleIdList) {
+              timeoutMap.put(tempId, targetSettings.get("all"));
+              Boolean execResult = executeSetSlaAction(req, ret, user, tempId, timeoutMap, null, departmentSlaInform);
+              logger.info("Via batch setSla, multi timeout and event have no flow, scheduleId[" + tempId
+                  + "] sla alert set result="+ execResult);
+            }
+
+            // 再执行特别设置的告警
+            for (String specialId : timeoutAlertScheduleIdList) {
+              if (!specialId.equals("all")) {
+                Map<String, List<String>> timeoutSettings1 = new HashMap<>();
+                timeoutSettings1.put(specialId, targetSettings.get(specialId));
+                Boolean execResult = executeSetSlaAction(req, ret, user, specialId, timeoutSettings1, null, departmentSlaInform);
+                logger.info("Via batch setSla, multi timeout nd event have all flow, scheduleId[" + specialId
+                    + "] sla alert set result="+ execResult);
+              }
+            }
+
+
+            // 对所有Flow执行通用的超时告警, 并判断事件告警的选择
+          } else if (eventAlertScheduleIdList.size() == 1) {
+            if (eventAlertScheduleIdList.get(0).equals("all")) {
+
+              // 先移除这一条,后面在单独执行
+              allScheduleIdList.removeAll(timeoutAlertScheduleIdList);
+              Map<String, List<String>> timeoutMap = new HashMap<>();
+              Map<String, List<String>> eventMap = new HashMap<>();
+              // 先执行通用的超时告警
+              for (String tempId : allScheduleIdList) {
+                timeoutMap.put(tempId, targetSettings.get("all"));
+                eventMap.put(tempId, targetSettings.get("all"));
+                Boolean execResult = executeSetSlaAction(req, ret, user, tempId, timeoutMap, eventMap, departmentSlaInform);
+                logger.info("Via batch setSla, multi timeout and event have all flow, scheduleId[" + tempId
+                    + "] sla alert set result="+ execResult);
+              }
+
+              // 单独执行超时告警中的特别设置
+              for (String specialId : timeoutAlertScheduleIdList) {
+                if (!specialId.equals("all")) {
+                  Map<String, List<String>> timeoutMap0 = new HashMap<>();
+                  timeoutMap0.put(specialId, targetSettings.get(specialId));
+                  eventMap.put(specialId, targetFinishSettings.get("all"));
+                  Boolean execResult = executeSetSlaAction(req, ret, user, specialId, timeoutMap0, eventMap, departmentSlaInform);
+                  logger.info("Via batch setSla, multi timeout nd event have all flow, scheduleId[" + specialId
+                      + "] sla alert set result="+ execResult);
+                }
+              }
+            } else {
+              String eventTempId = eventAlertScheduleIdList.get(0);
+
+              // 先执行通用的超时告警, 排除单独执行的
+              allScheduleIdList.removeAll(timeoutAlertScheduleIdList);
+              allScheduleIdList.removeAll(eventAlertScheduleIdList);
+              Map<String, List<String>> timeoutMap = new HashMap<>();
+              for (String tempId : allScheduleIdList) {
+                timeoutMap.put(tempId, targetSettings.get("all"));
+                Boolean execResult = executeSetSlaAction(req, ret, user, tempId, timeoutMap, null, departmentSlaInform);
+                logger.info("Via batch setSla, and event have one flow, scheduleId[" + tempId + "] sla alert set result="+ execResult);
+              }
+
+              // 判断是否包含在超时告警的id集合中
+              if (timeoutAlertScheduleIdList.contains(eventTempId)) {
+                Map<String, List<String>> timeoutSettings2 = new HashMap<>();
+                timeoutSettings2.put(eventTempId, targetSettings.get(eventTempId));
+                Map<String, List<String>> eventSettings2 = new HashMap<>();
+                eventSettings2.put(eventTempId, targetFinishSettings.get(eventTempId));
+                Boolean execResult = executeSetSlaAction(req, ret, user, eventTempId, timeoutSettings2, eventSettings2, departmentSlaInform);
+                logger.info("Via batch setSla, and event have one flow, scheduleId[" + eventTempId + "] sla alert set result="+ execResult);
+              } else {
+
+                // 先执行这一条
+                Map<String, List<String>> eventSettings2 = new HashMap<>();
+                timeoutMap.put(eventTempId, targetSettings.get("all"));
+                eventSettings2.put(eventTempId, targetFinishSettings.get(eventTempId));
+                Boolean execResult1 = executeSetSlaAction(req, ret, user, eventTempId, timeoutMap, eventSettings2, departmentSlaInform);
+                logger.info("Via batch setSla, and event have one flow, scheduleId[" + eventTempId + "] sla alert set result="+ execResult1);
+
+                // 再执行超时告警中的其他设置
+                for (String specialId : timeoutAlertScheduleIdList) {
+                  Map<String, List<String>> timeoutSettings1 = new HashMap<>();
+                  timeoutSettings1.put(specialId, targetSettings.get(specialId));
+                  Boolean execResult2 = executeSetSlaAction(req, ret, user, specialId, timeoutSettings1, null, departmentSlaInform);
+                  logger.info("Via batch setSla, and event have one flow, scheduleId[" + eventTempId + "] sla alert set result="+ execResult2);
+                }
+              }
+            }
+          } else {
+            // 事件告警不止一条
+            // 先执行通用的
+            if (eventAlertScheduleIdList.contains("all")) {
+              // 先执行所有的
+              allScheduleIdList.removeAll(timeoutAlertScheduleIdList);
+              allScheduleIdList.removeAll(eventAlertScheduleIdList);
+              Map<String, List<String>> timeoutMap = new HashMap<>();
+              Map<String, List<String>> eventMap = new HashMap<>();
+              // 先执行通用的超时告警
+              for (String tempId : allScheduleIdList) {
+                timeoutMap.put(tempId, targetSettings.get("all"));
+                eventMap.put(tempId, targetFinishSettings.get("all"));
+                Boolean execResult = executeSetSlaAction(req, ret, user, tempId, timeoutMap, eventMap, departmentSlaInform);
+                logger.info("Via batch setSla, multi timeout and multi event alert and  both have all flow, scheduleId[" + tempId
+                    + "] sla alert set result="+ execResult);
+              }
+
+              // 再执行特别设置
+              for (String id : timeoutAlertScheduleIdList) {
+                if (!id.equals("all")) {
+                  Map<String, List<String>> timeSettings2 = new HashMap<>();
+                  Map<String, List<String>> finishSettings2 = new HashMap<>();
+                  timeSettings2.put(id, targetSettings.get(id));
+                  finishSettings2.put(id, targetFinishSettings.get(id));
+                  if (eventAlertScheduleIdList.contains(id)) {
+                    Boolean execResult = executeSetSlaAction(req, ret, user, id, timeSettings2, finishSettings2, departmentSlaInform);
+                    logger.info("Via batch setSla, multi timeout and multi event alert and both have all flow, scheduleId[" + id
+                        + "] sla alert set result="+ execResult);
+                  } else {
+                    eventMap.put(id, targetFinishSettings.get("all"));
+                    Boolean execResult = executeSetSlaAction(req, ret, user, id, timeSettings2, eventMap, departmentSlaInform);
+                    logger.info("Via batch setSla, multi timeout and multi event alert and both have all flow, scheduleId[" + id
+                        + "] sla alert set result="+ execResult);
+                  }
+                }
+
+              }
+
+              for (String id : eventAlertScheduleIdList) {
+                if (!id.equals("all")) {
+                  Map<String, List<String>> finishSettings2 = new HashMap<>();
+                  finishSettings2.put(id, targetFinishSettings.get(id));
+                  // 执行时间告警中不包含的就行了, 其他的已在上面执行
+                  if (!timeoutAlertScheduleIdList.contains(id)) {
+                    timeoutMap.put(id, targetSettings.get("all"));
+                    Boolean execResult = executeSetSlaAction(req, ret, user, id, timeoutMap, finishSettings2, departmentSlaInform);
+                    logger.info("Via batch setSla, multi timeout and multi event alert and have all flow, scheduleId[" + id
+                        + "] sla alert set result="+ execResult);
+
+                  }
+                }
+
+              }
+
+            } else {
+
+              Map<String, List<String>> timeoutMap = new HashMap<>();
+              // 先执行通用告警中的通用设置
+              allScheduleIdList.removeAll(timeoutAlertScheduleIdList);
+              allScheduleIdList.removeAll(eventAlertScheduleIdList);
+              // 先执行通用的超时告警
+              for (String tempId : allScheduleIdList) {
+                timeoutMap.put(tempId, targetSettings.get("all"));
+                Boolean execResult = executeSetSlaAction(req, ret, user, tempId, timeoutMap, null, departmentSlaInform);
+                logger.info("Via batch setSla, multi timeout and multi event alert and  both have all flow, scheduleId[" + tempId
+                    + "] sla alert set result="+ execResult);
+              }
+
+
+              // 执行没有设置通用的事件告警
+              // 再执行特别设置
+              for (String id : timeoutAlertScheduleIdList) {
+                Map<String, List<String>> timeSettings2 = new HashMap<>();
+                Map<String, List<String>> finishSettings2 = new HashMap<>();
+                timeSettings2.put(id, targetSettings.get(id));
+                finishSettings2.put(id, targetFinishSettings.get(id));
+                if (eventAlertScheduleIdList.contains(id)) {
+                  Boolean execResult = executeSetSlaAction(req, ret, user, id, timeSettings2, finishSettings2, departmentSlaInform);
+                  logger.info("Via batch setSla, multi timeout and multi event alert but both have no all flow, scheduleId[" + id
+                      + "] sla alert set result="+ execResult);
+                } else {
+                  Boolean execResult = executeSetSlaAction(req, ret, user, id, timeSettings2, null, departmentSlaInform);
+                  logger.info("Via batch setSla, multi timeout and multi event alert but have no all flow, scheduleId[" + id
+                      + "] sla alert set result="+ execResult);
+                }
+              }
+
+              for (String id : eventAlertScheduleIdList) {
+                Map<String, List<String>> finishSettings2 = new HashMap<>();
+                finishSettings2.put(id, targetFinishSettings.get(id));
+                if (!timeoutAlertScheduleIdList.contains(id)) {
+                  // 执行时间告警中不包含的就行了, 其他的已在上面执行
+                  timeoutMap.put(id, targetSettings.get("all"));
+                  Boolean execResult = executeSetSlaAction(req, ret, user, id, timeoutMap, finishSettings2, departmentSlaInform);
+                  logger.info("Via batch setSla, multi timeout and multi event but both have no all flow, alert scheduleId[" + id
+                      + "] sla alert set result="+ execResult);
+
+                }
+              }
+            }
+          }
+        } else {
+          // 超时告警不包含all
+          // 清除告警
+          if (timeoutAlertScheduleIdList.size() == 0 && eventAlertScheduleIdList.size() == 0) {
+            for (String id : allScheduleIdList) {
+              Boolean execResult = executeSetSlaAction(req, ret, user, id, null, null, departmentSlaInform);
+              logger.info("Via batch setSla, clear current sla, result=" + execResult);
+            }
+          }
+
+          if (eventAlertScheduleIdList.size() == 0){
+            // 直接执行特别设置的告警
+            for (String specialId : timeoutAlertScheduleIdList) {
+              Map<String, List<String>> timeoutSettings1 = new HashMap<>();
+              timeoutSettings1.put(specialId, targetSettings.get(specialId));
+              Boolean execResult = executeSetSlaAction(req, ret, user, specialId, timeoutSettings1, null, departmentSlaInform);
+              logger.info("Via batch setSla, multi timeout nd event have all flow, scheduleId[" + specialId
+                  + "] sla alert set result="+ execResult);
+            }
+
+            // 对所有Flow执行通用的超时告警, 并判断事件告警的选择
+          } else if (eventAlertScheduleIdList.size() == 1) {
+            if (eventAlertScheduleIdList.get(0).equals("all")) {
+
+              // 先移除这一条,后面在单独执行
+              allScheduleIdList.removeAll(timeoutAlertScheduleIdList);
+              Map<String, List<String>> eventMap = new HashMap<>();
+              // 单独执行超时告警中的特别设置
+              for (String tempId : allScheduleIdList) {
+                eventMap.put(tempId, targetFinishSettings.get("all"));
+                Boolean execResult = executeSetSlaAction(req, ret, user, tempId, null, eventMap, departmentSlaInform);
+                logger.info("Via batch setSla, multi timeout and timeout have no flow, scheduleId[" + tempId
+                    + "] sla alert set result="+ execResult);
+              }
+
+              // 单独执行超时告警中的特别设置
+              for (String specialId : timeoutAlertScheduleIdList) {
+                eventMap.put(specialId, targetFinishSettings.get("all"));
+                Map<String, List<String>> timeoutSettings1 = new HashMap<>();
+                timeoutSettings1.put(specialId, targetSettings.get(specialId));
+                Boolean execResult = executeSetSlaAction(req, ret, user, specialId, timeoutSettings1, eventMap, departmentSlaInform);
+                logger.info("Via batch setSla, multi timeout nd event have all flow, scheduleId[" + specialId
+                    + "] sla alert set result="+ execResult);
+              }
+            } else {
+              String eventTempId = eventAlertScheduleIdList.get(0);
+
+              // 判断是否包含在超时告警的id集合中
+              if (timeoutAlertScheduleIdList.contains(eventTempId)) {
+                Map<String, List<String>> timeoutSettings2 = new HashMap<>();
+                Map<String, List<String>> finishSettings2 = new HashMap<>();
+                timeoutSettings2.put(eventTempId, targetSettings.get(eventTempId));
+                finishSettings2.put(eventTempId, targetFinishSettings.get(eventTempId));
+                Boolean execResult = executeSetSlaAction(req, ret, user, eventTempId, timeoutSettings2, finishSettings2, departmentSlaInform);
+                logger.info("Via batch setSla, and event have one flow, scheduleId[" + eventTempId + "] sla alert set result="+ execResult);
+              } else {
+                for (String specialId : timeoutAlertScheduleIdList) {
+                  Map<String, List<String>> timeoutSettings1 = new HashMap<>();
+                  timeoutSettings1.put(specialId, targetSettings.get(specialId));
+                  Boolean execResult = executeSetSlaAction(req, ret, user, specialId, timeoutSettings1, null, departmentSlaInform);
+                  logger.info("Via batch setSla, and event have one flow, scheduleId[" + eventTempId + "] sla alert set result="+ execResult);
+                }
+
+                Map<String, List<String>> finishSettings2 = new HashMap<>();
+                finishSettings2.put(eventTempId, targetFinishSettings.get(eventTempId));
+                Boolean execResult = executeSetSlaAction(req, ret, user, eventTempId, null, finishSettings2, departmentSlaInform);
+                logger.info("Via batch setSla, and event have one flow, scheduleId[" + eventTempId + "] sla alert set result="+ execResult);
+              }
+
+            }
+          } else {
+            // 事件告警不止一条
+            // 先执行通用的
+            if (eventAlertScheduleIdList.contains("all")) {
+
+              // 先执行所有的
+              allScheduleIdList.removeAll(timeoutAlertScheduleIdList);
+              allScheduleIdList.removeAll(eventAlertScheduleIdList);
+              Map<String, List<String>> eventMap = new HashMap<>();
+              // 先执行通用的超时告警
+              for (String tempId : allScheduleIdList) {
+                eventMap.put(tempId, targetFinishSettings.get("all"));
+                Boolean execResult = executeSetSlaAction(req, ret, user, tempId, null, eventMap, departmentSlaInform);
+                logger.info("Via batch setSla, multi timeout and multi event alert and  both have all flow, scheduleId[" + tempId
+                    + "] sla alert set result="+ execResult);
+              }
+
+              // 没有超时告警
+              if (timeoutAlertScheduleIdList.size() == 0) {
+                for (String id : eventAlertScheduleIdList) {
+                  if (!id.equals("all")) {
+                    Map<String, List<String>> finishSettings2 = new HashMap<>();
+                    finishSettings2.put(id, targetFinishSettings.get(id));
+                    Boolean execResult = executeSetSlaAction(req, ret, user, id, null, finishSettings2, departmentSlaInform);
+                    logger.info("Via batch setSla, multi timeout and multi event alert and have all flow, scheduleId[" + id
+                        + "] sla alert set result="+ execResult);
+                  }
+                }
+              } else {
+                // 再执行特别设置
+                for (String id : timeoutAlertScheduleIdList) {
+                  Map<String, List<String>> timeSettings2 = new HashMap<>();
+                  Map<String, List<String>> finishSettings2 = new HashMap<>();
+                  if (eventAlertScheduleIdList.contains(id)) {
+                    timeSettings2.put(id, targetSettings.get(id));
+                    finishSettings2.put(id, targetFinishSettings.get(id));
+                    Boolean execResult = executeSetSlaAction(req, ret, user, id, timeSettings2, finishSettings2, departmentSlaInform);
+                    logger.info("Via batch setSla, multi timeout and multi event alert and both have all flow, scheduleId[" + id
+                        + "] sla alert set result="+ execResult);
+                  } else {
+                    eventMap.put(id, targetFinishSettings.get("all"));
+                    Boolean execResult = executeSetSlaAction(req, ret, user, id, timeSettings2, eventMap, departmentSlaInform);
+                    logger.info("Via batch setSla, multi timeout and multi event alert and both have all flow, scheduleId[" + id
+                        + "] sla alert set result="+ execResult);
+                  }
+                }
+
+                for (String id : eventAlertScheduleIdList) {
+                  Map<String, List<String>> finishSettings2 = new HashMap<>();
+                  if (!timeoutAlertScheduleIdList.contains(id)) {
+                    finishSettings2.put(id, targetFinishSettings.get(id));
+                    Boolean execResult = executeSetSlaAction(req, ret, user, id, null, finishSettings2, departmentSlaInform);
+                    logger.info("Via batch setSla, multi timeout and multi event alert and have all flow, scheduleId[" + id
+                        + "] sla alert set result="+ execResult);
+
+                  }
+                }
+              }
+            } else {
+
+              // 执行没有设置通用的事件告警
+              // 再执行特别设置
+              if (timeoutAlertScheduleIdList.size() == 0) {
+                for (String id : eventAlertScheduleIdList) {
+                  Map<String, List<String>> finishSettings2 = new HashMap<>();
+                  finishSettings2.put(id, targetFinishSettings.get(id));
+                  Boolean execResult = executeSetSlaAction(req, ret, user, id, null, finishSettings2, departmentSlaInform);
+                  logger.info("Via batch setSla, multi timeout and multi event but both have no all flow, alert scheduleId[" + id
+                      + "] sla alert set result="+ execResult);
+                }
+              } else {
+
+                for (String id : timeoutAlertScheduleIdList) {
+                  Map<String, List<String>> timeSettings2 = new HashMap<>();
+                  Map<String, List<String>> finishSettings2 = new HashMap<>();
+                  if (eventAlertScheduleIdList.contains(id)) {
+                    timeSettings2.put(id, targetSettings.get(id));
+                    finishSettings2.put(id, targetFinishSettings.get(id));
+                    Boolean execResult = executeSetSlaAction(req, ret, user, id, timeSettings2, finishSettings2, departmentSlaInform);
+                    logger.info("Via batch setSla, multi timeout and multi event alert but both have no all flow, scheduleId[" + id
+                        + "] sla alert set result="+ execResult);
+                  } else {
+                    Boolean execResult = executeSetSlaAction(req, ret, user, id, timeSettings2, null, departmentSlaInform);
+                    logger.info("Via batch setSla, multi timeout and multi event alert but have no all flow, scheduleId[" + id
+                        + "] sla alert set result="+ execResult);
+                  }
+                }
+
+                for (String id : eventAlertScheduleIdList) {
+                  Map<String, List<String>> finishSettings2 = new HashMap<>();
+                  if (timeoutAlertScheduleIdList.contains(id)) {
+                    finishSettings2.put(id, targetFinishSettings.get(id));
+                    Boolean execResult = executeSetSlaAction(req, ret, user, id, null, finishSettings2, departmentSlaInform);
+                    logger.info("Via batch setSla, multi timeout and multi event but both have no all flow, alert scheduleId[" + id
+                        + "] sla alert set result="+ execResult);
+
+                  }
+                }
+              }
+
+            }
+          }
+
+        }
+      }
+
+    } catch (Exception e) {
+      ret.put("error", e.getMessage());
+      logger.error(e.getMessage(), e);
+    }
+
+  }
+
+  private List<SlaOption> parseSlaOptions(Map<String, List<String>> settings, Map<String, List<String>> finishSettings, String scheduleId,
+      Flow flow, Project project, Schedule schedule, List<String> slaEmails, String departmentSlaInform) throws ServletException {
+    List<SlaOption> slaOptionList = new ArrayList<>();
+    if (MapUtils.isEmpty(settings) && MapUtils.isEmpty(finishSettings)) {
+      return Lists.newArrayList();
+    }
+
+    if (MapUtils.isNotEmpty(settings)) {
+
+      List<String> list = settings.get(scheduleId);
+      for (final String set : list) {
+        final SlaOption slaTimeout;
+        try {
+          slaTimeout = parseSlaSetting("new", set, flow, project);
+        } catch (final Exception e) {
+          throw new ServletException(e);
+        }
+        if (slaTimeout != null) {
+          slaTimeout.getInfo().put(SlaOption.INFO_FLOW_NAME, schedule.getFlowName());
+          slaTimeout.getInfo().put(SlaOption.INFO_EMAIL_LIST, slaEmails);
+          slaTimeout.getInfo().put(SlaOption.INFO_DEP_TYPE_INFORM, departmentSlaInform);
+          slaOptionList.add(slaTimeout);
+        }
+      }
+    }
+
+    if (MapUtils.isNotEmpty(finishSettings)) {
+
+      List<String> list = finishSettings.get(scheduleId);
+      for (final String set : list) {
+        final SlaOption slaEvent;
+        try {
+          slaEvent = parseFinishSetting("new", set, flow, project);
+        } catch (final Exception e) {
+          throw new ServletException(e);
+        }
+        if (slaEvent != null) {
+          slaEvent.getInfo().put(SlaOption.INFO_FLOW_NAME, schedule.getFlowName());
+          slaEvent.getInfo().put(SlaOption.INFO_EMAIL_LIST, slaEmails);
+          slaEvent.getInfo().put(SlaOption.INFO_DEP_TYPE_INFORM, departmentSlaInform);
+          slaOptionList.add(slaEvent);
+        }
+      }
+    }
+
+    return slaOptionList;
+  }
+
+
+  // 执行设置告警的方法
+  private Boolean executeSetSlaAction(final HttpServletRequest req, final HashMap<String, Object> ret, User user, String scheduleId,
+      Map<String, List<String>> settings, Map<String, List<String>> finishSettings, String departmentSlaInform) throws Exception {
+
+    // 设置告警
+    final Schedule sched = this.scheduleManager.getSchedule(Integer.valueOf(scheduleId));
+    if (sched == null) {
+      logger.error("Error loading schedule. Schedule " + scheduleId + " doesn't exist");
+      ret.put("error", "Error loading schedule. Schedule " + scheduleId + " doesn't exist");
+      return false;
+    }
+
+    final Project project = this.projectManager.getProject(sched.getProjectId());
+    if (!hasPermission(project, user, Permission.Type.SCHEDULE)) {
+      logger.error("User " + user + " does not have permission to set SLA for this flow.");
+      ret.put("error", "User " + user + " does not have permission to set SLA for this flow.");
+      return false;
+    }
+
+    final Flow flow = project.getFlow(sched.getFlowName());
+    if (flow == null) {
+      logger.error("Flow " + sched.getFlowName() + " cannot be found in project " + project.getName());
+      ret.put("status", "error");
+      ret.put("message", "Flow " + sched.getFlowName() + " cannot be found in project " + project.getName());
+      return false;
+    }
+
+    final String emailStr = getParam(req, "batchSlaEmails");
+    final String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+    final List<String> slaEmails = Lists.newArrayList(emailSplit);
+    //设置SLA 告警配置项
+
+    List<SlaOption> slaOptions = parseSlaOptions(settings, finishSettings, scheduleId, flow, project, sched, slaEmails, departmentSlaInform);
+
+    if (slaOptions.isEmpty()) {
+      logger.warn(String.format("定时调度:[%s], 没有设置超时或者sla告警.", scheduleId));
+    }
+    sched.setSlaOptions(slaOptions);
+    Map<String, Object> otherOptions = sched.getOtherOption();
+    Boolean activeFlag = (Boolean)otherOptions.get("activeFlag");
+    logger.info("setSla, current flow schedule[" + scheduleId + "] active switch status, flowLevel=" + activeFlag);
+    if (null == activeFlag) {
+      activeFlag = true;
+    }
+    otherOptions.put("activeFlag", activeFlag);
+    sched.setOtherOption(otherOptions);
+
+    this.scheduleManager.insertSchedule(sched);
+    this.projectManager.postProjectEvent(project, EventType.SLA,
+        user.getUserId(), "SLA for flow " + sched.getFlowName() + " has been added/changed.");
+
+    return true;
+  }
+
+
+  private void ajaxSetSla(final HttpServletRequest req, final HashMap<String, Object> ret, final User user) {
     try {
       final int scheduleId = getIntParam(req, "scheduleId");
       final Schedule sched = this.scheduleManager.getSchedule(scheduleId);
@@ -222,16 +1015,16 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
             + project.getName());
         return;
       }
-
       String departmentSlaInform;
       if (hasParam(req, "departmentSlaInform")) {
         departmentSlaInform = getParam(req, "departmentSlaInform");
+        logger.info("current SlaAlert via department flag is departmentSlaInform=" + departmentSlaInform);
       } else {
         departmentSlaInform = "false";
       }
       final String emailStr = getParam(req, "slaEmails");
       final String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
-      final List<String> slaEmails = Arrays.asList(emailSplit);
+      final List<String> slaEmails = Lists.newArrayList(emailSplit);
 
       final Map<String, String> settings = getParamGroup(req, "settings");
 
@@ -241,7 +1034,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       for (final String set : settings.keySet()) {
         final SlaOption sla;
         try {
-          sla = parseSlaSetting(settings.get(set), flow, project);
+          sla = parseSlaSetting("old",settings.get(set), flow, project);
         } catch (final Exception e) {
           throw new ServletException(e);
         }
@@ -256,7 +1049,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       for (final String finish : finishSettings.keySet()) {
         final SlaOption sla;
         try {
-          sla = parseFinishSetting(finishSettings.get(finish), flow, project);
+          sla = parseFinishSetting("old", finishSettings.get(finish), flow, project);
         } catch (final Exception e) {
           throw new ServletException(e);
         }
@@ -298,20 +1091,22 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   //解析前端规则字符串 转换成SlaOption对象
-  private SlaOption parseSlaSetting(final String set, final Flow flow, final Project project) throws ScheduleManagerException {
+  private SlaOption parseSlaSetting(String type, final String set, final Flow flow, final Project project) throws ScheduleManagerException {
     logger.info("Tryint to set sla with the following set: " + set);
 
     final String slaType;
     final List<String> slaActions = new ArrayList<>();
     final Map<String, Object> slaInfo = new HashMap<>();
     final String[] parts = set.split(",", -1);
-    final String id = parts[0];
+    String id = parts[0];
     final String rule = parts[1];
     final String duration = parts[2];
     final String level = parts[3];
     final String emailAction = parts[4];
     final String killAction = parts[5];
-
+    if (type.equals("new")) {
+      id = "";
+    }
     Map<String, String> dataMap = loadScheduleServletI18nData();
 
     List<Flow> embeddedFlows = project.getFlows();
@@ -326,6 +1121,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
             id.equals("") ? SlaOption.ACTION_CANCEL_FLOW : SlaOption.ACTION_KILL_JOB;
         slaActions.add(killActionType);
       }
+
       if (id.equals("")) {//FLOW告警模式设置
         if (rule.equals("SUCCESS")) {
           slaType = SlaOption.TYPE_FLOW_SUCCEED;
@@ -352,10 +1148,18 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
           }
         }
 
-        if (rule.equals("SUCCESS")) {
-          slaType = SlaOption.TYPE_JOB_SUCCEED;
+        if (type.equals("new")) {
+          if (rule.equals("SUCCESS")) {
+            slaType = SlaOption.TYPE_FLOW_SUCCEED;
+          } else {
+            slaType = SlaOption.TYPE_FLOW_FINISH;
+          }
         } else {
-          slaType = SlaOption.TYPE_JOB_FINISH;
+          if (rule.equals("SUCCESS")) {
+            slaType = SlaOption.TYPE_JOB_SUCCEED;
+          } else {
+            slaType = SlaOption.TYPE_JOB_FINISH;
+          }
         }
       }
 
@@ -407,6 +1211,36 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       ret.put("error", e);
     }
   }
+
+  private void ajaxFetchAllScheduleFlowInfo(final HttpServletRequest req,
+      final HashMap<String, Object> ret, final Session session) throws ServletException {
+    try {
+      ajaxFetchAllSchedules(req, ret, session);
+      List<Schedule>  schedules = (List<Schedule> )ret.get("allSchedules");
+      if (CollectionUtils.isNotEmpty(schedules)) {
+        List<String> allScheduleFlowNameList = new ArrayList<>();
+        List<Integer> allScheduleIds = new ArrayList<>();
+        allScheduleFlowNameList.add("all#All_Flow");
+        for (Schedule schedule : schedules) {
+          int projectId = schedule.getProjectId();
+          Project project = this.projectManager.getProject(projectId);
+          List<String> rootFlowNameList = project.getAllRootFlows().stream().map(Flow::getId).collect(Collectors.toList());
+          if (rootFlowNameList.contains(schedule.getFlowName())) {
+            allScheduleFlowNameList.add(schedule.getScheduleId() + "#" + schedule.getFlowName());
+            allScheduleIds.add(schedule.getScheduleId());
+          }
+        }
+        logger.info("Load ScheduleFlowInfo, current schedule flow are: " + allScheduleFlowNameList.toString());
+        ret.put("scheduleFlowNameList", allScheduleFlowNameList);
+        ret.put("scheduleIdList", allScheduleIds);
+      }
+
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+      ret.put("error", e);
+    }
+  }
+
   //前端加载已有数据
   private void ajaxSlaInfo(final HttpServletRequest req, final HashMap<String, Object> ret,
       final User user) {
@@ -415,9 +1249,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       scheduleId = getIntParam(req, "scheduleId");
       final Schedule sched = this.scheduleManager.getSchedule(scheduleId);
       if (sched == null) {
-        ret.put("error",
-            "Error loading schedule. Schedule " + scheduleId
-                + " doesn't exist");
+        ret.put("error", "Error loading schedule. Schedule " + scheduleId + " doesn't exist");
         return;
       }
 
@@ -704,47 +1536,8 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     ret.put("slaSetting", dataMap.get("slaSetting"));
     ret.put("deleteSch", dataMap.get("deleteSch"));
     ret.put("showParam", dataMap.get("showParam"));
+    ret.put("allSchedules", schedules);
     ret.put("schedules", subList);
-  }
-
-  private void ajaxSetScheduleActiveFlag(final HttpServletRequest req,
-                                         final HashMap<String, Object> ret, final User user) throws ServletException {
-
-    final int scheduleId = getIntParam(req, "scheduleId");
-    final String activeFlagParam = getParam(req, "activeFlag");
-    Boolean activeFlag = Boolean.valueOf(activeFlagParam);
-    try {
-      final Schedule schedule = this.scheduleManager.getSchedule(scheduleId);
-
-      if (schedule != null) {
-        final Map<String, Object> jsonObj = new HashMap<>();
-        jsonObj.put("scheduleId", Integer.toString(schedule.getScheduleId()));
-        jsonObj.put("submitUser", schedule.getSubmitUser());
-        jsonObj.put("firstSchedTime", utils.formatDateTime(schedule.getFirstSchedTime()));
-        jsonObj.put("nextExecTime", utils.formatDateTime(schedule.getNextExecTime()));
-        jsonObj.put("period", utils.formatPeriod(schedule.getPeriod()));
-        jsonObj.put("cronExpression", schedule.getCronExpression());
-        jsonObj.put("executionOptions", HttpRequestUtils.parseWebOptions(schedule.getExecutionOptions()));
-
-        Map<String, Object> otherOption = schedule.getOtherOption();
-        logger.info("SetScheduleActiveFlag, current flow schedule[" + scheduleId + "] active switch status is set to flowLevel=" + activeFlag);
-        otherOption.put("activeFlag", activeFlag);
-        schedule.setOtherOption(otherOption);
-
-        jsonObj.put("otherOptions", otherOption);
-
-        jsonObj.put("projectName", schedule.getProjectName());
-        jsonObj.put("flowId", schedule.getFlowName());
-
-        // 更新缓存
-        scheduleManager.insertSchedule(schedule);
-
-        ret.put("schedule", jsonObj);
-      }
-    } catch (final ScheduleManagerException e) {
-      logger.error(e.getMessage(), e);
-      ret.put("error", e);
-    }
   }
 
   /**
@@ -815,7 +1608,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         list = scheduleList.subList((pageNum - 1) * pageSize, total);
       }
     } catch (Exception e){
-      logger.error("截取schedule list失败 " + e);
+      logger.error("截取schedule list失败 ", e);
     }
     return list;
   }
@@ -1217,7 +2010,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     } catch (final Exception e) {
       ret.put("error", e.getMessage());
     }
-
     // FIXME New function, set other parameter configuration, such as rerun failure, skip over failure, skip execution parameters by date.
     Map<String, Object> otherOptions = new HashMap<>();
     //设置失败重跑配置
@@ -1363,14 +2155,14 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   //解析前端规则字符串 转换成SlaOption对象
-  private SlaOption parseFinishSetting(final String set, final Flow flow, final Project project) throws ScheduleManagerException {
+  private SlaOption parseFinishSetting(String type, final String set, final Flow flow, final Project project) throws ScheduleManagerException {
     logger.info("Tryint to set sla with the following set: " + set);
 
     final String slaType;
     final List<String> slaActions = new ArrayList<>();
     final Map<String, Object> slaInfo = new HashMap<>();
     final String[] parts = set.split(",", -1);
-    final String id = parts[0];
+    String id = parts[0];
     final String rule = parts[1];
     final String level = parts[2];
 
@@ -1378,6 +2170,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     slaActions.add(SlaOption.ACTION_ALERT);
     slaInfo.put(SlaOption.ALERT_TYPE, "email");
+
+    if (type.equals("new")) {
+      id = "";
+    }
 
     if (id.equals("")) {//FLOW告警模式设置
       if (rule.equals("FAILURE EMAILS")) {
@@ -1405,13 +2201,25 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         }
       }
 
-      if (rule.equals("FAILURE EMAILS")) {
-        slaType = SlaOption.TYPE_JOB_FAILURE_EMAILS;
-      } else if (rule.equals("SUCCESS EMAILS")){
-        slaType = SlaOption.TYPE_JOB_SUCCESS_EMAILS;
+      if (type.equals("new")) {
+        if (rule.equals("FAILURE EMAILS")) {
+          slaType = SlaOption.TYPE_FLOW_FAILURE_EMAILS;
+        } else if (rule.equals("SUCCESS EMAILS")){
+          slaType = SlaOption.TYPE_FLOW_SUCCESS_EMAILS;
+        } else {
+          slaType = SlaOption.TYPE_FLOW_FINISH_EMAILS;
+        }
+
       } else {
-        slaType = SlaOption.TYPE_JOB_FINISH_EMAILS;
+        if (rule.equals("FAILURE EMAILS")) {
+          slaType = SlaOption.TYPE_JOB_FAILURE_EMAILS;
+        } else if (rule.equals("SUCCESS EMAILS")){
+          slaType = SlaOption.TYPE_JOB_SUCCESS_EMAILS;
+        } else {
+          slaType = SlaOption.TYPE_JOB_FINISH_EMAILS;
+        }
       }
+
 
     }
 
@@ -1422,14 +2230,14 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
   }
 
-  private void ajaxGetScheduleByScheduleId(final HttpServletRequest req,
+  private void ajaxSetScheduleActiveFlag(final HttpServletRequest req,
       final HashMap<String, Object> ret, final User user) throws ServletException {
 
-    //final int projectId = getIntParam(req, "projectId");
-    //final String flowId = getParam(req, "flowId");
-    final int schedultId = getIntParam(req, "scheduleId");
+    final int scheduleId = getIntParam(req, "scheduleId");
+    final String activeFlagParam = getParam(req, "activeFlag");
+    Boolean activeFlag = Boolean.valueOf(activeFlagParam);
     try {
-      final Schedule schedule = this.scheduleManager.getSchedule(schedultId);
+      final Schedule schedule = this.scheduleManager.getSchedule(scheduleId);
 
       if (schedule != null) {
         final Map<String, Object> jsonObj = new HashMap<>();
@@ -1440,6 +2248,57 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         jsonObj.put("period", utils.formatPeriod(schedule.getPeriod()));
         jsonObj.put("cronExpression", schedule.getCronExpression());
         jsonObj.put("executionOptions", HttpRequestUtils.parseWebOptions(schedule.getExecutionOptions()));
+
+        Map<String, Object> otherOption = schedule.getOtherOption();
+        logger.info("SetScheduleActiveFlag, current flow schedule[" + scheduleId + "] active switch status is set to flowLevel=" + activeFlag);
+        otherOption.put("activeFlag", activeFlag);
+        schedule.setOtherOption(otherOption);
+
+        jsonObj.put("otherOptions", otherOption);
+
+        jsonObj.put("projectName", schedule.getProjectName());
+        jsonObj.put("flowId", schedule.getFlowName());
+
+        // 更新缓存
+        scheduleManager.insertSchedule(schedule);
+
+        ret.put("schedule", jsonObj);
+      }
+    } catch (final ScheduleManagerException e) {
+      logger.error(e.getMessage(), e);
+      ret.put("error", e);
+    }
+  }
+
+  private void ajaxGetScheduleByScheduleId(final HttpServletRequest req,
+      final HashMap<String, Object> ret, final User user) throws ServletException {
+
+    //final int projectId = getIntParam(req, "projectId");
+    //final String flowId = getParam(req, "flowId");
+    final int scheduleId = getIntParam(req, "scheduleId");
+    try {
+      final Schedule schedule = this.scheduleManager.getSchedule(scheduleId);
+
+      if (schedule != null) {
+        final Map<String, Object> jsonObj = new HashMap<>();
+        jsonObj.put("scheduleId", Integer.toString(schedule.getScheduleId()));
+        jsonObj.put("submitUser", schedule.getSubmitUser());
+        jsonObj.put("firstSchedTime", utils.formatDateTime(schedule.getFirstSchedTime()));
+        jsonObj.put("nextExecTime", utils.formatDateTime(schedule.getNextExecTime()));
+        jsonObj.put("period", utils.formatPeriod(schedule.getPeriod()));
+        jsonObj.put("cronExpression", schedule.getCronExpression());
+        jsonObj.put("executionOptions", HttpRequestUtils.parseWebOptions(schedule.getExecutionOptions()));
+
+        // 为历史数据初始化
+        Map<String, Object> otherOption = schedule.getOtherOption();
+        Boolean activeFlag = (Boolean)otherOption.get("activeFlag");
+        logger.info("GetScheduleByScheduleId, current flow schedule[" + scheduleId + "] active switch status is flowLevel=" + activeFlag);
+        if (null == activeFlag) {
+          activeFlag = true;
+        }
+        otherOption.put("activeFlag", activeFlag);
+        schedule.setOtherOption(otherOption);
+
         jsonObj.put("otherOptions", schedule.getOtherOption());
         jsonObj.put("projectName", schedule.getProjectName());
         jsonObj.put("flowId", schedule.getFlowName());
@@ -1518,7 +2377,6 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       } catch (final Exception e) {
         ret.put("error", e.getMessage());
       }
-
       sched.setFlowOptions(flowOptions);
 
       //设置其他参数配置
@@ -1558,6 +2416,15 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       }
 
       otherOptions.put("jobSkipFailedOptions", jobSkipList);
+
+      // 为历史数据初始化
+      Map<String, Object> srcOtherOption = sched.getOtherOption();
+      Boolean activeFlag = (Boolean)srcOtherOption.get("activeFlag");
+      logger.info("updateSchedule, current flow schedule[" + scheduleId + "] active switch status is set to flowLevel=" + activeFlag);
+      if (null == activeFlag) {
+        activeFlag = true;
+      }
+      otherOptions.put("activeFlag", activeFlag);
 
       //设置通用告警级别
       if (hasParam(req, "failureAlertLevel")) {

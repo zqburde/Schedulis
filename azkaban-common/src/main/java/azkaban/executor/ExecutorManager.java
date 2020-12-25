@@ -16,6 +16,11 @@
 
 package azkaban.executor;
 
+import azkaban.flow.Flow;
+import azkaban.history.ExecutionRecover;
+import azkaban.history.GroupTask;
+import azkaban.history.RecoverTrigger;
+import azkaban.project.ProjectManagerException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 
@@ -101,6 +106,9 @@ import static java.util.Objects.requireNonNull;
 public class ExecutorManager extends EventHandler implements
     ExecutorManagerAdapter {
 
+  //  Time interval of historical rerun training. 
+  public static final String HISTORY_RECOVER_INTERVAL_MS = "history.recover.interval.ms";
+
   private static final String SPARK_JOB_TYPE = "spark";
   private static final String APPLICATION_ID = "${application.id}";
   // The regex to look for while fetching application ID from the Hadoop/Spark job log
@@ -123,6 +131,7 @@ public class ExecutorManager extends EventHandler implements
   private final ExecutorLoader executorLoader;
   private ProjectLoader projectLoader;
   private final CleanerThread cleanerThread;
+  private final RecoverThread recoverThread;
   private final ConcurrentHashMap<Integer, Pair<ExecutionReference, ExecutableFlow>> runningFlows =
       new ConcurrentHashMap<>();
 
@@ -145,6 +154,7 @@ public class ExecutorManager extends EventHandler implements
   private Duration sleepAfterDispatchFailure = Duration.ofSeconds(1L);
   private boolean initialized = false;
   private ExecutorService executorInforRefresherService;
+  private final AlerterHolder alerterHolder;
 
   @Inject
   public ExecutorManager(final Props azkProps, final ExecutorLoader executorLoader,
@@ -155,7 +165,8 @@ public class ExecutorManager extends EventHandler implements
       final ExecutorManagerUpdaterStage updaterStage,
       final ExecutionFinalizer executionFinalizer,
       final RunningExecutionsUpdaterThread updaterThread,
-      final ProjectLoader projectLoader) throws ExecutorManagerException {
+      final ProjectLoader projectLoader,
+      final AlerterHolder alerterHolder) throws ExecutorManagerException {
     this.azkProps = azkProps;
     this.commonMetrics = commonMetrics;
     this.executorLoader = executorLoader;
@@ -168,7 +179,9 @@ public class ExecutorManager extends EventHandler implements
     this.updaterThread = updaterThread;
     this.maxConcurrentRunsOneFlow = getMaxConcurrentRunsOneFlow(azkProps);
     this.cleanerThread = createCleanerThread();
+    this.recoverThread = createRecoverThread();
     this.executorInfoRefresherService = createExecutorInfoRefresherService();
+    this.alerterHolder = alerterHolder;
   }
 
   private int getMaxConcurrentRunsOneFlow(final Props azkProps) {
@@ -187,6 +200,12 @@ public class ExecutorManager extends EventHandler implements
   @Override
   public Props getAzkabanProps() {
     return this.azkProps;
+  }
+
+  private RecoverThread createRecoverThread() {
+    // 默认10s
+    final long waitTime = this.azkProps.getLong(HISTORY_RECOVER_INTERVAL_MS, 10000);
+    return new RecoverThread(waitTime);
   }
 
   void initialize() throws ExecutorManagerException {
@@ -212,6 +231,7 @@ public class ExecutorManager extends EventHandler implements
     this.updaterThread.start();
     this.cleanerThread.start();
     this.queueProcessor.start();
+    this.recoverThread.start();
   }
 
   private String findApplicationIdFromLog(final String logData) {
@@ -602,6 +622,11 @@ public class ExecutorManager extends EventHandler implements
   public ExecutableFlow getExecutableFlow(final int execId)
       throws ExecutorManagerException {
     return this.executorLoader.fetchExecutableFlow(execId);
+  }
+
+  @Override
+  public List<ExecutableFlow> getExecutableFlowByRepeatId(int repeatId) throws ExecutorManagerException {
+    return this.executorLoader.fetchExecutableFlowByRepeatId(repeatId);
   }
 
   /**
@@ -1294,11 +1319,7 @@ public class ExecutorManager extends EventHandler implements
 
       String message = "";
       if (this.queuedFlows.isFull()) {
-        message =
-            String
-                .format(
-                    "Failed to submit %s for project %s. Azkaban has overrun its webserver queue capacity",
-                    flowId, exflow.getProjectName());
+        message = String.format("Failed to submit %s for project %s. Azkaban has overrun its webserver queue capacity", flowId, exflow.getProjectName());
         logger.error(message);
         this.commonMetrics.markSubmitFlowFail();
       } else {
@@ -1363,9 +1384,8 @@ public class ExecutorManager extends EventHandler implements
           }
         }
 
-        final boolean memoryCheck =
-            !ProjectWhitelist.isProjectWhitelisted(exflow.getProjectId(),
-                ProjectWhitelist.WhitelistType.MemoryCheck);
+        final boolean memoryCheck = !ProjectWhitelist.isProjectWhitelisted(exflow.getProjectId(),
+                                       ProjectWhitelist.WhitelistType.MemoryCheck);
         options.setMemoryCheck(memoryCheck);
         // first insert Data in DB
         // The exflow id is set by the loader. So it's unavailable until after
@@ -1375,8 +1395,7 @@ public class ExecutorManager extends EventHandler implements
 
         // We create an active flow reference in the datastore. If the upload
         // fails, we remove the reference.
-        final ExecutionReference reference =
-            new ExecutionReference(exflow.getExecutionId());
+        final ExecutionReference reference = new ExecutionReference(exflow.getExecutionId());
 
         this.executorLoader.addActiveExecutableReference(reference);
         this.queuedFlows.enqueue(exflow, reference);
@@ -1449,6 +1468,7 @@ public class ExecutorManager extends EventHandler implements
     this.queueProcessor.shutdown();
     this.updaterThread.shutdown();
     this.cleanerThread.shutdown();
+	this.recoverThread.shutdown();
   }
 
 
@@ -1578,7 +1598,139 @@ public class ExecutorManager extends EventHandler implements
     this.sleepAfterDispatchFailure = sleepAfterDispatchFailure;
   }
 
-  /**
+  // FIXME RecoverThread is a historical rerun thread and is responsible for regularly submitting historical rerun tasks.
+  private class RecoverThread extends Thread {
+
+    private boolean shutdown = false;
+    private long waitTime;
+
+    public RecoverThread(long waitTime) {
+      this.waitTime = waitTime;
+      this.setName("AzkabanWebServer-Recover-Thread");
+    }
+
+    @SuppressWarnings("unused")
+    public void shutdown() {
+      this.shutdown = true;
+      this.interrupt();
+    }
+
+    @Override
+    public void run() {
+      while (!this.shutdown) {
+        synchronized (Constants.HISTORY_RERUN_LOCK) {
+          try {
+            historyRecoverHandle();
+            Constants.HISTORY_RERUN_LOCK.wait(this.waitTime);
+          } catch (final Exception e) {
+            ExecutorManager.logger.info("Recover-Thread interrupted. Probably to shut down.", e);
+          }
+        }
+      }
+    }
+
+    private void historyRecoverHandle() {
+
+        for(RecoverTrigger trigger: executorLoader.fetchHistoryRecoverTriggers()){
+          ExecutorManager.logger.info("trigger info : " + trigger.toString());
+          trigger.setExecutionRecoverStartTime();
+          trigger.updateTaskStatus();
+          Project project = ExecutorManager.this.projectLoader.fetchProjectById(trigger.getProjectId());
+          trigger.setProject(project);
+          if(!trigger.expireConditionMet()) {
+            loadAllProjectFlows(project);
+            Flow flow = project.getFlow(trigger.getFlowId());
+            for (GroupTask groupTask : trigger.getGroup()) {
+              Map<String, String> task = groupTask.nextTask();
+              if (task != null) {
+                ExecutableFlow exflow = new ExecutableFlow(project, flow);
+                submitRecoverFlow(exflow, project, trigger.getExecutionRecover(), task);
+                updateRecoverFlow(exflow, trigger.getExecutionRecover(), task);
+              }
+            }
+          }
+          updateHistoryRecover(trigger.getExecutionRecover());
+        }
+    }
+
+
+    private String submitRecoverFlow(ExecutableFlow exflow, Project project, ExecutionRecover recover, Map<String, String> item){
+      exflow.setSubmitUser(recover.getSubmitUser());
+      //获取项目默认代理用户
+      Set<String> proxyUserSet = project.getProxyUsers();
+      //设置用户代理用户
+      proxyUserSet.add(recover.getSubmitUser());
+      if(recover.getProxyUsers()!=null && !recover.getProxyUsers().equals("[]")){
+        List<String> proxyUsers = Arrays.asList(recover.getProxyUsers().replaceAll("\\s*", "").replace("[", "").replace("]", "").split(","));
+        proxyUserSet.addAll(proxyUsers);
+      }else{
+        ExecutorManager.logger.error("recover proxyUsers is null");
+      }
+      //设置当前登录的用户的代理用户
+      exflow.addAllProxyUsers(proxyUserSet);
+      exflow.setExecutionOptions(recover.getExecutionOptions());
+      exflow.setOtherOption(recover.getOtherOption());
+      if(recover.getOtherOption().get("flowFailedRetryOption") != null){
+        exflow.setFlowFailedRetry((Map<String, String>) recover.getOtherOption().get("flowFailedRetryOption"));
+      }
+      // 设置失败跳过所有job
+      exflow.setFailedSkipedAllJobs((Boolean) recover.getOtherOption().getOrDefault("flowFailedSkiped", false));
+      //超时告警设置
+      if(recover.getSlaOptions() != null) {
+        exflow.setSlaOptions(recover.getSlaOptions());
+      }
+
+      //设置数据补采参数
+      exflow.setRepeatOption(item);
+      //设置Flow类型为数据补采
+      exflow.setFlowType(2);
+      String message = "";
+      exflow.setRepeatId(recover.getRecoverId());
+      try {
+        message = ExecutorManager.this.submitExecutableFlow(exflow, recover.getSubmitUser());
+      } catch (ExecutorManagerException ex){
+        ExecutorManager.logger.error("submit recover flow failed. ", ex);
+      }
+      return message;
+    }
+
+    private void updateRecoverFlow(ExecutableFlow exflow, ExecutionRecover recover, Map<String, String> item){
+      //提交成功
+      if(exflow.getExecutionId() != -1){
+        recover.setNowExecutionId(exflow.getExecutionId());
+        item.put("isSubmit", "true");
+        item.put("exeId", String.valueOf(exflow.getExecutionId()));
+      }else{
+        ExecutorManager.logger.error("submit recover flow failed. ");
+        item.put("exeId", "-1");
+      }
+    }
+
+    private void updateHistoryRecover(ExecutionRecover recover){
+      try {
+        ExecutorManager.this.updateHistoryRecover(recover);
+      }catch (ExecutorManagerException executorManager){
+        ExecutorManager.logger.error("更新历史重跑任务信息失败, " + executorManager);
+      }
+    }
+
+
+    private void loadAllProjectFlows(final Project project) {
+      try {
+        final List<Flow> flows = ExecutorManager.this.projectLoader.fetchAllProjectFlows(project);
+        final Map<String, Flow> flowMap = new HashMap<>();
+        for (final Flow flow : flows) {
+          flowMap.put(flow.getId(), flow);
+        }
+
+        project.setFlows(flowMap);
+      } catch (final ProjectManagerException e) {
+        throw new RuntimeException("Could not load projects flows from store.", e);
+      }
+    }
+  }
+
+  /*
    * cleaner thread to clean up execution_logs, etc in DB. Runs every hour.
    */
   private class CleanerThread extends Thread {
@@ -1965,9 +2117,141 @@ public class ExecutorManager extends EventHandler implements
   }
 
   @Override
+  public List<ExecutableFlow> getHistoryRecoverExecutableFlows(final String userNameContains)
+      throws ExecutorManagerException {
+    List<ExecutableFlow> flows =
+        executorLoader.fetchHistoryRecoverFlows(userNameContains);
+    return flows;
+  }
+
+  @Override
+  public ExecutableFlow getHistoryRecoverExecutableFlowsByRepeatId(final String repeatId)
+      throws ExecutorManagerException {
+    ExecutableFlow ef = new ExecutableFlow();
+    List<ExecutableFlow> flows =
+        executorLoader.fetchHistoryRecoverFlowByRepeatId(repeatId);
+    if(!flows.isEmpty()){
+      ef = flows.get(0);
+    } else {
+      throw new ExecutorManagerException("Failed to search current job flow by RepeatId[" + repeatId + "]");
+    }
+    return ef;
+  }
+
+  @Override
+  public void stopHistoryRecoverExecutableFlowByRepeatId(final String repeatId)
+      throws ExecutorManagerException {
+    //如果数据不存在则查找当前最新的flow修改状态
+    ExecutableFlow exFlow = null;
+    try {
+      exFlow = this.getHistoryRecoverExecutableFlowsByRepeatId(repeatId);
+      if(2 == exFlow.getFlowType() && !Status.FAILED.equals(exFlow.getStatus())){
+        exFlow.setFlowType(3);//数据补采状态设置为这终止
+      }else if(2 == exFlow.getFlowType() && Status.FAILED.equals(exFlow.getStatus())){
+        exFlow.setFlowType(5);//数据补采状态设置为这失败终止
+      }
+      this.executorLoader.updateExecutableFlow(exFlow);
+    } catch (ExecutorManagerException e) {
+      e.printStackTrace();
+    }
+  }
+
+  @Override
+  public ExecutableFlow getHistoryRecoverExecutableFlowsByFlowId(final String flowId, final String projectId)
+      throws ExecutorManagerException {
+    List<ExecutableFlow> flows = executorLoader.fetchHistoryRecoverFlowByFlowId(flowId, projectId);
+    if(flows.isEmpty()){
+      return null;
+    }else {
+      return flows.get(0);
+    }
+  }
+
+  @Override
+  public List<ExecutionRecover> listHistoryRecoverFlows(final Map paramMap,
+      int skip, int size) throws ExecutorManagerException{
+    List<ExecutionRecover> flows =
+        executorLoader.listHistoryRecoverFlows(paramMap, skip, size);
+    return flows;
+  }
+
+  @Override
+  public List<ExecutionRecover> listMaintainedHistoryRecoverFlows(String username, List<Integer> projectIds, int skip, int size)
+          throws ExecutorManagerException {
+    return executorLoader.listMaintainedHistoryRecoverFlows(username, projectIds, skip, size);
+  }
+
+  @Override
+  public Integer saveHistoryRecoverFlow(final ExecutionRecover executionRecover)
+      throws ExecutorManagerException{
+   return executorLoader.saveHistoryRecoverFlow(executionRecover);
+  }
+
+  @Override
+  public void updateHistoryRecover(final ExecutionRecover executionRecover)
+      throws ExecutorManagerException{
+
+    try {
+      executionRecover.setUpdateTime(System.currentTimeMillis());
+      executorLoader.updateHistoryRecover(executionRecover);
+    } catch (ExecutorManagerException e) {
+      e.printStackTrace();
+    }
+  }
+
+  @Override
+  public ExecutionRecover getHistoryRecoverFlow(final Integer recoverId)
+      throws ExecutorManagerException{
+
+    ExecutionRecover executionRecover = executorLoader.getHistoryRecoverFlow(recoverId);
+
+    return executionRecover;
+  }
+
+  /**
+   * 根据项目ID和工作流ID 查找正在运行的历史补采
+   * @param projectId
+   * @param flowId
+   * @return
+   * @throws ExecutorManagerException
+   */
+  @Override
+  public ExecutionRecover getHistoryRecoverFlowByPidAndFid(final String projectId, final String flowId)
+      throws ExecutorManagerException{
+    ExecutionRecover executionRecover = executorLoader.getHistoryRecoverFlowByPidAndFid(projectId, flowId);
+
+    return executionRecover;
+  }
+
+
+  @Override
+  public List<ExecutionRecover> listHistoryRecoverRunnning(final Integer loadSize)
+      throws ExecutorManagerException{
+    List<ExecutionRecover> flows = executorLoader.listHistoryRecoverRunnning(loadSize);
+    return flows;
+  }
+
+  @Override
+  public int getHistoryRecoverTotal() throws ExecutorManagerException{
+
+    return executorLoader.getHistoryRecoverTotal();
+  }
+
+  @Override
   public ExecutableFlow getProjectLastExecutableFlow(int projectId, String flowId) throws ExecutorManagerException{
     ExecutableFlow flow = executorLoader.getProjectLastExecutableFlow(projectId, flowId);
     return flow;
+  }
+
+  @Override
+  public int getUserHistoryRecoverTotal(String userName) throws ExecutorManagerException{
+
+    return executorLoader.getUserRecoverHistoryTotal(userName);
+  }
+
+  @Override
+  public int getMaintainedHistoryRecoverTotal(String username, List<Integer> maintainedProjectIds) throws ExecutorManagerException {
+    return executorLoader.getMaintainedHistoryRecoverTotal(username, maintainedProjectIds);
   }
 
   @Override
@@ -2491,5 +2775,8 @@ public class ExecutorManager extends EventHandler implements
     return exectingFlowList;
   }
 
-
+  @Override
+  public List<Integer> fetchPermissionsProjectId(String user) {
+    return projectLoader.fetchPermissionsProjectId(user);
+  }
 }

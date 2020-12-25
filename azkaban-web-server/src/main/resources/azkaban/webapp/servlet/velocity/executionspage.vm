@@ -100,6 +100,7 @@
       <ul class="nav nav-tabs nav-sm" id="header-tabs">
         <li id="currently-running-view-link"><a href="#currently-running">$currentRunning</a></li>
         <li id="recently-finished-view-link"><a href="#recently-finished">$recentFinish</a></li>
+        <li id="recover-history-view-link"><a href="#recover-history">$reRunHistory</a></li>
         <li id="cycle-execution-view-link"><a href="#cycle-execution">$cycleExecution</a></li>
       </ul>
       <!-- 正在执行的Flow -->
@@ -220,6 +221,62 @@
 
             </tbody>
           </table>
+        </div><!-- /col-xs-12 -->
+      </div><!-- /row -->
+
+      <div class="row" id="recover-history-view"><!-- /row -->
+        <div class="col-xs-12">
+          <table class="table table-striped table-bordered table-condensed table-hover" id="execTable">
+            <thead>
+            <tr>
+              <th>#</th>
+              <th>$flow</th>
+              <th>$program</th>
+              <th class="user">$user</th>
+              ##<th class="user">$proxyUser</th>
+              <th class="date">$startTimeofrerun</th>
+              <th class="date">$endTimeofrerun</th>
+              <th class="elapse">$execInterval</th>
+              <th class="date">$runningCompensate</th>
+              <th class="elapse">$runningFlowcId</th>
+              <th class="status">$status</th>
+              <th class="action">$operate</th>
+            </tr>
+            </thead>
+            <tbody id="execTableBody">
+            </tbody>
+          </table>
+          <div>
+            <table id="pageTable">
+              <tr>
+                <td>
+                  <select id="pageSizeSelect" class="form-control select2" style="margin-bottom:5px;height:34px;">
+                    <option value="20">$pp_20</option>
+                    <option value="50">$pp_50</option>
+                    <option value="100">$pp_100</option>
+                  </select>
+                </td>
+                <td>
+                  <ul id="pageSelection" class="pagination">
+                    <li id="previous" class="first"><a><span class="arrow">&larr;</span>$previousPage</a></li>
+                    <li id="page1"><a href="#page1">1</a></li>
+                    <li id="page2"><a href="#page2">2</a></li>
+                    <li id="page3"><a href="#page3">3</a></li>
+                    <li id="page4"><a href="#page4">4</a></li>
+                    <li id="page5"><a href="#page5">5</a></li>
+##                    <li id="next"><a>总页数>${}</li>
+                    <li id="next"><a>$nextPage<span class="arrow">&rarr;</span></a></li>
+                  </ul>
+                </td>
+                <td>
+                  <input id="pageNumInput" class="form-control"  type="number" min="1"  style="margin-bottom:5px;width:100px;"/>
+                </td>
+                <td>
+                  <button id="pageNumJump" class="btn btn-default" style="margin-bottom:5px">$to</button>
+                </td>
+              </tr>
+            </table>
+          </div>
         </div><!-- /col-xs-12 -->
       </div><!-- /row -->
 

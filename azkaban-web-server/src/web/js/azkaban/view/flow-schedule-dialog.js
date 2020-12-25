@@ -798,8 +798,11 @@ azkaban.ScheduleSideMenuDialogView = Backbone.View.extend({
     // 当点击定时调度工作流时，显示隐藏流程图切换按钮
     if ((target[0] && target[0].id === "schedule-flow-option") || target.id === "schedule-flow-option") {
       $("#switching-schedule-flow-btn").show()
+      $("#workflow-zoom-in").show()
     } else {
       $("#switching-schedule-flow-btn").hide()
+      $("#workflow-zoom-in").hide()
+      $("#workflow-zoom-out").hide()
     }
 
 
@@ -1293,13 +1296,45 @@ $(function () {
   $("#switching-schedule-flow-btn").on('click', function () {
     var trimFlowName = !JSON.parse(sessionStorage.getItem('trimFlowName'));//标识是否剪切节点名称
     sessionStorage.setItem('trimFlowName', trimFlowName)
-    var data = executingSvgGraphView.model.get('data') //获取流程图数据
-    data.switchingFlow = true
-    $(executingSvgGraphView.mainG).empty() //清空流程图
-    executingSvgGraphView.renderGraph(data, executingSvgGraphView.mainG)
+    scheduleReRenderWorflow(true) // 参数是否切换工作流
   })
-
+  $("#workflow-zoom-in").on('click', function () {
+    $(this).hide()
+    $("#workflow-zoom-out").show()
+    $('#schedule-flow-panel .modal-header').hide()
+    $('#schedule-flow-panel .modal-footer').hide()
+    $('#schedule-graph-options-box').hide()
+    $('#schedule-graph-panel-box').removeClass('col-xs-8').addClass('col-xs-12')
+    $('#schedule-flow-panel .modal-dialog')[0].style.width = "98%"
+    $('#schedule-flow-executing-graph')[0].style.height = window.innerHeight * 0.88
+    scheduleZoomInWorflow() // 参数是否切换工作流
+  })
+  $("#workflow-zoom-out").on('click', function () {
+    $(this).hide()
+    $("#workflow-zoom-in").show()
+    $('#schedule-flow-panel .modal-header').show()
+    $('#schedule-flow-panel .modal-footer').show()
+    $('#schedule-graph-options-box').show()
+    $('#schedule-graph-panel-box').removeClass('col-xs-12').addClass('col-xs-8')
+    $('#schedule-flow-panel .modal-dialog')[0].style.width = "80%"
+    $('#schedule-flow-executing-graph')[0].style.height = '500px'
+    scheduleZoomInWorflow() // 参数是否切换工作流
+  })
 });
+// 放大缩小重新收拢工作流，并居中
+function scheduleZoomInWorflow () {
+  executingSvgGraphView.collapseAllFlows()
+  executingSvgGraphView.resetPanZoom()
+}
+
+function scheduleReRenderWorflow (switchingFlow) {
+  var data = executingSvgGraphView.model.get('data') //获取流程图数据
+  if (switchingFlow) {
+    data.switchingFlow = true
+  }
+  $(executingSvgGraphView.mainG).empty() //清空流程图
+  executingSvgGraphView.renderGraph(data, executingSvgGraphView.mainG)
+}
 
 function showSchedulePanel () {
   var timeZone = $('#scheduleTimeZoneID');

@@ -69,6 +69,18 @@
   
   <link rel="stylesheet" type="text/css" href="${context}/css/morris.css?version=1.10.0"/>
   <link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css?version=1.10.0"/>
+  <style type="text/css">
+      .select2-container .select2-selection--single .select2-selection__rendered {
+        display: block;
+        padding-left: 8px;
+        padding-right: 20px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: break-all;
+        height: 28px;
+        white-space: unset;
+      }
+    </style>
 </head>
 <body>
 
@@ -181,13 +193,14 @@
           <thead>
           <tr>
             <th>$execId</th>
-                <th>$user</th>
-                <th class="date">$startTime</th>
-                <th class="date">$endTime</th>
-                <th class="date">$runBatchDate</th>
-                <th class="elapse">$timeOfExec</th>
-                <th class="status">$status</th>
-                <th class="action">$operate</th>
+            <th>$user</th>
+            <th class="date">$startTime</th>
+            <th class="date">$endTime</th>
+            <th class="date">$runBatchDate</th>
+            <th class="elapse">$timeOfExec</th>
+            <th class="status">$status</th>
+            <th class="action">$operate</th>
+            <th>$comment</th>
           </tr>
           </thead>
           <tbody id="execTableBody">

@@ -17,6 +17,8 @@
 package azkaban.executor;
 
 import azkaban.executor.ExecutorLogEvent.EventType;
+import azkaban.history.ExecutionRecover;
+import azkaban.history.RecoverTrigger;
 import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
 import com.webank.wedatasphere.schedulis.common.system.entity.WtssUser;
 import azkaban.utils.FileIOUtils.LogData;
@@ -24,7 +26,6 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.webank.wedatasphere.schedulis.common.executor.DepartmentGroup;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
-import com.webank.wedatasphere.schedulis.common.executor.ExecutionRecover;
 import com.webank.wedatasphere.schedulis.common.executor.UserVariable;
 import java.io.File;
 import java.time.Duration;
@@ -37,7 +38,9 @@ public interface ExecutorLoader {
   void uploadExecutableFlow(ExecutableFlow flow)
       throws ExecutorManagerException;
 
-  ExecutableFlow fetchExecutableFlow(int execId)
+  ExecutableFlow fetchExecutableFlow(int execId) throws ExecutorManagerException;
+
+  List<ExecutableFlow> fetchExecutableFlowByRepeatId(int repeatId)
       throws ExecutorManagerException;
 
   List<ExecutableFlow> fetchRecentlyFinishedFlows(Duration maxAge)
@@ -340,6 +343,8 @@ public interface ExecutorLoader {
   Integer saveHistoryRecoverFlow(final ExecutionRecover executionRecover) throws ExecutorManagerException;
 
   List<ExecutionRecover> fetchHistoryRecoverFlows() throws ExecutorManagerException;
+
+  List<RecoverTrigger> fetchHistoryRecoverTriggers();
 
   void updateHistoryRecover(final ExecutionRecover executionRecover) throws ExecutorManagerException;
 

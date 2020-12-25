@@ -57,10 +57,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     final List<TriggerAction> actions = createActions(s);
 
     final Trigger t = new Trigger.TriggerBuilder(s.getSubmitUser(),
-        this.triggerSource,
-        triggerCondition,
-        expireCondition,
-        actions)
+         this.triggerSource, triggerCondition, expireCondition, actions)
         .setSubmitTime(s.getSubmitTime())
         .setLastModifyTime(s.getLastModifyTime())
         .setId(s.getScheduleId())
@@ -76,7 +73,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
 
   private List<TriggerAction> createActions(final Schedule s) {
     final List<TriggerAction> actions = new ArrayList<>();
-	  // FIXME The ExecuteFlowAction constructor is overloaded, adding some parameters, such as failure retry, failure skip.
+	// FIXME The ExecuteFlowAction constructor is overloaded, adding some parameters, such as failure retry, failure skip.
     final ExecuteFlowAction executeAct =
         new ExecuteFlowAction("executeFlowAction", s.getProjectId(),
             s.getProjectName(), s.getFlowName(), s.getSubmitUser(),
@@ -87,8 +84,7 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
   }
 
   private Condition createTriggerCondition(final Schedule s) {
-    final Map<String, ConditionChecker> checkers =
-        new HashMap<>();
+    final Map<String, ConditionChecker> checkers = new HashMap<>();
     final ConditionChecker checker =
         new BasicTimeChecker("BasicTimeChecker_1", s.getFirstSchedTime(),
             s.getTimezone(), s.isRecurring(), s.skipPastOccurrences(),

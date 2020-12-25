@@ -423,6 +423,15 @@ azkaban.ExecutionListView = Backbone.View.extend({
       $(a).append(span);
       $(a).text(wtssI18n.common.logDownload);
       $(tdAction).append(a);
+
+//<button type="button" id="job-id-relation-btn" class="btn btn-sm btn-success" >jobId关系</button>
+      var idRelationBtn = document.createElement("button");
+      $(idRelationBtn).attr("nestedId", node.nestedId);
+      $(idRelationBtn).addClass("btn btn-sm btn-success job-id-relation");
+      $(idRelationBtn).text('jobId关系');
+      $(idRelationBtn).attr("style", "margin-left:5px");
+      $(idRelationBtn).bind("click", showRelation);
+      $(tdAction).append(idRelationBtn);
     }
 
     //运行日期
@@ -481,6 +490,57 @@ var attemptRightClick = function (event) {
 
   contextMenuView.show(event, menu);
   return false;
+}
+
+var showRelation = function(evt){
+    console.log("show relation");
+    $("#jobid-relation-modal").modal();
+    var tbody = $("#jobIdRelationBody");
+    tbody.empty();
+    $("#jobid-relation-title").text($(evt.currentTarget).attr("nestedid"));
+    var requestURL = "/executor";
+    var params = {
+      "execid": execId,
+      "nested_id": $(evt.currentTarget).attr("nestedid"),
+      "ajax": "getJobIdRelation"
+    }
+    var successHandler = function (data) {
+      if(data.error){
+        console.log(data.error);
+      } else{
+
+        for (var i = 0; i < data.data.length; i++) {
+          var row = document.createElement("tr");
+          //jobServerId
+          var td1 = document.createElement("td");
+          $(td1).text(data.data[i].jobServerJobId);
+          row.appendChild(td1);
+
+          //appid
+          var td2 = document.createElement("td");
+          $(td2).text(data.data[i].applicationId);
+          row.appendChild(td2);
+
+          //attempt
+          var td3 = document.createElement("td");
+          $(td3).text(data.data[i].attempt);
+          row.appendChild(td3);
+
+          tbody.append(row);
+        }
+      }
+    };
+    $.ajax({
+      url: requestURL,
+      type: "get",
+      data: params,
+      dataType: "json",
+      error: function (data) {
+        console.log(data.error);
+      },
+      success: successHandler
+    });
+
 }
 
 $(function () {

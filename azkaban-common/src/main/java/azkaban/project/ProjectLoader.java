@@ -270,4 +270,11 @@ public interface ProjectLoader {
    */
   int getTodayRunFlow(int projectId, String flowName) throws ProjectManagerException;
 
+  /**
+   * 获取用户有权限的projectId
+   * @param user
+   * @return
+   * @throws ProjectManagerException
+   */
+  List<Integer> fetchPermissionsProjectId(String user) throws ProjectManagerException;
 }

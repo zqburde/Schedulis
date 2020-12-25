@@ -60,6 +60,7 @@ azkaban.ExecutionsTabView = Backbone.View.extend({
   events: {
     'click #currently-running-view-link': 'handleCurrentlyRunningViewLinkClick',
     'click #recently-finished-view-link': 'handleRecentlyFinishedViewLinkClick',
+    'click #recover-history-view-link': 'handleRecoverHistoryViewLinkClick',
     'click #cycle-execution-view-link': 'handleCycleExecutionViewLinkClick'
   },
 
@@ -76,9 +77,10 @@ azkaban.ExecutionsTabView = Backbone.View.extend({
   render: function () {
   },
   //当前运行页面
-  handleCurrentlyRunningViewLinkClick: function() {
+  handleCurrentlyRunningViewLinkClick: function () {
     $('#recently-finished-view-link').removeClass('active');
     $('#recently-finished-view').hide();
+    $('#recover-history-view-link').removeClass('active');
     $('#recover-history-view').hide();
     $('#cycle-execution-view-link').removeClass('active');
     $('#cycle-execution-view').hide();
@@ -86,9 +88,10 @@ azkaban.ExecutionsTabView = Backbone.View.extend({
     $('#currently-running-view').show();
   },
   //最近完成页面
-  handleRecentlyFinishedViewLinkClick: function() {
+  handleRecentlyFinishedViewLinkClick: function () {
     $('#currently-running-view-link').removeClass('active');
     $('#currently-running-view').hide();
+    $('#recover-history-view-link').removeClass('active');
     $('#recover-history-view').hide();
     $('#cycle-execution-view-link').removeClass('active');
     $('#cycle-execution-view').hide();
@@ -96,13 +99,14 @@ azkaban.ExecutionsTabView = Backbone.View.extend({
     $('#recently-finished-view').show();
   },
   //历史重跑页面
-  handleRecoverHistoryViewLinkClick: function() {
+  handleRecoverHistoryViewLinkClick: function () {
     $('#recently-finished-view-link').removeClass('active');
     $('#recently-finished-view').hide();
     $('#currently-running-view-link').removeClass('active');
     $('#currently-running-view').hide();
     $('#cycle-execution-view-link').removeClass('active');
     $('#cycle-execution-view').hide();
+    $('#recover-history-view-link').addClass('active');
     $('#recover-history-view').show();
     executionModel.trigger("change:view");
   },
@@ -112,6 +116,7 @@ azkaban.ExecutionsTabView = Backbone.View.extend({
     $('#recently-finished-view').hide();
     $('#currently-running-view-link').removeClass('active');
     $('#currently-running-view').hide();
+    $('#recover-history-view-link').removeClass('active');
     $('#recover-history-view').hide();
     $('#cycle-execution-view-link').addClass('active');
     $('#cycle-execution-view').show();

@@ -833,6 +833,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
       historyInfo.put("flowType", executableFlow.getFlowType());
 //      historyInfo.put("execTime", WebUtils.formatDurationTime(executableFlow.getStartTime(), executableFlow.getEndTime()) + "");
 //      historyInfo.put("moyenne", executableFlow.getOtherOption().get("moyenne"));
+      historyInfo.put(ExecutableFlow.COMMENT_PARAM, executableFlow.getComment());
       historyList.add(historyInfo);
     }
 

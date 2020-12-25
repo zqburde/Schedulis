@@ -327,6 +327,13 @@ azkaban.HistoryListView = Backbone.View.extend({
       }
       row.appendChild(tdFlowType);
 
+      //备注
+      var tdComment = document.createElement("td");
+      $(tdComment).attr("style", "overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width: 60px;");
+      $(tdComment).attr("title", historyList[i].comment);
+      $(tdComment).text(historyList[i].comment);
+      row.appendChild(tdComment);
+
       historyTbody.append(row);
 
       this.renderPagination(evt);

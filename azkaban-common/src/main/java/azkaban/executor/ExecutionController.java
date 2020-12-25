@@ -18,6 +18,7 @@ package azkaban.executor;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.event.EventHandler;
 import azkaban.flow.FlowUtils;
+import azkaban.history.ExecutionRecover;
 import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
 import azkaban.metrics.CommonMetrics;
 import azkaban.project.Project;
@@ -28,7 +29,7 @@ import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
-import com.webank.wedatasphere.schedulis.common.executor.ExecutionRecover;
+
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.time.Duration;
@@ -258,6 +259,11 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   public ExecutableFlow getExecutableFlow(final int execId)
       throws ExecutorManagerException {
     return this.executorLoader.fetchExecutableFlow(execId);
+  }
+
+  @Override
+  public List<ExecutableFlow> getExecutableFlowByRepeatId(int repeatId) throws ExecutorManagerException {
+    return this.executorLoader.fetchExecutableFlowByRepeatId(repeatId);
   }
 
   /**
@@ -866,8 +872,79 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   }
 
   @Override
+  public List<ExecutableFlow> getHistoryRecoverExecutableFlows(String userNameContains) throws ExecutorManagerException {
+    return null;
+  }
+
+  @Override
+  public ExecutableFlow getHistoryRecoverExecutableFlowsByRepeatId(String repeatId) throws ExecutorManagerException {
+    return null;
+  }
+
+  @Override
+  public void stopHistoryRecoverExecutableFlowByRepeatId(String repeatId) throws ExecutorManagerException {
+
+  }
+
+  @Override
+  public ExecutableFlow getHistoryRecoverExecutableFlowsByFlowId(String flowId, String projectId) throws ExecutorManagerException {
+    return null;
+  }
+
+  @Override
+  public List<ExecutionRecover> listHistoryRecoverFlows(Map paramMap, int skip, int size) throws ExecutorManagerException {
+    return null;
+  }
+
+  @Override
+  public List<ExecutionRecover> listMaintainedHistoryRecoverFlows(String username, List<Integer> projectIds, int skip, int size)
+          throws ExecutorManagerException {
+    return null;
+  }
+
+  @Override
+  public Integer saveHistoryRecoverFlow(ExecutionRecover executionRecover) throws ExecutorManagerException {
+    return null;
+  }
+
+  @Override
+  public void updateHistoryRecover(ExecutionRecover executionRecover) throws ExecutorManagerException {
+
+  }
+
+  @Override
+  public ExecutionRecover getHistoryRecoverFlow(Integer recoverId) throws ExecutorManagerException {
+    return null;
+  }
+
+  @Override
+  public ExecutionRecover getHistoryRecoverFlowByPidAndFid(String projectId, String flowId) throws ExecutorManagerException {
+    return null;
+  }
+
+  @Override
+  public List<ExecutionRecover> listHistoryRecoverRunnning(Integer loadSize) throws ExecutorManagerException {
+    return null;
+  }
+
+  @Override
+  public int getHistoryRecoverTotal() throws ExecutorManagerException {
+    return 0;
+  }
+
+  @Override
   public ExecutableFlow getProjectLastExecutableFlow(int projectId, String flowId) throws ExecutorManagerException {
     return null;
+  }
+
+  @Override
+  public int getUserHistoryRecoverTotal(String userName) throws ExecutorManagerException {
+    return 0;
+  }
+
+  @Override
+  public int getMaintainedHistoryRecoverTotal(String username, List<Integer> maintainedProjectIds) throws ExecutorManagerException {
+    return 0;
   }
 
   @Override
@@ -1022,6 +1099,11 @@ public class ExecutionController extends EventHandler implements ExecutorManager
 
   @Override
   public List<ExecutionCycle> getAllRunningCycleFlows() throws ExecutorManagerException {
+    return null;
+  }
+
+  @Override
+  public List<Integer> fetchPermissionsProjectId(String user) {
     return null;
   }
 }

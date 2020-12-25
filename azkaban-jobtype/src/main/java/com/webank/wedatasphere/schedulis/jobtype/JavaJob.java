@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.JavaProcessJob;
@@ -56,10 +55,19 @@ public class JavaJob extends JavaProcessJob {
   protected String getJVMArguments() {
     String args = super.getJVMArguments();
 
-    String typeGlobalJVMArgs =
+    String typeUserGlobalJVMArgs =
+        getJobProps().getString("jobtype.global.jvm.args", null);
+    if (typeUserGlobalJVMArgs != null) {
+      args += " " + typeUserGlobalJVMArgs;
+    }
+    String typeSysGlobalJVMArgs =
         getSysProps().getString("jobtype.global.jvm.args", null);
-    if (typeGlobalJVMArgs != null) {
-      args += " " + typeGlobalJVMArgs;
+    if (typeSysGlobalJVMArgs != null) {
+      args += " " + typeSysGlobalJVMArgs;
+    }
+    String typeSysJVMArgs = getSysProps().getString("jobtype.jvm.args", null);
+    if (typeSysJVMArgs != null) {
+      args += " " + typeSysJVMArgs;
     }
     return args;
   }
@@ -78,15 +86,6 @@ public class JavaJob extends JavaProcessJob {
     String loggerPath = getSourcePathFromClass(Logger.class);
     if (!classPath.contains(loggerPath)) {
       classPath.add(loggerPath);
-    }
-
-    // Add hadoop home to classpath
-    String hadoopHome = System.getenv("HADOOP_HOME");
-    if (hadoopHome == null) {
-      info("HADOOP_HOME not set, using default hadoop config.");
-    } else {
-      info("Using hadoop config found in " + hadoopHome);
-      classPath.add(new File(hadoopHome, "conf").getPath());
     }
 
     List<String> typeClassPath =

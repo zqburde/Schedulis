@@ -57,7 +57,7 @@ public class ExecutionFlowDao {
 
     final String INSERT_EXECUTABLE_FLOW = "INSERT INTO execution_flows "
         + "(project_id, flow_id, version, status, submit_time, submit_user, update_time, flow_type, "
-        + "use_executor) values (?,?,?,?,?,?,?,?,?)";
+        + "use_executor, repeat_id) values (?,?,?,?,?,?,?,?,?, ?)";
     final long submitTime = System.currentTimeMillis();
     flow.setStatus(Status.PREPARING);
     flow.setSubmitTime(submitTime);
@@ -78,7 +78,7 @@ public class ExecutionFlowDao {
           flow.getSubmitUser(),
           submitTime,
           flow.getFlowType(),
-		  executorId);
+		  executorId, flow.getRepeatId());
       transOperator.getConnection().commit();
       return transOperator.getLastInsertId();
     };
@@ -496,6 +496,17 @@ public class ExecutionFlowDao {
     }
   }
 
+  public List<ExecutableFlow> fetchExecutableFlowByRepeatId(final int repeatId) throws ExecutorManagerException {
+    final FetchExecutableFlows flowHandler = new FetchExecutableFlows();
+    try {
+      final List<ExecutableFlow> executableFlows = this.dbOperator
+          .query(FetchExecutableFlows.FETCH_EXECUTABLE_FLOW_BY_REPEAT_ID, flowHandler, repeatId);
+      return executableFlows;
+    } catch (final SQLException e) {
+      throw new ExecutorManagerException("Error fetching flow by repeatId: " + repeatId, e);
+    }
+  }
+
   /**
    * set executor id to null for the execution id
    */
@@ -585,6 +596,9 @@ public class ExecutionFlowDao {
 
   public static class FetchExecutableFlows implements
       ResultSetHandler<List<ExecutableFlow>> {
+
+    static String FETCH_EXECUTABLE_FLOW_BY_REPEAT_ID = "SELECT ef.exec_id, ef.enc_type, ef.flow_data FROM execution_flows ef " +
+        " WHERE ef.`repeat_id` = ? AND ef.status IN (20, 30, 80);";
 
     static String FETCH_EXECUTABLE_FLOW_BY_START_TIME =
         "SELECT ef.exec_id, ef.enc_type, ef.flow_data FROM execution_flows ef WHERE project_id=? "

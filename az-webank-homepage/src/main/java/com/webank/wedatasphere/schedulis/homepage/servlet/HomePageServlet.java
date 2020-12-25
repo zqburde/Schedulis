@@ -36,6 +36,7 @@ import azkaban.utils.WebUtils;
 import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.Page;
+import azkaban.webapp.servlet.RecoverServlet;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import com.webank.wedatasphere.schedulis.homepage.utils.TimeUtils;
 
@@ -62,6 +63,7 @@ public class HomePageServlet extends LoginAbstractAzkabanServlet {
   private static final long serialVersionUID = 1L;
   private ExecutorManagerAdapter executorManager;
   private ProjectManager projectManager;
+  private RecoverServlet.ExecutorVMHelper vmHelper;
   private ScheduleManager scheduleManager;
   private final Props props;
   private final File webResourcesPath;
@@ -289,7 +291,10 @@ public class HomePageServlet extends LoginAbstractAzkabanServlet {
       }
 
       for(Schedule schedule : schedules){
-
+        if(!(boolean)schedule.getOtherOption().getOrDefault("activeFlag", false)){
+          logger.debug("not active schedule, id:{}", schedule.getScheduleId());
+          continue;
+        }
         queueNum += getScheduleTodayRunCount(schedule);
         if(0 != queueNum && null == exFlowMap.get(schedule.getProjectId() + schedule.getFlowName())){
           Project project = this.projectManager.getProject(schedule.getProjectId());
@@ -440,6 +445,10 @@ public class HomePageServlet extends LoginAbstractAzkabanServlet {
         //schedules = this.scheduleManager.getSchedulesByUser(session.getUser());
 
         for(Schedule schedule : this.scheduleManager.getSchedules()){
+          if(!(boolean)schedule.getOtherOption().getOrDefault("activeFlag", false)){
+            logger.debug("not active schedule, id:{}", schedule.getScheduleId());
+            continue;
+          }
           for(Project project : userProjectList){
             if(project.getId() == schedule.getProjectId()){
               schedules.add(schedule);
@@ -701,16 +710,16 @@ public class HomePageServlet extends LoginAbstractAzkabanServlet {
 
     //runCount = countTodaySchedule(cronExpression, todayLast, runCount, nowSchedTime.getMillis(), timezone);
 
-    Optional<DateTime> nextTime = WebUtils.getNextCronRuntime(todayLong
-            , timezone, Utils.parseCronExpression(cronExpression, timezone));
+    final DateTime nextTime = WebUtils.getNextCronRuntime(todayLong, timezone, Utils.parseCronExpression(cronExpression, timezone));
+    long nextExecTime = nextTime.getMillis();
 
-    while(nextTime.isPresent() && nextTime.get().getMillis() < todayLast) {
+    while(nextExecTime < todayLast){
       runCount += 1;
-      nextTime = WebUtils.getNextCronRuntime(nextTime.get().getMillis(), timezone
-              , Utils.parseCronExpression(cronExpression, timezone));
+      nextExecTime = WebUtils.getNextCronRuntime(nextExecTime, timezone
+          , Utils.parseCronExpression(cronExpression, timezone)).getMillis();
     }
 
-      return runCount;
+    return runCount;
 
   }
 

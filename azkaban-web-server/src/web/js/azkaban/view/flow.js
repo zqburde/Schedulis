@@ -227,6 +227,13 @@ azkaban.ExecutionsView = Backbone.View.extend({
       var tdAction = document.createElement("td");
       row.appendChild(tdAction);
 
+      //备注
+      var tdComment = document.createElement("td");
+      $(tdComment).attr("style", "overflow: hidden;text-overflow: ellipsis;white-space: nowrap;max-width: 60px;");
+      $(tdComment).attr("title", executions[i].comment);
+      $(tdComment).text(executions[i].comment);
+      row.appendChild(tdComment);
+
       tbody.append(row);
     }
 

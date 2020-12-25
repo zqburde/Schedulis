@@ -54,7 +54,18 @@
   <script src="${context}/js/select2/select2.js?version=1.10.0"></script>
   <script src="${context}/js/select2/i18n/zh-CN.js?version=1.10.0"></script>
   <link href="${context}/css/select2/select2.css?version=1.10.0" rel="stylesheet"/>
-  
+  <style type="text/css">
+      .select2-container .select2-selection--single .select2-selection__rendered {
+        display: block;
+        padding-left: 8px;
+        padding-right: 20px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: break-all;
+        height: 28px;
+        white-space: unset;
+      }
+    </style>
 </head>
 <body>
 
@@ -83,9 +94,8 @@
                        placeholder="${floworprogramNameIncl}" value=#if($search_term) "$esc.html(${search_term})" #else
                 "" #end class="form-control input-sm" name="searchterm" />
                 <span class="input-group-btn">
-                  <button id="quick-serach-btn" type="button"
-                          class="btn btn-primary btn-sm">$quickSearch</button>
-            </span>
+                  <button id="quick-serach-btn" type="button" class="btn btn-primary btn-sm">$quickSearch</button>
+                </span>
               </div>
             </div>
           </form>
@@ -106,6 +116,7 @@
     <div class="row" id="schedule-view">
       <div class="col-xs-12">
         <i>$clickColumntoRank</i>
+        <button id="batch-setSla-btn" type="button" class="btn btn-primary btn-sm" style="float:right">$batchSetSla</button>
         <table id="scheduledFlowsTbl"
                class="table table-striped table-condensed table-bordered table-hover">
           <thead>
@@ -165,6 +176,7 @@
   ## Set SLA modal.
 
     #parse ("azkaban/webapp/servlet/velocity/slapanel.vm")
+    #parse ("azkaban/webapp/servlet/velocity/batch-sla-panel.vm")
 
   ## Set schedule modal.
 

@@ -16,6 +16,7 @@
 
 package azkaban.executor;
 
+import azkaban.history.ExecutionRecover;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
 import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
 
@@ -36,11 +37,14 @@ import azkaban.utils.Props;
 
 public interface ExecutorManagerAdapter {
 
+  public List<Integer> fetchPermissionsProjectId(String user);
+
   public Props getAzkabanProps();
 
   public boolean isFlowRunning(int projectId, String flowId) throws ExecutorManagerException;
 
-  public ExecutableFlow getExecutableFlow(int execId)
+  public ExecutableFlow getExecutableFlow(int execId) throws ExecutorManagerException;
+  public List<ExecutableFlow> getExecutableFlowByRepeatId(int repeatId)
       throws ExecutorManagerException;
 
   public List<Integer> getRunningFlows(int projectId, String flowId);
@@ -279,6 +283,104 @@ public interface ExecutorManagerAdapter {
   public List<ExecutableFlow> getUserExecutableFlowsQuickSearch(String flowIdContains, String user,
       int skip, int size) throws ExecutorManagerException;
 
+  /**
+   * 查找所有的历史补采记录
+   * @param userNameContains
+   * @return
+   * @throws ExecutorManagerException
+   */
+  public List<ExecutableFlow> getHistoryRecoverExecutableFlows(final String userNameContains) throws ExecutorManagerException;
+
+  /**
+   * 根据历史补采ID 查找对应的补采记录
+   * @param repeatId
+   * @return
+   * @throws ExecutorManagerException
+   */
+  public ExecutableFlow getHistoryRecoverExecutableFlowsByRepeatId(final String repeatId) throws ExecutorManagerException;
+
+  /**
+   * 根据历史补采ID 设置该补采流程停止
+   * @param repeatId
+   * @throws ExecutorManagerException
+   */
+  public void stopHistoryRecoverExecutableFlowByRepeatId(final String repeatId)
+      throws ExecutorManagerException;
+
+
+  public ExecutableFlow getHistoryRecoverExecutableFlowsByFlowId(final String flowId, final String projectId)
+      throws ExecutorManagerException;
+
+  /**
+   * 分页查找历史补采记录
+   * @param paramMap
+   * @param skip
+   * @param size
+   * @return
+   * @throws ExecutorManagerException
+   */
+  public List<ExecutionRecover> listHistoryRecoverFlows(final Map paramMap, int skip, int size)
+      throws ExecutorManagerException;
+
+  /**
+   * 分页查询运维管理员运维的所有历史补采记录
+   * @param projectIds 运维管理员运维的所有工程的ID
+   * @param skip
+   * @param size
+   * @return
+   * @throws ExecutorManagerException
+   */
+   List<ExecutionRecover> listMaintainedHistoryRecoverFlows(String username, List<Integer> projectIds, int skip, int size)
+          throws ExecutorManagerException;
+  /**
+   * 创建一个新的历史补采记录
+   * @param executionRecover
+   * @return
+   * @throws ExecutorManagerException
+   */
+  Integer saveHistoryRecoverFlow(final ExecutionRecover executionRecover)
+      throws ExecutorManagerException;
+
+  /**
+   * 更新历史补采记录
+   * @param executionRecover
+   * @throws ExecutorManagerException
+   */
+  void updateHistoryRecover(final ExecutionRecover executionRecover)
+      throws ExecutorManagerException;
+
+  /**
+   * 根据历史补采ID 获取历史补采信息
+   * @param recoverId
+   * @return
+   * @throws ExecutorManagerException
+   */
+  ExecutionRecover getHistoryRecoverFlow(final Integer recoverId)
+      throws ExecutorManagerException;
+
+  /**
+   * 根据项目ID和工作流ID 查找正在运行的历史补采
+   * @param projectId
+   * @param flowId
+   * @return
+   * @throws ExecutorManagerException
+   */
+  ExecutionRecover getHistoryRecoverFlowByPidAndFid(final String projectId, final String flowId)
+      throws ExecutorManagerException;
+
+  /**
+   * 获取未完成的历史补采
+   * @return
+   * @throws ExecutorManagerException
+   */
+  List<ExecutionRecover> listHistoryRecoverRunnning(final Integer loadSize) throws ExecutorManagerException;
+
+  /**
+   * 获取历史重跑的总数
+   * @return
+   * @throws ExecutorManagerException
+   */
+  int getHistoryRecoverTotal() throws ExecutorManagerException;
 
   /**
    *
@@ -288,6 +390,21 @@ public interface ExecutorManagerAdapter {
    * @throws ExecutorManagerException
    */
   ExecutableFlow getProjectLastExecutableFlow(int projectId, String flowId) throws ExecutorManagerException;
+
+  /**
+   * 获取用户历史重跑的总数
+   * @return
+   * @throws ExecutorManagerException
+   */
+  int getUserHistoryRecoverTotal(String userName) throws ExecutorManagerException;
+
+  /**
+   * 获取运维管理者历史重跑总数
+   * @param maintainedProjectIds 运维管理者运维的所有工程ID
+   * @return
+   * @throws ExecutorManagerException
+   */
+  int getMaintainedHistoryRecoverTotal(String username, List<Integer> maintainedProjectIds) throws ExecutorManagerException;
 
   /**
    * 根据执行ID获取所有执行日志压缩包地址

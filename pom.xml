@@ -6,7 +6,7 @@
 
     <groupId>com.webank.wedatasphere.schedulis</groupId>
     <artifactId>schedulis</artifactId>
-    <version>0.5.0</version>
+    <version>0.6.0</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -26,12 +26,12 @@
     </modules>
 
     <properties>
-        <schedulis.version>0.5.0</schedulis.version>
+        <schedulis.version>0.6.0</schedulis.version>
         <assertj.version>3.8.0</assertj.version>
         <awaitility.version>3.0.0</awaitility.version>
-        <hadoop.version>3.2.1</hadoop.version>
+        <hadoop.version>2.7.2</hadoop.version>
         <codahale.metrics.core.version>3.0.2</codahale.metrics.core.version>
-        <hive.version>2.0.1</hive.version>
+        <hive.version>1.2.1</hive.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.collections4.version>4.1</commons.collections4.version>
         <commons.compress.version>1.20</commons.compress.version>

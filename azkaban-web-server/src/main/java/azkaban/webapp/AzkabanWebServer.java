@@ -18,6 +18,7 @@ package azkaban.webapp;
 
 import azkaban.executor.Status;
 import azkaban.server.HttpRequestUtils;
+import azkaban.webapp.servlet.*;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
@@ -104,20 +105,6 @@ import azkaban.utils.Utils;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.TriggerPlugin;
 import azkaban.webapp.plugin.ViewerPlugin;
-import azkaban.webapp.servlet.AbstractAzkabanServlet;
-import azkaban.webapp.servlet.ExecutorServlet;
-import azkaban.webapp.servlet.FlowTriggerInstanceServlet;
-import azkaban.webapp.servlet.FlowTriggerServlet;
-import azkaban.webapp.servlet.HistoryServlet;
-import azkaban.webapp.servlet.IndexRedirectServlet;
-import azkaban.webapp.servlet.JMXHttpServlet;
-import azkaban.webapp.servlet.NoteServlet;
-import azkaban.webapp.servlet.ProjectManagerServlet;
-import azkaban.webapp.servlet.ProjectServlet;
-import azkaban.webapp.servlet.ScheduleServlet;
-import azkaban.webapp.servlet.StatsServlet;
-import azkaban.webapp.servlet.StatusServlet;
-import azkaban.webapp.servlet.TriggerManagerServlet;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutorManagerHA;
 import com.webank.wedatasphere.schedulis.common.jmx.JmxExecutorManagerAdapter;
@@ -344,7 +331,8 @@ public class AzkabanWebServer extends AzkabanServer {
     final ArrayList<String> jarPaths = new ArrayList<>();
     for (final File pluginDir : pluginDirs) {
       if (!pluginDir.exists()) {
-        logger.error("Error viewer plugin path " + pluginDir.getPath() + " doesn't exist.");
+        logger.error("Error viewer plugin path " + pluginDir.getPath()
+            + " doesn't exist.");
         continue;
       }
 
@@ -793,6 +781,7 @@ public class AzkabanWebServer extends AzkabanServer {
     root.addServlet(new ServletHolder(new NoteServlet()), "/notes");
     root.addServlet(new ServletHolder(new FlowTriggerInstanceServlet()), "/flowtriggerinstance");
     root.addServlet(new ServletHolder(new FlowTriggerServlet()), "/flowtrigger");
+    root.addServlet(new ServletHolder(new RecoverServlet()), "/recover");
     root.addServlet(new ServletHolder(new CycleServlet()), "/cycle");
 
 

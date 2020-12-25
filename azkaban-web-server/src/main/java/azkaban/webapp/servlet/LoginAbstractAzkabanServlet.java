@@ -36,6 +36,8 @@ import com.webank.wedatasphere.dss.appjoint.auth.AppJointAuth;
 import com.webank.wedatasphere.dss.appjoint.auth.RedirectMsg;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import com.webank.wedatasphere.schedulis.common.system.SystemManager;
+import com.webank.wedatasphere.schedulis.common.system.SystemUserManagerException;
+import com.webank.wedatasphere.schedulis.common.system.entity.WtssUser;
 import com.webank.wedatasphere.schedulis.common.user.SystemUserManager;
 import com.webank.wedatasphere.schedulis.common.utils.RSAUtils;
 import com.webank.wedatasphere.schedulis.common.utils.XSSFilterUtils;
@@ -56,6 +58,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ObjectUtils;
@@ -660,10 +664,12 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
 
   protected boolean hasPermission(final Project project, final User user, final Permission.Type type) {
+    // 1、判断用户是否有调度权限
     if (project.hasPermission(user, type)) {
       return true;
     }
 
+    // 2、判断用户是否管理员
     for (final String roleName : user.getRoles()) {
       final Role role = user.getRoleMap().get(roleName);
       if (role != null && role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
@@ -671,9 +677,17 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
       }
     }
 
+    // 3、判断用户是否是这个项目创建人所在部门的运维用户
+    String createUser = project.getCreateUser();
     SystemManager systemManager = this.application.getTransitionService().getSystemManager();
-    if (systemManager.isDepartmentMaintainer(user)) {
-      return true;
+    try {
+      WtssUser wtssUser = systemManager.getSystemUserByUserName(createUser);
+      List<Integer> departmentIds = systemManager.getDepartmentMaintainerDepListByUserName(user.getUserId());
+      if (CollectionUtils.isNotEmpty(departmentIds) && departmentIds.contains((int) wtssUser.getDepartmentId())) {
+        return true;
+      }
+    } catch (SystemUserManagerException e){
+      logger.error("Failed to get information.", e);
     }
 
     return false;

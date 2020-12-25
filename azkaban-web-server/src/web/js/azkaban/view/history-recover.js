@@ -17,7 +17,7 @@
 $.namespace('azkaban');
 
 
-$(function() {
+$(function () {
 
   // function initializeHistoryRecover(settings) {
   //   var date = new Date();
@@ -38,19 +38,19 @@ $(function() {
   //   $('#repeat-collection-error-msg').hide();
   // }
 
-  var beginTime   = $('#datetimebegin');
+  var beginTime = $('#datetimebegin');
   beginTime.blur(function () {
     updateRecoverTimeTopTen();
   });
-  var endTime     = $('#datetimeend');
+  var endTime = $('#datetimeend');
   endTime.blur(function () {
     updateRecoverTimeTopTen();
   });
-  var monthNum   = $('#repeat-month');
+  var monthNum = $('#repeat-month');
   monthNum.click(function () {
     updateRecoverTimeTopTen();
   });
-  var dayNum     = $('#repeat-day');
+  var dayNum = $('#repeat-day');
   dayNum.click(function () {
     updateRecoverTimeTopTen();
   });
@@ -67,8 +67,24 @@ $(function() {
     updateRecoverTimeTopTen();
   });
 
-  var rdt   = $('#runDateTime');
+  var rdt = $('#runDateTime');
   rdt.blur(function () {
+    updateRecoverTimeTopTen();
+  });
+
+  $("#id-show-start-five-date").click(function (evt) {
+    $("#show-start-five-date").prop("checked", true);
+    $("#show-last-five-date").prop("checked", false);
+    updateRecoverTimeTopTen();
+  });
+
+  $("#id-show-last-five-date").click(function (evt) {
+    $("#show-last-five-date").prop("checked", true);
+    $("#show-start-five-date").prop("checked", false);
+    updateRecoverTimeTopTen();
+  });
+
+  $("#enable-reverse-execute-history-recover").click(function (evt) {
     updateRecoverTimeTopTen();
   });
 
@@ -78,59 +94,51 @@ $(function() {
 });
 
 
-function getHistoryRecoverOptionData(executingData) {
+function getHistoryRecoverOptionData (executingData, reverseExecuteFlag) {
 
-  var beginTime   = $('#datetimebegin').val();
-  var endTime     = $('#datetimeend').val();
-  var monthNum   = $('#repeat-month').val();
-  var dayNum     = $('#repeat-day').val();
-  var hourNum    = $('#repeat-hour').val();
-  var minNum     = $('#repeat-min').val();
-  var state      = true;
+  var beginTime = $('#datetimebegin').val();
+  var endTime = $('#datetimeend').val();
+  var monthNum = $('#repeat-month').val();
+  var dayNum = $('#repeat-day').val();
+  var hourNum = $('#repeat-hour').val();
+  var minNum = $('#repeat-min').val();
+  var state = true;
   var recoverNum = $('#repeat-num').val();
   var recoverInterval = $('#recover-interval').val();
   var recoverErrorOption = $('#recover-error-option').val();
   var runDateTimeList = [];
-  if($("#runDateTime").val()){
-    runDateTimeList = $("#runDateTime").val().split(",").map(function(x){return Date.parse(x);});
+  if ($("#runDateTime").val()) {
+    runDateTimeList = $("#runDateTime").val().split(",").map(function (x) { return Date.parse(x); });
   }
 
-  if(beginTime == ''){
+  // 历史重跑告警信息
+  var historyRerunAlertLevel = $('#flow-history-rerun-finish-alert-level').val();
+  var historyRerunAlertEmails = $('#flow-history-rerun-finish-emails').val();
+
+  if (beginTime == '') {
     alert(wtssI18n.view.startTimeReq);
     state = false;
     return;
   }
-  if(endTime == ''){
+  if (endTime == '') {
     alert(wtssI18n.view.endTimeReq);
     state = false;
     return;
   }
 
-  if(beginTime > endTime){
+  if (beginTime > endTime) {
     alert(wtssI18n.view.timeFormat);
     state = false;
     return;
   }
 
-  // if(monthNum == 0 && dayNum == 0){
-  //   alert("请选择执行间隔！");
-  //   state = false;
-  //   return;
-  // }
-  //
-  // if(monthNum == "" || dayNum == ""){
-  //   alert("执行间隔不能时空字符串，不需要的请填0！");
-  //   state = false;
-  //   return;
-  // }
-
-  if(0 == recoverNum){
+  if (0 == recoverNum) {
     alert(wtssI18n.view.executionIntervaPro);
     state = false;
     return;
   }
 
-  if("" == recoverNum){
+  if ("" == recoverNum) {
     alert(wtssI18n.view.executeIntervalFormat);
     state = false;
     return;
@@ -145,7 +153,7 @@ function getHistoryRecoverOptionData(executingData) {
   start.setMinutes(start.getMinutes() + parseInt(minNum));
 
 
-  if(start > end){
+  if (start > end) {
     alert(wtssI18n.view.timeIntervalFormat);
     state = false;
     return;
@@ -165,19 +173,28 @@ function getHistoryRecoverOptionData(executingData) {
   recoverData.recoverInterval = recoverInterval;
   recoverData.recoverErrorOption = recoverErrorOption;
   recoverData.runDateTimeList = runDateTimeList;
+  recoverData.reverseExecuteFlag = reverseExecuteFlag;
+  recoverData.historyRerunAlertLevel = historyRerunAlertLevel;
+  recoverData.historyRerunAlertEmails = historyRerunAlertEmails;
+  recoverData.taskSize = $('#recover-Concurrent-option').val();
+  recoverData.finishedAlert = $("#enable-history-recover-finished-alert").is(':checked');
 
   return recoverData;
 }
 
-function HistoryRecoverExecute(executingData) {
-  var recoverData = this.getHistoryRecoverOptionData(executingData);
-  if(recoverData){
+function HistoryRecoverExecute (executingData) {
+  var reverseExecuteFlag = false;
+  if ($("#enable-reverse-execute-history-recover").is(':checked')) {
+    reverseExecuteFlag = true;
+  }
+  var recoverData = this.getHistoryRecoverOptionData(executingData, reverseExecuteFlag);
+  if (recoverData) {
     this.checkRecoverParam(recoverData, repeatFlow);
   }
 }
 
-function repeatFlow(recoverData) {
-  executeURL = contextURL + "/executor?ajax=repeatCollection";
+function repeatFlow (recoverData) {
+  executeURL = "/executor?ajax=repeatCollection";
   recoverData.disabled = JSON.parse(recoverData.disabled);
   $.ajax({
     type: "POST",
@@ -192,20 +209,20 @@ function repeatFlow(recoverData) {
   });
 }
 
-function checkRecoverParam(recoverData, repeatFun) {
-  executeURL = contextURL + "/executor?ajax=recoverParamVerify";
+function checkRecoverParam (recoverData, repeatFun) {
+  executeURL = "/executor?ajax=recoverParamVerify";
 
-  var successHandler = function(data) {
+  var successHandler = function (data) {
     if (data.error) {
       messageDialogView.show(wtssI18n.view.historyRerunError, data.error);
       return false;
     } else {
       flowExecuteDialogView.hideExecutionOptionPanel();
       messageDialogView.show(wtssI18n.view.historicalRerun, wtssI18n.view.rerunSubmitSuccess,
-          function() {
-            window.location.href = contextURL + "/executor#recover-history";
-            repeatFun(recoverData);
-          }
+        function () {
+          window.location.href = "/executor#recover-history";
+          repeatFun(recoverData);
+        }
       );
 
     }
@@ -225,29 +242,29 @@ function checkRecoverParam(recoverData, repeatFun) {
 
 }
 //历史重跑Top10时间预览处理方法
-function updateRecoverTimeTopTen() {
+function updateRecoverTimeTopTen () {
   $('#nextRecoverId').html("");
-  var beginTime   = $('#datetimebegin').val();
-  var endTime     = $('#datetimeend').val();
-  var monthNum   = $('#repeat-month').val();
-  var dayNum     = $('#repeat-day').val();
+  var beginTime = $('#datetimebegin').val();
+  var endTime = $('#datetimeend').val();
+  var monthNum = $('#repeat-month').val();
+  var dayNum = $('#repeat-day').val();
 
   var recoverNum = $('#repeat-num').val();
   var recoverInterval = $('#recover-interval').val();
 
-  if(beginTime && endTime && 0 != recoverNum){
+  if (beginTime && endTime && 0 != recoverNum) {
     var recoverTimeList = loadRecoverTimeList();
     var flowDateList = loadFlowDateTimeList();
 
-    if($("#runDateTime").val()){
-      var _flowDateList = $("#runDateTime").val().split(", ").map(function(x){return x.replace(/\//g, "");});
-      var _recoverTimeList = $("#runDateTime").val().split(", ").map(function(x){
+    if ($("#runDateTime").val()) {
+      var _flowDateList = $("#runDateTime").val().split(", ").map(function (x) { return x.replace(/\//g, ""); });
+      var _recoverTimeList = $("#runDateTime").val().split(", ").map(function (x) {
         var d = new Date(Date.parse(x));
         d.setDate(d.getDate() - 1);
         return getRecoverRunDateFormat(d);
       });
-      _flowDateList.forEach(function(x){flowDateList.push(x);});
-      _recoverTimeList.forEach(function(x){recoverTimeList.push(x);});
+      _flowDateList.forEach(function (x) { flowDateList.push(x); });
+      _recoverTimeList.forEach(function (x) { recoverTimeList.push(x); });
       recoverTimeList = Array.from(new Set(recoverTimeList));
       flowDateList = Array.from(new Set(flowDateList));
       recoverTimeList.sort();
@@ -256,7 +273,7 @@ function updateRecoverTimeTopTen() {
 
     var tableRecoverTime = $("<table></table>");
 
-    tableRecoverTime.attr("class","table table-striped");
+    tableRecoverTime.attr("class", "table table-striped");
 
     var theadRecoverTime = $("<thead></thead>");
     var trHeadRecoverTime = $("<tr></tr>");
@@ -272,27 +289,68 @@ function updateRecoverTimeTopTen() {
 
     var tbodyRecoverTime = $("<tbody></tbody>")
 
-    var len = recoverTimeList.length < 10 ? recoverTimeList.length : 10;
 
-    for(var i=0; i < len; i++){
+    // 如果选择倒序执行, 则调整预览页面数据, 逆序输出时间
+    if ($("#enable-reverse-execute-history-recover").is(':checked')) {
+      recoverTimeList.reverse();
+      flowDateList.reverse();
+    }
 
-      var tr = $("<tr></tr>");
+    var dateLength = recoverTimeList.length
+    if ($("#show-start-five-date").is(":checked")) {
+      if (dateLength <= 10) {
+        for (var i = 0; i < dateLength; i++) {
+          var tr = $("<tr></tr>");
+          var tdFlow = $("<td></td>");
+          tdFlow.text(flowDateList[i]);
+          tr.append(tdFlow);
 
-      var tdFlow = $("<td></td>");
-      tdFlow.text(flowDateList[i]);
-      tr.append(tdFlow);
+          var tdRun = $("<td></td>");
+          tdRun.text(recoverTimeList[i]);
+          tr.append(tdRun);
+          tbodyRecoverTime.append(tr);
+        }
+      } else {
+        for (var i = 0; i < 10; i++) {
+          var tr = $("<tr></tr>");
+          var tdFlow = $("<td></td>");
+          tdFlow.text(flowDateList[i]);
+          tr.append(tdFlow);
 
-      // var liRecoverTime = $("<li></li>");
-      // $(liRecoverTime).text(recoverTimeList[i]);
-      // $(liRecoverTime).attr("color","DarkGreen");
-      // $('#nextRecoverId').append(liRecoverTime);
+          var tdRun = $("<td></td>");
+          tdRun.text(recoverTimeList[i]);
+          tr.append(tdRun);
+          tbodyRecoverTime.append(tr);
+        }
+      }
+    }
 
-      var tdRun = $("<td></td>");
-      tdRun.text(recoverTimeList[i]);
-      tr.append(tdRun);
+    if ($("#show-last-five-date").is(":checked")) {
+      if (dateLength <= 10) {
+        for (var i = 0; i < dateLength; i++) {
+          var tr = $("<tr></tr>");
+          var tdFlow = $("<td></td>");
+          tdFlow.text(flowDateList[i]);
+          tr.append(tdFlow);
 
+          var tdRun = $("<td></td>");
+          tdRun.text(recoverTimeList[i]);
+          tr.append(tdRun);
+          tbodyRecoverTime.append(tr);
+        }
+      } else {
+        for (var i = (dateLength - 10); i < dateLength; i++) {
+          var tr = $("<tr></tr>");
+          var tdFlow = $("<td></td>");
+          tdFlow.text(flowDateList[i]);
+          tr.append(tdFlow);
 
-      tbodyRecoverTime.append(tr);
+          var tdRun = $("<td></td>");
+          tdRun.text(recoverTimeList[i]);
+          tr.append(tdRun);
+          tbodyRecoverTime.append(tr);
+        }
+      }
     }
 
     tableRecoverTime.append(tbodyRecoverTime);
@@ -305,12 +363,12 @@ function updateRecoverTimeTopTen() {
 
 }
 //获取预期Flow执行时间
-function loadRecoverTimeList() {
+function loadRecoverTimeList () {
 
-  var beginTime   = $('#datetimebegin').val();
-  var endTime     = $('#datetimeend').val();
-  var monthNum   = $('#repeat-month').val();
-  var dayNum     = $('#repeat-day').val();
+  var beginTime = $('#datetimebegin').val();
+  var endTime = $('#datetimeend').val();
+  var monthNum = $('#repeat-month').val();
+  var dayNum = $('#repeat-day').val();
 
   var recoverNum = $('#repeat-num').val();
   var recoverInterval = $('#recover-interval').val();
@@ -326,24 +384,24 @@ function loadRecoverTimeList() {
   var i = 0;
   var first = false;
   var firstDate;
-  while(start <= end){
-    if(i == 0){
+  while (start <= end) {
+    if (i == 0) {
       firstDate = start.getDate();
       var firstLastDay = getLastDay(start.getFullYear(), start.getMonth() + 1);
-      if(firstDate == firstLastDay){
+      if (firstDate == firstLastDay) {
         first = true;
       }
     }
-    i++;
-    if(i>10){
-      break;
-    }
+    //    i++;
+    //    if(i>10){
+    //      break;
+    //    }
     var run_date = new Date(Date.parse(beginTime));
     run_date.setFullYear(start.getFullYear(), start.getMonth(), start.getDate());
     run_date.setMonth(start.getMonth(), start.getDate());
     run_date.setDate(start.getDate() - 1);
     recoverTimeList.push(getRecoverRunDateFormat(run_date));
-    if("month" == recoverInterval){
+    if ("month" == recoverInterval) {
       //start.setMonth(start.getMonth() + parseInt(recoverNum), start.getDate());
       var oldDate = start.getDate();
       var oldMonth = start.getMonth();
@@ -353,19 +411,19 @@ function loadRecoverTimeList() {
 
       var newLastDay = getLastDay(start.getFullYear(), newMonth + 1);
 
-      if(oldDate > newLastDay){
+      if (oldDate > newLastDay) {
         start.setMonth(newMonth, newLastDay);
-      }else if(first && oldDate < newLastDay && oldLastDay < newLastDay){
+      } else if (first && oldDate < newLastDay && oldLastDay < newLastDay) {
         start.setMonth(newMonth, newLastDay);
-      }else if(!first && oldDate < firstDate && oldLastDay < newLastDay){
+      } else if (!first && oldDate < firstDate && oldLastDay < newLastDay) {
         start.setMonth(newMonth, firstDate);
-      }else{
+      } else {
         start.setMonth(newMonth, oldDate);
       }
 
-    }else if("week" == recoverInterval){
-      start.setDate(start.getDate() + parseInt(recoverNum)*parseInt(7));
-    }else if("day" == recoverInterval){
+    } else if ("week" == recoverInterval) {
+      start.setDate(start.getDate() + parseInt(recoverNum) * parseInt(7));
+    } else if ("day" == recoverInterval) {
       start.setDate(start.getDate() + parseInt(recoverNum));
     }
   }
@@ -373,12 +431,12 @@ function loadRecoverTimeList() {
   return recoverTimeList;
 }
 //获取FlowDate时间
-function loadFlowDateTimeList() {
+function loadFlowDateTimeList () {
 
-  var beginTime   = $('#datetimebegin').val();
-  var endTime     = $('#datetimeend').val();
-  var monthNum   = $('#repeat-month').val();
-  var dayNum     = $('#repeat-day').val();
+  var beginTime = $('#datetimebegin').val();
+  var endTime = $('#datetimeend').val();
+  var monthNum = $('#repeat-month').val();
+  var dayNum = $('#repeat-day').val();
 
   var recoverNum = $('#repeat-num').val();
   var recoverInterval = $('#recover-interval').val();
@@ -391,20 +449,20 @@ function loadFlowDateTimeList() {
   var i = 0;
   var first = false;
   var firstDate;
-  while(start <= end){
-    if(i == 0){
+  while (start <= end) {
+    if (i == 0) {
       firstDate = start.getDate();
       var firstLastDay = getLastDay(start.getFullYear(), start.getMonth() + 1);
-      if(firstDate == firstLastDay){
+      if (firstDate == firstLastDay) {
         first = true;
       }
     }
-    i++;
-    if(i>10){
-      break;
-    }
+    //    i++;
+    //    if(i>10){
+    //      break;
+    //    }
     recoverTimeList.push(getRecoverRunDateFormat(start));
-    if("month" == recoverInterval){
+    if ("month" == recoverInterval) {
       // start.setDate(1);
       // var oldMonth = start.getMonth();
       // start.setMonth(oldMonth + parseInt(recoverNum));
@@ -418,19 +476,19 @@ function loadFlowDateTimeList() {
 
       var newLastDay = getLastDay(start.getFullYear(), newMonth + 1);
 
-      if(oldDate > newLastDay){
+      if (oldDate > newLastDay) {
         start.setMonth(newMonth, newLastDay);
-      }else if(first && oldDate < newLastDay && oldLastDay < newLastDay){
+      } else if (first && oldDate < newLastDay && oldLastDay < newLastDay) {
         start.setMonth(newMonth, newLastDay);
-      }else if(!first && oldDate < firstDate && oldLastDay < newLastDay){
+      } else if (!first && oldDate < firstDate && oldLastDay < newLastDay) {
         start.setMonth(newMonth, firstDate);
-      }else{
+      } else {
         start.setMonth(newMonth, oldDate);
       }
 
-    }else if("week" == recoverInterval){
-      start.setDate(start.getDate() + parseInt(recoverNum)*parseInt(7));
-    }else if("day" == recoverInterval){
+    } else if ("week" == recoverInterval) {
+      start.setDate(start.getDate() + parseInt(recoverNum) * parseInt(7));
+    } else if ("day" == recoverInterval) {
       start.setDate(start.getDate() + parseInt(recoverNum));
     }
   }
@@ -439,12 +497,12 @@ function loadFlowDateTimeList() {
 
 }
 
-function getLastDay(year, month){
+function getLastDay (year, month) {
   var d = new Date(0);
-  if(month == 12){
+  if (month == 12) {
     d.setUTCFullYear(year + 1);
     d.setUTCMonth(0);
-  }else{
+  } else {
     d.setUTCFullYear(year);
     d.setUTCMonth(month);
   }
@@ -452,10 +510,10 @@ function getLastDay(year, month){
   return d.getUTCDate();
 }
 
-function setHistoryRecoverRunNum(){
+function setHistoryRecoverRunNum () {
 
-  var beginTime   = $('#datetimebegin').val();
-  var endTime     = $('#datetimeend').val();
+  var beginTime = $('#datetimebegin').val();
+  var endTime = $('#datetimeend').val();
 
   var recoverNum = $('#repeat-num').val();
   var recoverInterval = $('#recover-interval').val();
@@ -468,17 +526,17 @@ function setHistoryRecoverRunNum(){
   var i = 0;
   var first = false;
   var firstDate;
-  while(start <= end){
-    if(i == 0){
+  while (start <= end) {
+    if (i == 0) {
       firstDate = start.getDate();
       var firstLastDay = getLastDay(start.getFullYear(), start.getMonth() + 1);
-      if(firstDate == firstLastDay){
+      if (firstDate == firstLastDay) {
         first = true;
       }
     }
     i++;
     recoverTimeList.push(getRecoverRunDateFormat(start));
-    if("month" == recoverInterval){
+    if ("month" == recoverInterval) {
       // start.setDate(1);
       // var oldMonth = start.getMonth();
       // start.setMonth(oldMonth + parseInt(recoverNum));
@@ -492,30 +550,29 @@ function setHistoryRecoverRunNum(){
 
       var newLastDay = getLastDay(start.getFullYear(), newMonth + 1);
 
-      if(oldDate > newLastDay){
+      if (oldDate > newLastDay) {
         start.setMonth(newMonth, newLastDay);
-      }else if(first && oldDate < newLastDay && oldLastDay < newLastDay){
+      } else if (first && oldDate < newLastDay && oldLastDay < newLastDay) {
         start.setMonth(newMonth, newLastDay);
-      }else if(!first && oldDate < firstDate && oldLastDay < newLastDay){
+      } else if (!first && oldDate < firstDate && oldLastDay < newLastDay) {
         start.setMonth(newMonth, firstDate);
-      }else{
+      } else {
         start.setMonth(newMonth, oldDate);
       }
 
-    }else if("week" == recoverInterval){
-      start.setDate(start.getDate() + parseInt(recoverNum)*parseInt(7));
-    }else if("day" == recoverInterval){
+    } else if ("week" == recoverInterval) {
+      start.setDate(start.getDate() + parseInt(recoverNum) * parseInt(7));
+    } else if ("day" == recoverInterval) {
       start.setDate(start.getDate() + parseInt(recoverNum));
     }
   }
 
-  if($("#runDateTime").val()){
-    var _recoverTimeList = $("#runDateTime").val().split(", ").map(function(x){
+  if ($("#runDateTime").val()) {
+    var _recoverTimeList = $("#runDateTime").val().split(", ").map(function (x) {
       var d = new Date(Date.parse(x));
-      d.setDate(d.getDate() - 1);
       return getRecoverRunDateFormat(d);
     });
-    _recoverTimeList.forEach(function(x){recoverTimeList.push(x);});
+    _recoverTimeList.forEach(function (x) { recoverTimeList.push(x); });
     recoverTimeList = Array.from(new Set(recoverTimeList));
     recoverTimeList.sort();
   }

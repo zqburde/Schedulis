@@ -473,7 +473,7 @@ public class ProcessJob extends AbstractProcessJob {
           return;
         }
         HadoopJobUtils.killAllHadoopJobs(logFilePath, getLog());
-        HadoopJobUtils.killBdpClientJob(getCommandList(), logFilePath, getLog());
+        HadoopJobUtils.killBdpClientJob(getCommandList(), logFilePath, getLog(), this.sysProps);
       }
     }
   }

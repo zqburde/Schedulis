@@ -20,7 +20,7 @@ import azkaban.utils.Props;
 public class TestHadoopJobUtilsExecutionJar {
   Props jobProps = null;
 
-  Logger logger = Logger.getRootLogger();
+  Logger logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
   String workingDirString = "/tmp/TestHadoopSpark";
 

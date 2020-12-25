@@ -1110,6 +1110,7 @@ azkaban.ProjectListView = Backbone.View.extend({
           $('#delete-expand-project-permit-change-panel').modal();
         }
         $("#switching-execute-flow-btn").hide()
+        $("#workflow-execute-zoom-in").hide()
       }
     });
 

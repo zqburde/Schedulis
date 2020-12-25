@@ -51,16 +51,12 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -208,6 +204,30 @@ public class JdbcProjectImpl implements ProjectLoader {
       throw new ProjectManagerException("Query for permissions for " + project.getName() + " failed.", ex);
     }
     return permissions;
+  }
+
+  public List<Integer> fetchPermissionsProjectId(final String user) throws ProjectManagerException {
+    final ResultSetHandler<List<Integer>> handler = rs -> {
+        if (!rs.next()) {
+          return Collections.emptyList();
+        }
+        final List<Integer> projectIds = new ArrayList<>();
+        do {
+          final int projectId = rs.getInt(1);
+          projectIds.add(projectId);
+        } while (rs.next());
+        return projectIds;
+    };
+
+    String sql = "SELECT project_id FROM project_permissions WHERE `name` = ? ;";
+    List<Integer> projectIds = new ArrayList<>();
+    try {
+      projectIds = this.dbOperator.query(sql, handler, user);
+    } catch (final SQLException ex) {
+      logger.error("exec sql:{} failed.", sql, ex);
+      throw new ProjectManagerException("Query for permissions by " + user + " failed.", ex);
+    }
+    return projectIds;
   }
 
   /**

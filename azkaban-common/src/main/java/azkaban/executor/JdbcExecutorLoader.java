@@ -17,6 +17,9 @@
 package azkaban.executor;
 
 import azkaban.executor.ExecutorLogEvent.EventType;
+import azkaban.history.ExecutionRecover;
+import azkaban.history.ExecutionRecoverDao;
+import azkaban.history.RecoverTrigger;
 import com.webank.wedatasphere.schedulis.common.log.LogFilterDao;
 import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
 import com.webank.wedatasphere.schedulis.common.system.entity.WtssUser;
@@ -30,8 +33,6 @@ import com.webank.wedatasphere.schedulis.common.executor.DepartmentGroupDao;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycleDao;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionLogsAdapter;
-import com.webank.wedatasphere.schedulis.common.executor.ExecutionRecover;
-import com.webank.wedatasphere.schedulis.common.executor.ExecutionRecoverDao;
 import com.webank.wedatasphere.schedulis.common.executor.UserVariable;
 import com.webank.wedatasphere.schedulis.common.executor.UserVariableDao;
 import java.util.*;
@@ -39,6 +40,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.File;
 import java.time.Duration;
+import java.util.stream.Collectors;
 
 @Singleton
 public class JdbcExecutorLoader implements ExecutorLoader {
@@ -107,6 +109,11 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   public ExecutableFlow fetchExecutableFlow(final int id)
       throws ExecutorManagerException {
     return this.executionFlowDao.fetchExecutableFlow(id);
+  }
+
+  @Override
+  public List<ExecutableFlow> fetchExecutableFlowByRepeatId(int repeatId) throws ExecutorManagerException {
+    return this.executionFlowDao.fetchExecutableFlowByRepeatId(repeatId);
   }
 
   @Override
@@ -738,6 +745,17 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public List<RecoverTrigger> fetchHistoryRecoverTriggers() {
+    List<RecoverTrigger> recoverTriggers = new ArrayList<>();
+    try {
+      recoverTriggers = this.executionRecoverDao.fetchHistoryRecover().stream().map(x -> new RecoverTrigger(x)).collect(Collectors.toList());
+    }catch (ExecutorManagerException eme){
+      logger.error("fetch history recover trigger failed.", eme);
+    }
+    return recoverTriggers;
+  }
+
+  @Override
   public List<Integer> getExecutorIdsBySubmitUser(String submitUser) throws ExecutorManagerException {
     return departmentGroupDao.fetchExecutorsIdSBySubmitUser(submitUser);
   }
@@ -793,7 +811,7 @@ public class JdbcExecutorLoader implements ExecutorLoader {
   }
 
   @Override
-  public int updateUserVariable(UserVariable userVariable) throws ExecutorManagerException {
+  public int updateUserVariable(UserVariable userVariable) throws ExecutorManagerException{
     return this.userVariableDao.updateUserVariable(userVariable);
   }
 

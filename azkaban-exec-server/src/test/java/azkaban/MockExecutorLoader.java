@@ -25,7 +25,6 @@ import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.webank.wedatasphere.schedulis.common.executor.DepartmentGroup;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
-import com.webank.wedatasphere.schedulis.common.executor.ExecutionRecover;
 import com.webank.wedatasphere.schedulis.common.executor.UserVariable;
 import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
 import com.webank.wedatasphere.schedulis.common.system.entity.WtssUser;

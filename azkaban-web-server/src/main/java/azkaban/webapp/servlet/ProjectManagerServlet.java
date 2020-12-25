@@ -3209,6 +3209,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             } catch (final Exception e) {
                 logger.info("Installation Failed.", e);
                 String error = e.getMessage();
+                if(error != null && error.equals("MALFORMED")){
+                    error = "Decompressing files failed, please check if there are Chinese characters in the file name.";
+                }
                 if (error.length() > 512) {
                     error =
                         error.substring(0, 512) + "<br>Too many errors to display.<br>";
@@ -3725,6 +3728,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             flowInfo.put("startTime", flow.getStartTime());
             flowInfo.put("endTime", flow.getEndTime());
             flowInfo.put("submitUser", flow.getSubmitUser());
+            flowInfo.put(ExecutableFlow.COMMENT_PARAM, flow.getComment());
             Map<String, String> repeatMap = flow.getRepeatOption();
             if(flow.getRunDate() != null){
                 logger.info("run_date: " + flow.getRunDate());
