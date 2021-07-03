@@ -178,7 +178,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
   public void removeTrigger(final Trigger t) throws TriggerManagerException {
     logger.info("Removing trigger " + t + " from TriggerManager");
     synchronized (this.syncObj) {
-      this.runnerThread.deleteTrigger(t);
+      this.runnerThread.deleteTrigger(triggerIdMap.get(t.getTriggerId()));
       triggerIdMap.remove(t.getTriggerId());
       try {
         t.stopCheckers();
@@ -311,7 +311,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
             if(triggersId.contains(triggerId)){
               continue;
             }else{
-              runnerThread.deleteTrigger(triggerIdMap.get(triggersId));
+              runnerThread.deleteTrigger(triggerIdMap.get(triggerId));
               triggerIdMap.remove(triggerId);
             }
           }else{
