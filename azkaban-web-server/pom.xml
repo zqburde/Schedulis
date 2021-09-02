@@ -12,7 +12,7 @@
     <parent>
         <groupId>com.webank.wedatasphere.schedulis</groupId>
         <artifactId>schedulis</artifactId>
-        <version>0.6.0</version>
+        <version>0.6.1</version>
     </parent>
 
     <dependencies>
@@ -380,7 +380,12 @@
         </dependency>
         <dependency>
             <groupId>com.webank.wedatasphere.dss</groupId>
-            <artifactId>dss-appjoint-auth</artifactId>
+            <artifactId>dss-standard-common</artifactId>
+            <version>${dss.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.webank.wedatasphere.dss</groupId>
+            <artifactId>dss-origin-sso-integration-standard</artifactId>
             <version>${dss.version}</version>
             <exclusions>
                 <exclusion>
@@ -424,6 +429,16 @@
                     <groupId>org.apache.poi</groupId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.webank.wedatasphere.dss</groupId>
+            <artifactId>dss-sso-integration-standard</artifactId>
+            <version>${dss.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.webank.wedatasphere.dss</groupId>
+            <artifactId>spring-origin-sso-integration-plugin</artifactId>
+            <version>${dss.version}</version>
         </dependency>
     </dependencies>
 

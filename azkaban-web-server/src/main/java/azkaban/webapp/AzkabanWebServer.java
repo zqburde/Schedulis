@@ -16,30 +16,66 @@
 
 package azkaban.webapp;
 
+import azkaban.AzkabanCommonModule;
+import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
+import azkaban.database.AzkabanDatabaseSetup;
 import azkaban.executor.Status;
+import azkaban.executor.*;
+import azkaban.flowtrigger.FlowTriggerService;
+import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
+import azkaban.jmx.JmxExecutionController;
+import azkaban.jmx.JmxExecutorManager;
+import azkaban.jmx.JmxJettyServer;
+import azkaban.jmx.JmxTriggerManager;
+import azkaban.metrics.MetricsManager;
+import azkaban.project.ProjectManager;
+import azkaban.scheduler.ScheduleManager;
+import azkaban.server.AzkabanServer;
 import azkaban.server.HttpRequestUtils;
+import azkaban.server.session.SessionCache;
+import azkaban.trigger.TriggerManager;
+import azkaban.trigger.TriggerManagerException;
+import azkaban.trigger.builtin.*;
+import azkaban.utils.*;
+import azkaban.webapp.plugin.PluginRegistry;
+import azkaban.webapp.plugin.TriggerPlugin;
+import azkaban.webapp.plugin.ViewerPlugin;
 import azkaban.webapp.servlet.*;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-
 import com.linkedin.restli.server.RestliServlet;
-
+import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
+import com.webank.wedatasphere.schedulis.common.executor.ExecutorManagerHA;
+import com.webank.wedatasphere.schedulis.common.jmx.JmxExecutorManagerAdapter;
+import com.webank.wedatasphere.schedulis.common.system.common.TransitionService;
+import com.webank.wedatasphere.schedulis.web.webapp.LocaleFilter;
+import com.webank.wedatasphere.schedulis.web.webapp.servlet.CycleServlet;
 import joptsimple.internal.Strings;
 import org.apache.commons.lang.StringUtils;
+import org.apache.velocity.app.VelocityEngine;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.IPAccessHandler;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-import org.apache.velocity.app.VelocityEngine;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.IPAccessHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.joda.time.DateTimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.management.MBeanInfo;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.servlet.DispatcherType;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,73 +88,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.management.MBeanInfo;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import javax.servlet.DispatcherType;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 import static java.util.Objects.requireNonNull;
-
-import azkaban.AzkabanCommonModule;
-import azkaban.Constants;
-import azkaban.Constants.ConfigurationKeys;
-import azkaban.database.AzkabanDatabaseSetup;
-import azkaban.executor.AlerterHolder;
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutionController;
-import azkaban.executor.ExecutionControllerUtils;
-import azkaban.executor.ExecutorManager;
-import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.ExecutorManagerException;
-import azkaban.flowtrigger.FlowTriggerService;
-import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
-import azkaban.jmx.JmxExecutionController;
-import azkaban.jmx.JmxExecutorManager;
-import azkaban.jmx.JmxJettyServer;
-import azkaban.jmx.JmxTriggerManager;
-import azkaban.metrics.MetricsManager;
-import azkaban.project.ProjectManager;
-import azkaban.scheduler.ScheduleManager;
-import azkaban.server.AzkabanServer;
-import azkaban.server.session.SessionCache;
-import azkaban.trigger.TriggerManager;
-import azkaban.trigger.TriggerManagerException;
-import azkaban.trigger.builtin.BasicTimeChecker;
-import azkaban.trigger.builtin.CreateTriggerAction;
-import azkaban.trigger.builtin.ExecuteFlowAction;
-import azkaban.trigger.builtin.ExecutionChecker;
-import azkaban.trigger.builtin.KillExecutionAction;
-import azkaban.trigger.builtin.SlaAlertAction;
-import azkaban.trigger.builtin.SlaChecker;
-import azkaban.utils.FileIOUtils;
-import azkaban.utils.Props;
-import azkaban.utils.PropsUtils;
-import azkaban.utils.StdOutErrRedirect;
-import azkaban.utils.Utils;
-import azkaban.webapp.plugin.PluginRegistry;
-import azkaban.webapp.plugin.TriggerPlugin;
-import azkaban.webapp.plugin.ViewerPlugin;
-import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
-import com.webank.wedatasphere.schedulis.common.executor.ExecutorManagerHA;
-import com.webank.wedatasphere.schedulis.common.jmx.JmxExecutorManagerAdapter;
-import com.webank.wedatasphere.schedulis.common.system.common.TransitionService;
-import com.webank.wedatasphere.schedulis.web.webapp.LocaleFilter;
-import com.webank.wedatasphere.schedulis.web.webapp.servlet.CycleServlet;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.concurrent.CompletableFuture;
 
 
 /**
@@ -752,6 +726,7 @@ public class AzkabanWebServer extends AzkabanServer {
     final ServletContextHandler root = new ServletContextHandler(this.server, "/", ServletContextHandler.SESSIONS);
     root.getSessionHandler().setMaxInactiveInterval(30 * 60);
     root.addFilter(new FilterHolder(LocaleFilter.class),"/*", EnumSet.of(DispatcherType.REQUEST));
+    root.addFilter(new FilterHolder(DSSOriginSSOFilter.class),"/*", EnumSet.of(DispatcherType.REQUEST));
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
     final String defaultServletPath =
         this.props.getString("azkaban.default.servlet.path", "/index");

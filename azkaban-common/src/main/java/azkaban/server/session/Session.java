@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public class Session {
 
-  private final User user;
+  private User user;
   private final String sessionId;
   private final String ip;
   private final Map<String, Object> sessionData = new HashMap<>();
@@ -43,6 +43,10 @@ public class Session {
    */
   public User getUser() {
     return this.user;
+  }
+
+  public void setUser(User user) {
+    this.user = user;
   }
 
   /**
