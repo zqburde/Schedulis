@@ -38,7 +38,7 @@ HA 部署模式，即多个 WebServer 组合一个及以上 ExecutorServer 的�
     - 项目文件根目录下的 bin 目录中的环境检测脚本 checkEnv.sh
 5. 将安装包解压到合适的安装目录下，譬如：/appcom/Install/AzkabanInstall， 并将安装的根目录 /appcom 以及其下子目录的属主转换为 hadoop 用户， 且赋予 775 权限（/appcom/Install/AzkabnaInstall/ 为默认安装目录，建议创建该路径并将其作为安装路径，可避免一些路径的修改）
 6. 在开始下一步操作之前，为需要部署的机器运行 bin 目录下的环境检测脚本 checkEnv.sh，确认基础环境已经准备完成。若是报错，请用户参考"使用前置"章节为部署节点准备好基础环境
-7. 如果直接编译schedulis，那么编译出的linkis插件是不可用的，需要自行编译linkis1.0或者直接使用第二步中已经编译好的插件包放入jobtype目录，使用release包没有此问题
+7. 如果自行编译schedulis，那么编译出的linkis插件是不可用的，需要自行编译linkis1.0或者直接使用第二步中已经编译好的插件包（jobtypes）放入安装目录的plugins目录下，使用release包没有此问题
 
 ### 三）、修改配置
 
