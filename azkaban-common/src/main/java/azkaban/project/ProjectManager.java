@@ -16,43 +16,39 @@
 
 package azkaban.project;
 
-import static java.util.Objects.requireNonNull;
-
 import azkaban.Constants;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
-import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import azkaban.project.ProjectLogEvent.EventType;
 import azkaban.project.validator.ValidationReport;
 import azkaban.project.validator.ValidatorConfigs;
 import azkaban.project.validator.XmlValidatorManager;
 import azkaban.storage.StorageManager;
-import com.webank.wedatasphere.schedulis.common.system.SystemManager;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.CaseInsensitiveConcurrentHashMap;
-import com.webank.wedatasphere.schedulis.common.utils.PagingListStreamUtil;
 import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import com.google.common.io.Files;
+import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
+import com.webank.wedatasphere.schedulis.common.system.SystemManager;
+import com.webank.wedatasphere.schedulis.common.utils.PagingListStreamUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
+
+import static java.util.Objects.requireNonNull;
 
 
 @Singleton
@@ -282,11 +278,14 @@ public class ProjectManager {
    * fetch active project from cache and inactive projects from db by project_id
    */
   public Project getProject(final int id) {
-    this.loadAllProjects();
     Project fetchedProject = this.projectsById.get(id);
     if (fetchedProject == null) {
       try {
         fetchedProject = this.projectLoader.fetchProjectById(id);
+        if (fetchedProject.isActive()) {
+          loadAllProjectFlows(fetchedProject);
+          this.projectsById.put(fetchedProject.getId(), fetchedProject);
+        }
       } catch (final ProjectManagerException e) {
         logger.error("Could not load project from store.", e);
       }
