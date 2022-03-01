@@ -415,10 +415,6 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
                 this.scannerInterval
                     - (System.currentTimeMillis() - TriggerManager.this.lastRunnerThreadCheckTime);
 
-
-            if(azkprops.getBoolean(Constants.ConfigurationKeys.WEBSERVER_HA_MODEL, false)){
-              dd.unlock(TRIGGERS_LOCK_KEY);
-            }
             if (TriggerManager.this.runnerThreadIdleTime < 0) {
               logger.error("Trigger manager thread " + this.getName()
                   + " is too busy!");
