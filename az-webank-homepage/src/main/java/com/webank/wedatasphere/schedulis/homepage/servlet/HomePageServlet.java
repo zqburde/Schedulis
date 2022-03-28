@@ -16,12 +16,7 @@
 
 package com.webank.wedatasphere.schedulis.homepage.servlet;
 
-import azkaban.executor.ExecutableFlow;
-import azkaban.executor.ExecutableFlowBase;
-import azkaban.executor.ExecutableNode;
-import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.ExecutorManagerException;
-import azkaban.executor.Status;
+import azkaban.executor.*;
 import azkaban.flow.Flow;
 import azkaban.flow.Node;
 import azkaban.project.Project;
@@ -39,24 +34,19 @@ import azkaban.webapp.servlet.Page;
 import azkaban.webapp.servlet.RecoverServlet;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import com.webank.wedatasphere.schedulis.homepage.utils.TimeUtils;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 public class HomePageServlet extends LoginAbstractAzkabanServlet {
   private static final Logger logger = LoggerFactory.getLogger(HomePageServlet.class.getName());
@@ -713,7 +703,7 @@ public class HomePageServlet extends LoginAbstractAzkabanServlet {
     final DateTime nextTime = WebUtils.getNextCronRuntime(todayLong, timezone, Utils.parseCronExpression(cronExpression, timezone));
     long nextExecTime = nextTime.getMillis();
 
-    while(nextExecTime < todayLast){
+    while (nextExecTime != 0 && nextExecTime < todayLast) {
       runCount += 1;
       nextExecTime = WebUtils.getNextCronRuntime(nextExecTime, timezone
           , Utils.parseCronExpression(cronExpression, timezone)).getMillis();

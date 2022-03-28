@@ -19,10 +19,17 @@ package com.webank.wedatasphere.schedulis.common.utils;
 import azkaban.executor.ExecutableFlow;
 import azkaban.executor.Status;
 import azkaban.utils.Props;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import okhttp3.*;
+import org.apache.commons.lang.StringUtils;
+import org.jetbrains.annotations.NotNull;
+import org.joda.time.format.DateTimeFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -32,17 +39,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import okhttp3.Call;
-import okhttp3.FormBody;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import org.joda.time.format.DateTimeFormat;
 
 /**
  *
@@ -97,10 +93,10 @@ public class HttpUtils {
   }
 
   public static String getValue(Props props, String key){
-    if(org.apache.commons.lang.StringUtils.isNotBlank(props.get(key))){
+    if(StringUtils.isNotBlank(props.get(key))){
       return props.get(key)==null?props.get(key):props.get(key).trim();
     }
-    if (props.getParent() != null && org.apache.commons.lang.StringUtils.isNotBlank(props.getParent().get(key))){
+    if (props.getParent() != null && StringUtils.isNotBlank(props.getParent().get(key))){
       return props.getParent().get(key)==null?props.getParent().get(key):props.getParent().get(key).trim();
     }
     return null;
@@ -308,27 +304,85 @@ public class HttpUtils {
   public static String getLinuxLocalIp(Logger log) {
     String ip = "127.0.0.1";
     try {
-      for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
-        NetworkInterface intf = en.nextElement();
-        String name = intf.getName();
-        if (!name.contains("docker") && !name.contains("lo")) {
-          for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
-            InetAddress inetAddress = enumIpAddr.nextElement();
-            if (!inetAddress.isLoopbackAddress()) {
-              String ipaddress = inetAddress.getHostAddress().toString();
-              if (!ipaddress.contains("::") && !ipaddress.contains("0:0:") && !ipaddress.contains("fe80")) {
-                ip = ipaddress;
-              }
-            }
-          }
-        }
-      }
+      ip = getLinuxLocalIp();
     } catch (SocketException ex) {
       log.warn("get ip failed", ex);
 
     }
     log.info("current host IP:   " + ip);
     return ip;
+  }
+
+  public static String getLinuxLocalIp() throws SocketException {
+    for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
+      NetworkInterface intf = en.nextElement();
+      String name = intf.getName();
+      if (!name.contains("docker") && !name.contains("lo")) {
+        for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
+          InetAddress inetAddress = enumIpAddr.nextElement();
+          if (!inetAddress.isLoopbackAddress()) {
+            String ipaddress = inetAddress.getHostAddress().toString();
+            if (!ipaddress.contains("::") && !ipaddress.contains("0:0:") && !ipaddress.contains("fe80")) {
+              logger.debug("local ip: " + ipaddress);
+              return ipaddress;
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  public static void reloadWebData(List<String> urlList, String type, String data) {
+    try {
+      if (StringUtils.isEmpty(type)) {
+        return;
+      }
+      for (String url : urlList) {
+        if (StringUtils.isEmpty(url) || !(url.indexOf(getLinuxLocalIp()) < 0)) {
+          continue;
+        }
+        url = url + "/executor?ajax=reloadWebData&reloadType=" + type;
+        if (type.indexOf("Trigger") >= 0) {
+          url = url + "&triggerId=" + data;
+        } else if (type.indexOf("Project") >= 0) {
+          if("deleteProject".equals(type)){
+            url = url + "&projectId=" + data;
+          }else{
+            url = url + "&projectName=" + data;
+          }
+
+        } else if (type.contains("EventSchedule")) {
+          url += "&scheduleId=" + data;
+        }
+        OkHttpClient okHttpClient = new OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .writeTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS)
+            .build();
+
+        Request request = new Request.Builder()
+            .url(url).get()
+            .build();
+
+        Call call = okHttpClient.newCall(request);
+        call.enqueue(new Callback() {
+          @Override
+          public void onFailure(@NotNull Call call, @NotNull IOException e) {
+
+          }
+
+          @Override
+          public void onResponse(@NotNull Call call, @NotNull Response response)
+              throws IOException {
+
+          }
+        });
+      }
+    } catch (Exception e) {
+      logger.error("reload web data error", e);
+    }
+
   }
 
   public static void main(String[] args) {

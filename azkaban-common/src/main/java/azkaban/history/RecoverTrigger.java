@@ -34,7 +34,7 @@ public class RecoverTrigger{
         this.repeatList = (List<Map<String, String>>) executionRecover.getRepeatOption().get("repeatTimeList");
         this.taskSize = executionRecover.getTaskSize();
         this.group = new ArrayList<>(taskSize);
-        this.errorContinue = executionRecover.getRecoverErrorOption().equals("errorCountion");
+        this.errorContinue = "errorCountion".equals(executionRecover.getRecoverErrorOption());
         this.triggerId = executionRecover.getRecoverId();
         this.projectId = executionRecover.getProjectId();
         this.flowId = executionRecover.getFlowId();
@@ -117,7 +117,8 @@ public class RecoverTrigger{
     }
 
     private void updateRecoverStatus(){
-        List<Map<String, String>> failedTask = repeatList.stream().filter(x -> !x.get("recoverStatus").equals("50")).collect(Collectors.toList());
+        List<Map<String, String>> failedTask = repeatList.stream().filter(x -> !"50"
+            .equals(x.get("recoverStatus"))).collect(Collectors.toList());
         if(failedTask.size() == 0){
             logger.info("set history recover status to SUCCEEDED");
             executionRecover.setRecoverStatus(Status.SUCCEEDED);
@@ -132,7 +133,8 @@ public class RecoverTrigger{
 
     public void updateTaskStatus(){
         List<Map<String, String>> tasks = repeatList.stream().filter(item -> {
-            return (item.containsKey("isSubmit") && item.get("recoverStatus").equals("20")) || item.get("recoverStatus").equals("30") ;
+            return (item.containsKey("isSubmit") && "20".equals(item.get("recoverStatus"))) || "30"
+                .equals(item.get("recoverStatus")) ;
         }).collect(Collectors.toList());
         for(Map<String, String> task: tasks){
             try {

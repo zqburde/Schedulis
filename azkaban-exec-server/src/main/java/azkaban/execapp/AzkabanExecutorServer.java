@@ -220,8 +220,8 @@ public class AzkabanExecutorServer {
             && new File("/usr/bin/head").exists()) {
           AzkabanExecutorServer.logger.info("logging top memory consumer");
 
-          final java.lang.ProcessBuilder processBuilder =
-              new java.lang.ProcessBuilder("/bin/bash", "-c",
+          final ProcessBuilder processBuilder =
+              new ProcessBuilder("/bin/bash", "-c",
                   "/bin/ps aux --sort -rss | /usr/bin/head");
           final Process p = processBuilder.start();
           p.waitFor();
@@ -508,7 +508,7 @@ public class AzkabanExecutorServer {
   public String getHost() {
     if (this.props.containsKey(ConfigurationKeys.AZKABAN_SERVER_HOST_NAME)) {
       final String hostName = this.props
-          .getString(Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME);
+          .getString(ConfigurationKeys.AZKABAN_SERVER_HOST_NAME);
       if (!StringUtils.isEmpty(hostName)) {
         return hostName;
       }

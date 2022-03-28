@@ -95,7 +95,7 @@ public class ExecutorHealthChecker {
    */
   public void checkExecutorHealth() {
     final Map<Optional<Executor>, List<ExecutableFlow>> exFlowMap = getFlowToExecutorMap();
-    for (final Map.Entry<Optional<Executor>, List<ExecutableFlow>> entry : exFlowMap.entrySet()) {
+    for (final Entry<Optional<Executor>, List<ExecutableFlow>> entry : exFlowMap.entrySet()) {
       final Optional<Executor> executorOption = entry.getKey();
       if (!executorOption.isPresent()) {
         final String finalizeReason = "Executor id of this execution doesn't exist.";

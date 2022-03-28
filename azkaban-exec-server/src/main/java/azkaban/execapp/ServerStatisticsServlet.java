@@ -84,8 +84,8 @@ public class ServerStatisticsServlet extends HttpServlet {
    */
   protected void fillRemainingMemoryPercent(final ExecutorInfo stats) {
     if (exists_Bash && exists_Cat && exists_Grep && exists_Meminfo) {
-      final java.lang.ProcessBuilder processBuilder =
-          new java.lang.ProcessBuilder("/bin/bash", "-c",
+      final ProcessBuilder processBuilder =
+          new ProcessBuilder("/bin/bash", "-c",
               "/bin/cat /proc/meminfo | grep -E \"^MemTotal:|^MemFree:|^Buffers:|^Cached:|^SwapCached:\"");
       try {
         final ArrayList<String> output = new ArrayList<>();
@@ -242,8 +242,8 @@ public class ServerStatisticsServlet extends HttpServlet {
    */
   protected void fillCpuUsage(final ExecutorInfo stats) {
     if (exists_Bash && exists_Cat && exists_LoadAvg) {
-      final java.lang.ProcessBuilder processBuilder =
-          new java.lang.ProcessBuilder("/bin/bash", "-c", "/bin/cat /proc/loadavg");
+      final ProcessBuilder processBuilder =
+          new ProcessBuilder("/bin/bash", "-c", "/bin/cat /proc/loadavg");
       try {
         final ArrayList<String> output = new ArrayList<>();
         final Process process = processBuilder.start();

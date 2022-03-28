@@ -24,23 +24,24 @@ import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.Page;
 import com.google.gson.JsonObject;
 import com.google.inject.Injector;
-import com.webank.wedatasphere.schedulis.common.utils.GsonUtils;
-import org.json.JSONObject;
 import com.webank.wedatasphere.schedulis.common.executor.UserVariable;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import com.webank.wedatasphere.schedulis.common.system.entity.WtssUser;
+import com.webank.wedatasphere.schedulis.common.utils.GsonUtils;
 import com.webank.wedatasphere.schedulis.userparams.module.UserParamsModule;
 import com.webank.wedatasphere.schedulis.userparams.service.UserParamsService;
+import org.json.JSONObject;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 
 public class UserParamsServlet extends LoginAbstractAzkabanServlet {
@@ -187,6 +188,7 @@ public class UserParamsServlet extends LoginAbstractAzkabanServlet {
         UserVariable userVariable = GsonUtils.jsonToJavaObject(jsonObject, UserVariable.class);
         if(!userVariable.getOwner().equals(session.getUser().getUserId())){
             ret.put("error", "No Access Permission");
+            return;
         }
         List<UserVariable> userVariables = this.userParamsService.fetchAllUserVariable(userVariable);
         ret.put("userparams", userVariables);
@@ -218,6 +220,17 @@ public class UserParamsServlet extends LoginAbstractAzkabanServlet {
     private void ajaxDeleteUserVariable(final HttpServletRequest req, final HttpServletResponse resp, final Session session, final HashMap<String, Object> ret) throws ServletException {
         JsonObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
         UserVariable userVariable = GsonUtils.jsonToJavaObject(jsonObject, UserVariable.class);
+        UserVariable findById = this.userParamsService
+            .getUserVariableById(jsonObject.get("id").getAsInt());
+        if (findById == null) {
+            ret.put("error", "Not find the UserVariable by ID");
+            return;
+        }
+        userVariable.setOwner(findById.getOwner());
+        if(!userVariable.getOwner().equals(session.getUser().getUserId())){
+            ret.put("error", "No Access Permission");
+            return;
+        }
         userVariable.setOwner(session.getUser().getUserId());
         if(this.userParamsService.deleteUserVariable(userVariable)){
             ret.put("success", "Request Success");
@@ -229,6 +242,17 @@ public class UserParamsServlet extends LoginAbstractAzkabanServlet {
     private void ajaxUpdateUpdateUserVariable(final HttpServletRequest req, final HttpServletResponse resp, final Session session, final HashMap<String, Object> ret) throws ServletException {
         JsonObject jsonObject = HttpRequestUtils.parseRequestToJsonObject(req);
         UserVariable userVariable = GsonUtils.jsonToJavaObject(jsonObject, UserVariable.class);
+        UserVariable findById = this.userParamsService
+            .getUserVariableById(jsonObject.get("id").getAsInt());
+        if (findById == null) {
+            ret.put("error", "Not find the UserVariable by ID");
+            return;
+        }
+        userVariable.setOwner(findById.getOwner());
+        if(!userVariable.getOwner().equals(session.getUser().getUserId())){
+            ret.put("error", "No Access Permission");
+            return;
+        }
         userVariable.setOwner(session.getUser().getUserId());
         for(WtssUser user: userVariable.getUsers()){
             if(!this.userParamsService.checkWtssUserIsExist(user.getUserId())){

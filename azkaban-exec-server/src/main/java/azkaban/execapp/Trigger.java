@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 
 public class Trigger implements Runnable {
 
-  private static final Logger logger = LoggerFactory.getLogger(azkaban.execapp.Trigger.class);
+  private static final Logger logger = LoggerFactory.getLogger(Trigger.class);
   private final int execId;
 //  private final ExecutorLoader executorLoader ;
 
@@ -75,7 +75,7 @@ public class Trigger implements Runnable {
           }
         } catch (final Exception e) {
           logger.error("Failed to do action " + action.getDescription()
-              + " for execution " + azkaban.execapp.Trigger.this.execId, e);
+              + " for execution " + Trigger.this.execId, e);
         }
       }
     }

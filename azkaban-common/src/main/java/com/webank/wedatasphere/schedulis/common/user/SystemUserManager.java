@@ -17,28 +17,21 @@
 package com.webank.wedatasphere.schedulis.common.user;
 
 import azkaban.ServiceProvider;
-import azkaban.user.Permission;
-import azkaban.user.Role;
-import azkaban.user.User;
-import azkaban.user.UserManager;
-import azkaban.user.UserManagerException;
+import azkaban.user.*;
+import azkaban.utils.Props;
+import com.webank.wedatasphere.schedulis.common.system.JdbcSystemUserImpl;
 import com.webank.wedatasphere.schedulis.common.system.SystemUserLoader;
 import com.webank.wedatasphere.schedulis.common.system.SystemUserManagerException;
 import com.webank.wedatasphere.schedulis.common.system.entity.WtssPermissions;
 import com.webank.wedatasphere.schedulis.common.system.entity.WtssRole;
 import com.webank.wedatasphere.schedulis.common.system.entity.WtssUser;
 import com.webank.wedatasphere.schedulis.common.utils.LdapCheckCenter;
-import com.webank.wedatasphere.schedulis.common.system.JdbcSystemUserImpl;
-import azkaban.utils.Props;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import javax.inject.Inject;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import java.util.*;
 
 public class SystemUserManager implements UserManager {
 
@@ -61,6 +54,7 @@ public class SystemUserManager implements UserManager {
   }
 
   public SystemUserManager() {
+    systemUserLoader = ServiceProvider.SERVICE_PROVIDER.getInstance(JdbcSystemUserImpl.class);
   }
 
   @Override
@@ -72,37 +66,44 @@ public class SystemUserManager implements UserManager {
       throw new UserManagerException("Empty Password.");
     }
 
-    User user = null;
     synchronized (this) {
       try {
 
         WtssUser wtssUser = this.systemUserLoader.getWtssUserByUsername(username);
 
         if (null != wtssUser){
-          user = new User(wtssUser.getUsername());
           wtssUser.setPassword(password);
         } else {
           throw new UserManagerException("Unknown User.");
         }
 
-        //
-        if(LdapCheckCenter.checkLogin(props, username, password)){
+        boolean ldapSwitch = props.getBoolean("ladp.switch", false);
+        WtssUser wtssUserByUsernameAndPassword = systemUserLoader
+            .getWtssUserByUsernameAndPassword(wtssUser);
 
-        }else if(null != this.systemUserLoader.getWtssUserByUsernameAndPassword(wtssUser)){
+        if (!ldapSwitch) {
+          if (wtssUserByUsernameAndPassword == null) {
+            throw new UserManagerException("Error User Name Or Password.");
+          }
+        } else {
+          if (!LdapCheckCenter.checkLogin(props, username, password) && wtssUserByUsernameAndPassword == null) {
+            throw new UserManagerException("Error User Name Or Password.");
+          }
+        }
 
+        User user = new User(wtssUser.getUsername());
+        initUserAuthority(wtssUser, user);
+
+        return user;
+      } catch (Exception e) {
+        logger.error("Login error！ caused by {}：" , e);
+        if (e instanceof UserManagerException) {
+          throw new UserManagerException(e.getMessage());
         } else {
           throw new UserManagerException("Error User Name Or Password.");
         }
-
-        initUserAuthority(wtssUser, user);
-
-      } catch (Exception e) {
-        logger.error("Login error！ caused by {}：" , e);
-        throw new UserManagerException("Error User Name Or Password.");
       }
     }
-
-    return user;
   }
 
   /**
@@ -207,7 +208,7 @@ public class SystemUserManager implements UserManager {
 
       String proxyUsers = wtssUser.getProxyUsers();
       //空字符串不做处理
-      if(org.apache.commons.lang.StringUtils.isNotEmpty(proxyUsers)){
+      if(StringUtils.isNotEmpty(proxyUsers)){
         final String[] proxySplit = proxyUsers.split("\\s*,\\s*");
         for (final String proxyUser : proxySplit) {
           Set<String> proxySet = new HashSet<>();

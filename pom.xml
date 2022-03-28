@@ -6,7 +6,7 @@
 
     <groupId>com.webank.wedatasphere.schedulis</groupId>
     <artifactId>schedulis</artifactId>
-    <version>0.6.1</version>
+    <version>0.6.2</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -25,14 +25,8 @@
         <module>azkaban-exec-server</module>
     </modules>
 
-    <parent>
-        <groupId>org.sonatype.oss</groupId>
-        <artifactId>oss-parent</artifactId>
-        <version>7</version>
-    </parent>
-
     <properties>
-        <schedulis.version>0.6.1</schedulis.version>
+        <schedulis.version>0.6.2</schedulis.version>
         <assertj.version>3.8.0</assertj.version>
         <awaitility.version>3.0.0</awaitility.version>
         <hadoop.version>2.7.2</hadoop.version>
@@ -44,7 +38,7 @@
         <commons.cli.version>1.3.1</commons.cli.version>
         <commons.dbcp2.version>2.1.1</commons.dbcp2.version>
         <commons.dbutils.version>1.5</commons.dbutils.version>
-        <commons.fileupload.version>1.2.1</commons.fileupload.version>
+        <commons.fileupload.version>1.4</commons.fileupload.version>
         <commons.lang3.version>3.7</commons.lang3.version>
         <commons.io.version>2.4</commons.io.version>
         <common.lang.version>2.6</common.lang.version>
@@ -77,13 +71,13 @@
         <velocity.tools.version>2.0</velocity.tools.version>
         <grizzly.version>3.0.0</grizzly.version>
         <opendjcore.version>4.4.7</opendjcore.version>
-        <log4j-api.version>2.13.3</log4j-api.version>
+        <log4j-api.version>2.17.1</log4j-api.version>
         <poi.version>4.1.2</poi.version>
         <c3p0.version>0.9.5.5</c3p0.version>
         <commons-beanutils.version>1.9.4</commons-beanutils.version>
         <fasterxml.jackson.version>2.11.2</fasterxml.jackson.version>
-        <dss.version>1.0.0</dss.version>
-        <linkis.version>1.0.2</linkis.version>
+        <dss.version>1.0.1</dss.version>
+        <linkis.version>1.0.3</linkis.version>
     </properties>
 
     <dependencies>
@@ -217,27 +211,27 @@
         </dependency>
 
         <dependency>
-            <groupId>com.webank.wedatasphere.linkis</groupId>
+            <groupId>org.apache.linkis</groupId>
             <artifactId>linkis-common</artifactId>
             <version>${linkis.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.webank.wedatasphere.linkis</groupId>
+            <groupId>org.apache.linkis</groupId>
             <artifactId>linkis-error-code-client</artifactId>
             <version>${linkis.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.webank.wedatasphere.linkis</groupId>
+            <groupId>org.apache.linkis</groupId>
             <artifactId>linkis-error-code-common</artifactId>
             <version>${linkis.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.webank.wedatasphere.linkis</groupId>
+            <groupId>org.apache.linkis</groupId>
             <artifactId>linkis-gateway-httpclient-support</artifactId>
             <version>${linkis.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.webank.wedatasphere.linkis</groupId>
+            <groupId>org.apache.linkis</groupId>
             <artifactId>linkis-httpclient</artifactId>
             <version>${linkis.version}</version>
         </dependency>

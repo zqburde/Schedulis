@@ -1,14 +1,13 @@
 package azkaban.webapp.servlet;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import azkaban.webapp.AzkabanWebServer;
 import com.webank.wedatasphere.dss.standard.app.sso.origin.plugin.OriginSSOPluginFilter;
 import com.webank.wedatasphere.dss.standard.app.sso.plugin.filter.UserInterceptor;
+import javax.servlet.FilterConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.servlet.FilterConfig;
-
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 public class DSSOriginSSOFilter extends OriginSSOPluginFilter {
 

@@ -16,17 +16,17 @@
 
 package azkaban.trigger;
 
-import static java.util.Objects.requireNonNull;
-
 import azkaban.utils.JSONUtils;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-import org.joda.time.DateTime;
+import static java.util.Objects.requireNonNull;
 
 
 public class Trigger {
@@ -152,7 +152,7 @@ public class Trigger {
         action.setContext(context);
       }
 
-      trigger = new Trigger.TriggerBuilder(submitUser,
+      trigger = new TriggerBuilder(submitUser,
           source,
           triggerCond,
           expireCond,

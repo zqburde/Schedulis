@@ -1,8 +1,8 @@
 #generate ansible-playbook inventory
 #生成ansible-playbook 执行清单
 all_nodes=$1
-wtss_version_old=$2
-wtss_version_new=$3
+schedulis_version_old=$2
+schedulis_version_new=$3
 update_type=$4
 
 UUID=${cat /proc/sys/kernel/random/uuid}
@@ -32,13 +32,13 @@ cat ${v_hosts}
 if [ "$update_type" == 'exec' ] 
 then 
 	echo "start to update execServer"	
-	/usr/bin/ansible-playbook -i ${v_hosts} --extra-vars "version_old=${wtss_version_old} version_new=${wtss_version_new}" /appcom/Install/AzkabanInstall/wtssdeploy/upgrade/upgrade_exec.yml
+	/usr/bin/ansible-playbook -i ${v_hosts} --extra-vars "version_old=${schedulis_version_old} version_new=${schedulis_version_new}" /appcom/Install/AzkabanInstall/schedulisdeploy/upgrade/upgrade_exec.yml
 	
 	
 elif [ "$update_type" == 'web' ] 
 then 
 	echo "start to update webServer"	
-	/usr/bin/ansible-playbook -i ${v_hosts} --extra-vars "version_old=${wtss_version_old} version_new=${wtss_version_new}" /appcom/Install/AzkabanInstall/wtssdeploy/upgrade/upgrade_web.yml
+	/usr/bin/ansible-playbook -i ${v_hosts} --extra-vars "version_old=${schedulis_version_old} version_new=${schedulis_version_new}" /appcom/Install/AzkabanInstall/schedulisdeploy/upgrade/upgrade_web.yml
 
 else
 	echo "no match update_type"

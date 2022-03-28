@@ -1210,4 +1210,45 @@ public class ExecutionFlowDao {
     }
   }
 
+  public List<Integer> getRunningExecByLock(Integer projectId, String flowId) {
+    try {
+      return dbOperator.query(FetchLockHandler.FETCH_LOCK_RESOURCE,
+          new FetchLockHandler(), "%:" + projectId + ":" + flowId, System.currentTimeMillis());
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+    }
+    return new ArrayList<>();
+  }
+
+  public static class FetchLockHandler implements
+      ResultSetHandler<List<Integer>> {
+    static String FETCH_LOCK_RESOURCE =
+        "select lock_resource from distribute_lock dl WHERE dl.lock_resource like ? and dl.timeout >= ?";
+
+    @Override
+    public List<Integer> handle(final ResultSet rs) throws SQLException {
+      if (!rs.next()) {
+        logger.info("there is no exist lock");
+        return new ArrayList<>();
+      }
+
+      final List<Integer> execIdList =
+          new ArrayList<>();
+      do {
+        try {
+          final String lockResource = rs.getString(1);
+          if (StringUtils.isNotEmpty(lockResource)) {
+            String[] arr = lockResource.split(":");
+            execIdList.add(Integer.parseInt(arr[0]));
+          }
+        } catch (Exception e) {
+          logger.error(e.getMessage(), e);
+        }
+      } while (rs.next());
+
+      return execIdList;
+
+    }
+  }
+
 }

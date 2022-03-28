@@ -147,6 +147,10 @@ public class ExecutableFlowBase extends ExecutableNode {
     }
   }
 
+  public void addExecutableNode(ExecutableNode node){
+    this.executableNodes.put(node.getId(), node);
+  }
+
   public List<ExecutableNode> getExecutableNodes() {
     return new ArrayList<>(this.executableNodes.values());
   }

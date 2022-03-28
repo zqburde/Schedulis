@@ -16,11 +16,14 @@
 
 package azkaban.trigger;
 
+import static java.util.Objects.requireNonNull;
+
+import azkaban.event.EventHandler;
+import azkaban.executor.ExecutorLoader;
+import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.trigger.builtin.ExecuteFlowAction;
-import com.webank.wedatasphere.schedulis.common.distributelock.DBTableDistributeLock;
-
-import org.joda.time.DateTimeUtils;
-
+import azkaban.utils.Props;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -31,58 +34,41 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import azkaban.Constants;
-import azkaban.db.DatabaseOperator;
-import azkaban.event.EventHandler;
-import azkaban.executor.ExecutorManagerAdapter;
-import azkaban.executor.ExecutorManagerException;
-import azkaban.utils.Props;
-
-import static java.util.Objects.requireNonNull;
 import org.apache.commons.collections4.MapUtils;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
-/**
- * @author georgeqiao
- * @Title: TriggerManager support HA
- * @date 2019/11/2619:10
- * @Description: TODO
- */
+import org.slf4j.LoggerFactory;
+
 @Singleton
 public class TriggerManager extends EventHandler implements TriggerManagerAdapter {
 
   public static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
-  public static final String TRIGGERS_LOCK_KEY= "triggers_lock_key";
   private static final Logger logger = LoggerFactory.getLogger(TriggerManager.class);
-  private static final Map<Integer, Trigger> triggerIdMap = new ConcurrentHashMap<>();
+  private static final Map<Integer, Trigger> TRIGGER_ID_MAP = new ConcurrentHashMap<>();
 
   private final TriggerScannerThread runnerThread;
   private final Object syncObj = new Object();
   private final CheckerTypeLoader checkerTypeLoader;
   private final ActionTypeLoader actionTypeLoader;
   private final TriggerLoader triggerLoader;
+  @Inject
+  private ExecutorLoader executorLoader;
   private final LocalTriggerJMX jmxStats = new LocalTriggerJMX();
   private long lastRunnerThreadCheckTime = -1;
   private long runnerThreadIdleTime = -1;
   private String scannerStage = "";
-  private DBTableDistributeLock dd;
-  private Props azkprops;
-  private DatabaseOperator dbOperator;
 
-  public static final String SYSTEM_SCHEDULE_SWITCH_ACTIVE = "system.schedule.switch.active";
+  public static final String SYSTEM_SCHEDULE_SWITCH_ACTIVE_CONF = "system.schedule.switch.active";
 
   // 定时调度生效系统级别开关
   private static boolean system_schedule_switch_active;
 
+
   @Inject
   public TriggerManager(final Props props, final TriggerLoader triggerLoader,
-                        final ExecutorManagerAdapter executorManagerAdapter,
-                        final DatabaseOperator dbOperator) throws TriggerManagerException {
-    azkprops = props;
+      final ExecutorManagerAdapter executorManagerAdapter) throws TriggerManagerException {
+
     requireNonNull(props);
     requireNonNull(executorManagerAdapter);
     this.triggerLoader = requireNonNull(triggerLoader);
@@ -99,11 +85,10 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
     } catch (final Exception e) {
       throw new TriggerManagerException(e);
     }
-    system_schedule_switch_active = props.getBoolean(SYSTEM_SCHEDULE_SWITCH_ACTIVE, true);
+
     Condition.setCheckerLoader(this.checkerTypeLoader);
     Trigger.setActionTypeLoader(this.actionTypeLoader);
-
-    this.dbOperator = dbOperator;
+    system_schedule_switch_active = props.getBoolean(SYSTEM_SCHEDULE_SWITCH_ACTIVE_CONF, true);
 
     logger.info("TriggerManager loaded.");
   }
@@ -116,13 +101,12 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
       final List<Trigger> triggers = this.triggerLoader.loadTriggers();
       for (final Trigger t : triggers) {
         this.runnerThread.addTrigger(t);
-        triggerIdMap.put(t.getTriggerId(), t);
+        TRIGGER_ID_MAP.put(t.getTriggerId(), t);
       }
     } catch (final Exception e) {
       logger.error("", e);
       throw new TriggerManagerException(e);
     }
-
     if (system_schedule_switch_active) {
       this.runnerThread.start();
     }
@@ -144,30 +128,36 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
       } catch (final TriggerLoaderException e) {
         throw new TriggerManagerException(e);
       }
-      runnerThread.lastCheckTime = System.currentTimeMillis();
       this.runnerThread.addTrigger(t);
-      triggerIdMap.put(t.getTriggerId(), t);
+      TRIGGER_ID_MAP.put(t.getTriggerId(), t);
     }
+  }
+
+  public void insertTriggerByWeb(final int id) throws TriggerManagerException {
+    //HA SUPPORT
   }
 
   public void removeTrigger(final int id) throws TriggerManagerException {
     logger.info("Removing trigger with id: " + id + " from TriggerManager");
     synchronized (this.syncObj) {
-      final Trigger t = triggerIdMap.get(id);
+      final Trigger t = TRIGGER_ID_MAP.get(id);
       if (t != null) {
-        removeTrigger(triggerIdMap.get(id));
+        removeTrigger(TRIGGER_ID_MAP.get(id));
       }
     }
+  }
+
+  public void removeTriggerByWeb(final int id) throws TriggerManagerException {
+    //HA SUPPORT
   }
 
   public void updateTrigger(final Trigger t) throws TriggerManagerException {
     logger.info("Updating trigger " + t + " in TriggerManager");
     synchronized (this.syncObj) {
-      this.runnerThread.deleteTrigger(triggerIdMap.get(t.getTriggerId()));
+      this.runnerThread.deleteTrigger(TRIGGER_ID_MAP.get(t.getTriggerId()));
       this.runnerThread.addTrigger(t);
-      triggerIdMap.put(t.getTriggerId(), t);
+      TRIGGER_ID_MAP.put(t.getTriggerId(), t);
       try {
-        runnerThread.lastCheckTime = System.currentTimeMillis();
         this.triggerLoader.updateTrigger(t);
       } catch (final TriggerLoaderException e) {
         throw new TriggerManagerException(e);
@@ -175,14 +165,17 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
     }
   }
 
+  public void updateTriggerByWeb(final int id) throws TriggerManagerException {
+    //HA SUPPORT
+  }
+
   public void removeTrigger(final Trigger t) throws TriggerManagerException {
     logger.info("Removing trigger " + t + " from TriggerManager");
     synchronized (this.syncObj) {
       this.runnerThread.deleteTrigger(t);
-      triggerIdMap.remove(t.getTriggerId());
+      TRIGGER_ID_MAP.remove(t.getTriggerId());
       try {
         t.stopCheckers();
-        runnerThread.lastCheckTime = System.currentTimeMillis();
         this.triggerLoader.removeTrigger(t);
       } catch (final TriggerLoaderException e) {
         throw new TriggerManagerException(e);
@@ -191,7 +184,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
   }
 
   public List<Trigger> getTriggers() {
-    return new ArrayList<>(triggerIdMap.values());
+    return new ArrayList<>(TRIGGER_ID_MAP.values());
   }
 
   public Map<String, Class<? extends ConditionChecker>> getSupportedCheckers() {
@@ -200,7 +193,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 
   public Trigger getTrigger(final int triggerId) {
     synchronized (this.syncObj) {
-      return triggerIdMap.get(triggerId);
+      return TRIGGER_ID_MAP.get(triggerId);
     }
   }
 
@@ -212,7 +205,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
   @Override
   public List<Trigger> getTriggers(final String triggerSource) {
     final List<Trigger> triggers = new ArrayList<>();
-    for (final Trigger t : triggerIdMap.values()) {
+    for (final Trigger t : TRIGGER_ID_MAP.values()) {
       if (t.getSource().equals(triggerSource)) {
         triggers.add(t);
       }
@@ -223,19 +216,9 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
   @Override
   public List<Trigger> getTriggerUpdates(final String triggerSource, final long lastUpdateTime) throws TriggerManagerException {
     final List<Trigger> triggers = new ArrayList<>();
-    List<Trigger> triggersFromDb = null;
-    if(azkprops.getBoolean(Constants.ConfigurationKeys.WEBSERVER_HA_MODEL, false)){
-      try {
-        triggersFromDb = triggerLoader.loadTriggers();
-      } catch (TriggerLoaderException e) {
-        logger.error("load trigger updates from DB failed" + e);
-      }
-    }else{
-      triggersFromDb = getTriggers();
-    }
-    for (final Trigger t : triggersFromDb) {
+    for (final Trigger t : TRIGGER_ID_MAP.values()) {
       if (t.getSource().equals(triggerSource)
-              && t.getLastModifyTime() > lastUpdateTime) {
+          && t.getLastModifyTime() > lastUpdateTime) {
         triggers.add(t);
       }
     }
@@ -246,23 +229,12 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
   public List<Trigger> getAllTriggerUpdates(final long lastUpdateTime)
       throws TriggerManagerException {
     final List<Trigger> triggers = new ArrayList<>();
-    for (final Trigger t : triggerIdMap.values()) {
+    for (final Trigger t : TRIGGER_ID_MAP.values()) {
       if (t.getLastModifyTime() > lastUpdateTime) {
         triggers.add(t);
       }
     }
     return triggers;
-  }
-
-  @Override
-  public List<Integer> getAllTriggersId() throws TriggerLoaderException {
-    List<Integer> triggersId = null;
-      try {
-        triggersId = triggerLoader.loadTriggersId();
-      } catch (TriggerLoaderException e) {
-        logger.error("load trigger updates from DB failed" + e);
-      }
-    return triggersId;
   }
 
   @Override
@@ -280,49 +252,6 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
   public void updateTrigger(final Trigger t, final String user)
       throws TriggerManagerException {
     updateTrigger(t);
-  }
-
-  private List<Trigger>  updateLocalTriggers(long lastCheckTime){
-    List<Trigger> triggers = null;
-    try {
-      triggers = triggerLoader.getUpdatedTriggers(lastCheckTime);
-      for (final Trigger t : triggers) {
-        // expect loader to return valid triggers
-        if(triggerIdMap.containsKey(t.getTriggerId())){
-          runnerThread.deleteTrigger(triggerIdMap.get(t.getTriggerId()));
-          logger.info("triggerIdMap contains exist trigger,it will be deleted in runnerThread.triggers");
-        }
-        runnerThread.addTrigger(t);
-        triggerIdMap.put(t.getTriggerId(), t);
-      }
-      filterInvalidTriggers();
-    } catch (TriggerLoaderException e) {
-      logger.error("load trigger from DB failed" + e);
-    }
-    return triggers;
-  }
-
-  private void filterInvalidTriggers(){
-    try {
-      List<Integer> triggersId = getAllTriggersId();
-      if(triggerIdMap !=null && triggerIdMap.size() != 0){
-        for (int triggerId : triggerIdMap.keySet()){
-          if(triggersId != null && triggersId.size() != 0){
-            if(triggersId.contains(triggerId)){
-              continue;
-            }else{
-              runnerThread.deleteTrigger(triggerIdMap.get(triggersId));
-              triggerIdMap.remove(triggerId);
-            }
-          }else{
-            triggerIdMap.clear();
-            runnerThread.triggers.clear();
-          }
-        }
-      }
-    } catch (TriggerLoaderException e) {
-      logger.error("filterInvalidTriggers failed " + e);
-    }
   }
 
   @Override
@@ -352,7 +281,6 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
     private final long scannerInterval;
     private final BlockingQueue<Trigger> triggers;
     private boolean shutdown = false;
-    private long lastCheckTime = -1;
 
     public TriggerScannerThread(final long scannerInterval) {
       this.triggers = new PriorityBlockingQueue<>(1, new TriggerComparator());
@@ -383,30 +311,17 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
         synchronized (TriggerManager.this.syncObj) {
           try {
             TriggerManager.this.lastRunnerThreadCheckTime = System.currentTimeMillis();
-            TriggerManager.this.scannerStage = "Ready to start a new scan cycle at " + TriggerManager.this.lastRunnerThreadCheckTime;
+
+            TriggerManager.this.scannerStage =
+                "Ready to start a new scan cycle at "
+                    + TriggerManager.this.lastRunnerThreadCheckTime;
+
             try {
-              if(azkprops.getBoolean(Constants.ConfigurationKeys.WEBSERVER_HA_MODEL, false)){
-                dd = new DBTableDistributeLock(dbOperator);
-                boolean lockFlag =  dd.lock(TRIGGERS_LOCK_KEY,azkprops.getLong(Constants.ConfigurationKeys.DISTRIBUTELOCK_LOCK_TIMEOUT, 30000),
-                        azkprops.getLong(Constants.ConfigurationKeys.DISTRIBUTELOCK_GET_TIMEOUT, 60000));
-                if(lockFlag){
-                  if(lastCheckTime != -1){
-                    updateLocalTriggers(lastCheckTime);
-                  }
-                  checkAllTriggers();
-                }else{
-                  logger.info("checkAllTriggers step is running in another webserver !");
-                }
-              }else{
-                checkAllTriggers();
-              }
-              // trigger all start ,record lastCheckTime  在更新那里进行设置
-              lastCheckTime = DateTimeUtils.currentTimeMillis();
+              checkAllTriggers();
             } catch (final Exception e) {
               logger.error(e.getMessage());
             } catch (final Throwable t) {
               logger.error(t.getMessage());
-
             }
 
             TriggerManager.this.scannerStage = "Done flipping all triggers.";
@@ -415,10 +330,6 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
                 this.scannerInterval
                     - (System.currentTimeMillis() - TriggerManager.this.lastRunnerThreadCheckTime);
 
-
-            if(azkprops.getBoolean(Constants.ConfigurationKeys.WEBSERVER_HA_MODEL, false)){
-              dd.unlock(TRIGGERS_LOCK_KEY);
-            }
             if (TriggerManager.this.runnerThreadIdleTime < 0) {
               logger.error("Trigger manager thread " + this.getName()
                   + " is too busy!");
@@ -437,7 +348,6 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
       for (final Trigger t : this.triggers) {
         try {
           TriggerManager.this.scannerStage = "Checking for trigger " + t.getTriggerId();
-
           if (t.getStatus().equals(TriggerStatus.READY)) {
 
             /**
@@ -455,7 +365,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
               onTriggerTrigger(t);
             }
           }
-          if (t.getStatus().equals(TriggerStatus.EXPIRED) && t.getSource().equals("azkaban")) {
+          if (t.getStatus().equals(TriggerStatus.EXPIRED) && "azkaban".equals(t.getSource())) {
             removeTrigger(t);
           } else {
             t.updateNextCheckTime();
@@ -493,6 +403,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
             // 非定时调度执行,直接执行
             action.doAction();
           }
+
         } catch (final ExecutorManagerException e) {
           if (e.getReason() == ExecutorManagerException.Reason.SkippedExecution) {
             logger.info("Skipped action [" + action.getDescription() + "] for [" + t +
@@ -509,10 +420,12 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
       if (t.isResetOnTrigger()) {
         t.resetTriggerConditions();
 
-        // FIXME If the scheduled schedule is only executed once (such as the schedule specific to the year, month, and day), the scheduled schedule needs to be terminated; otherwise, the scheduled schedule will be triggered periodically. As a solution, after the checkertime does not change, set the scheduled scheduling status to EXPIRED.
+        // FIXME If the scheduled schedule is only executed once (such as the schedule specific to the year, month, and day),
+        //  the scheduled schedule needs to be terminated; otherwise, the scheduled schedule will be triggered periodically.
+        //  As a solution, after the checkertime does not change, set the scheduled scheduling status to EXPIRED.
         if(oldNextCheckTime == t.getNextCheckTime()){
           logger.info("NextCheckTime did not change. Setting status to expired for trigger"
-                  + t.getTriggerId());
+              + t.getTriggerId());
           t.setStatus(TriggerStatus.EXPIRED);
         }
       } else {
@@ -584,13 +497,13 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 
     @Override
     public int getNumTriggers() {
-      return triggerIdMap.size();
+      return TRIGGER_ID_MAP.size();
     }
 
     @Override
     public String getTriggerSources() {
       final Set<String> sources = new HashSet<>();
-      for (final Trigger t : triggerIdMap.values()) {
+      for (final Trigger t : TRIGGER_ID_MAP.values()) {
         sources.add(t.getSource());
       }
       return sources.toString();
@@ -598,7 +511,7 @@ public class TriggerManager extends EventHandler implements TriggerManagerAdapte
 
     @Override
     public String getTriggerIds() {
-      return triggerIdMap.keySet().toString();
+      return TRIGGER_ID_MAP.keySet().toString();
     }
 
     @Override

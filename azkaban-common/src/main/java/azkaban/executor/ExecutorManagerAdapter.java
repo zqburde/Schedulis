@@ -17,9 +17,14 @@
 package azkaban.executor;
 
 import azkaban.history.ExecutionRecover;
+import azkaban.project.Project;
+import azkaban.user.User;
+import azkaban.utils.FileIOUtils.JobMetaData;
+import azkaban.utils.FileIOUtils.LogData;
+import azkaban.utils.Pair;
+import azkaban.utils.Props;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
 import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
-
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.util.Collection;
@@ -28,22 +33,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import azkaban.project.Project;
-import azkaban.user.User;
-import azkaban.utils.FileIOUtils.JobMetaData;
-import azkaban.utils.FileIOUtils.LogData;
-import azkaban.utils.Pair;
-import azkaban.utils.Props;
-
 public interface ExecutorManagerAdapter {
 
   public List<Integer> fetchPermissionsProjectId(String user);
 
   public Props getAzkabanProps();
 
-  public boolean isFlowRunning(int projectId, String flowId) throws ExecutorManagerException;
+  public boolean isFlowRunning(int projectId, String flowId);
 
-  public ExecutableFlow getExecutableFlow(int execId) throws ExecutorManagerException;
+  public ExecutableFlow getExecutableFlow(int execId)
+      throws ExecutorManagerException;
+
   public List<ExecutableFlow> getExecutableFlowByRepeatId(int repeatId)
       throws ExecutorManagerException;
 
@@ -60,7 +60,7 @@ public interface ExecutorManagerAdapter {
    * </pre>
    */
   public List<Pair<ExecutableFlow, Optional<Executor>>> getActiveFlowsWithExecutor()
-          throws IOException;
+      throws IOException;
 
   public List<ExecutableFlow> getRecentlyFinishedFlows();
 
@@ -71,21 +71,21 @@ public interface ExecutorManagerAdapter {
       throws ExecutorManagerException;
 
   List<ExecutableFlow> getMaintainedExecutableFlows(String username, List<Integer> projectIds, int skip, int size)
-          throws ExecutorManagerException;
+      throws ExecutorManagerException;
 
   public List<ExecutableFlow> getExecutableFlowsQuickSearch(String flowIdContains,
       int skip, int size) throws ExecutorManagerException;
 
   public List<ExecutableFlow> getMaintainedFlowsQuickSearch(String flowIdContains,
-                                                            int skip, int size, String username, List<Integer> projectIds) throws ExecutorManagerException;
+      int skip, int size, String username, List<Integer> projectIds) throws ExecutorManagerException;
 
   public List<ExecutableFlow> getExecutableFlows(String projContain, String flowContain,
       String execIdContain, String userContain, String status, long begin, long end,
       int skip, int size, int flowType) throws ExecutorManagerException;
 
   List<ExecutableFlow> getMaintainedExecutableFlows(String projContain, String flowContain,
-                                          String execIdContain, String userContain, String status, long begin, long end,
-                                          int skip, int size, int flowType, String username, List<Integer> projectIds) throws ExecutorManagerException;
+      String execIdContain, String userContain, String status, long begin, long end,
+      int skip, int size, int flowType, String username, List<Integer> projectIds) throws ExecutorManagerException;
 
   public int getExecutableFlows(int projectId, String flowId, int from,
       int length, List<ExecutableFlow> outputList)
@@ -113,7 +113,7 @@ public interface ExecutorManagerAdapter {
       int offset, int length, int attempt) throws ExecutorManagerException;
 
   public Long getLatestLogOffset(ExecutableFlow exFlow, String jobId,
-                                Long length, int attempt, User user) throws ExecutorManagerException;
+      Long length, int attempt, User user) throws ExecutorManagerException;
 
   public List<Object> getExecutionJobStats(ExecutableFlow exflow, String jobId,
       int attempt) throws ExecutorManagerException;
@@ -127,6 +127,9 @@ public interface ExecutorManagerAdapter {
   public void cancelFlow(ExecutableFlow exFlow, String userId)
       throws ExecutorManagerException;
 
+  public void superKillFlow(ExecutableFlow exFlow, String userId)
+      throws ExecutorManagerException;
+
   public void resumeFlow(ExecutableFlow exFlow, String userId)
       throws ExecutorManagerException;
 
@@ -138,7 +141,7 @@ public interface ExecutorManagerAdapter {
    * @throws Exception
    */
   public void setFlowFailed(ExecutableFlow exFlow, String userId, List<Pair<String, String>> params)
-          throws Exception;
+      throws Exception;
 
   /**
    *  flow失败暂停设置 重试指定的失败job
@@ -148,7 +151,7 @@ public interface ExecutorManagerAdapter {
    * @throws Exception
    */
   public String retryFailedJobs(ExecutableFlow exFlow, String userId, String request)
-          throws Exception;
+      throws Exception;
 
   /**
    *  设置job状态为disabled
@@ -158,7 +161,7 @@ public interface ExecutorManagerAdapter {
    * @throws Exception
    */
   public String setJobDisabled(ExecutableFlow exFlow, String userId, String request)
-          throws Exception;
+      throws Exception;
 
   /**
    *  设置跳过执行失败的jobs
@@ -168,7 +171,7 @@ public interface ExecutorManagerAdapter {
    * @throws Exception
    */
   public String skipFailedJobs(ExecutableFlow exFlow, String userId, String request)
-          throws Exception;
+      throws Exception;
 
   public void pauseFlow(ExecutableFlow exFlow, String userId)
       throws ExecutorManagerException;
@@ -203,13 +206,13 @@ public interface ExecutorManagerAdapter {
 
   /**
    * Manage servlet call for stats servlet in Azkaban execution server Action can take any of the
-   * following values <ul> <li>{@link azkaban.executor.ConnectorParams#STATS_SET_REPORTINGINTERVAL}<li>
-   * <li>{@link azkaban.executor.ConnectorParams#STATS_SET_CLEANINGINTERVAL}<li> <li>{@link
-   * azkaban.executor.ConnectorParams#STATS_SET_MAXREPORTERPOINTS}<li> <li>{@link
-   * azkaban.executor.ConnectorParams#STATS_GET_ALLMETRICSNAME}<li> <li>{@link
-   * azkaban.executor.ConnectorParams#STATS_GET_METRICHISTORY}<li> <li>{@link
-   * azkaban.executor.ConnectorParams#STATS_SET_ENABLEMETRICS}<li> <li>{@link
-   * azkaban.executor.ConnectorParams#STATS_SET_DISABLEMETRICS}<li> </ul>
+   * following values <ul> <li>{@link ConnectorParams#STATS_SET_REPORTINGINTERVAL}<li>
+   * <li>{@link ConnectorParams#STATS_SET_CLEANINGINTERVAL}<li> <li>{@link
+   * ConnectorParams#STATS_SET_MAXREPORTERPOINTS}<li> <li>{@link
+   * ConnectorParams#STATS_GET_ALLMETRICSNAME}<li> <li>{@link
+   * ConnectorParams#STATS_GET_METRICHISTORY}<li> <li>{@link
+   * ConnectorParams#STATS_SET_ENABLEMETRICS}<li> <li>{@link
+   * ConnectorParams#STATS_SET_DISABLEMETRICS}<li> </ul>
    */
   public Map<String, Object> callExecutorStats(int executorId, String action,
       Pair<String, String>... param) throws IOException, ExecutorManagerException;
@@ -330,8 +333,8 @@ public interface ExecutorManagerAdapter {
    * @return
    * @throws ExecutorManagerException
    */
-   List<ExecutionRecover> listMaintainedHistoryRecoverFlows(String username, List<Integer> projectIds, int skip, int size)
-          throws ExecutorManagerException;
+  List<ExecutionRecover> listMaintainedHistoryRecoverFlows(String username, List<Integer> projectIds, int skip, int size)
+      throws ExecutorManagerException;
   /**
    * 创建一个新的历史补采记录
    * @param executionRecover
@@ -440,7 +443,7 @@ public interface ExecutorManagerAdapter {
 
 
   int getExecHistoryTotal(String username, final Map<String, String> filterMap, List<Integer> projectIds)
-          throws ExecutorManagerException;
+      throws ExecutorManagerException;
 
   /**
    * 根据工程ID查询历史记录总条数
@@ -449,7 +452,7 @@ public interface ExecutorManagerAdapter {
    * @throws ExecutorManagerException
    */
   int getMaintainedExecHistoryTotal(String username, List<Integer> projectIds)
-          throws ExecutorManagerException;
+      throws ExecutorManagerException;
 
   /**
    * 根据条件获取历史记录总条数
@@ -461,7 +464,7 @@ public interface ExecutorManagerAdapter {
       throws ExecutorManagerException;
 
   public int getMaintainedFlowsQuickSearchTotal(String username, final Map<String, String> filterMap, List<Integer> projectIds)
-          throws ExecutorManagerException;
+      throws ExecutorManagerException;
 
 
   /**
@@ -575,4 +578,6 @@ public interface ExecutorManagerAdapter {
   int stopAllCycleFlows() throws ExecutorManagerException;
 
   List<ExecutionCycle> getAllRunningCycleFlows() throws ExecutorManagerException;
+
+  void reloadWebData();
 }

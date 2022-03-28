@@ -950,8 +950,8 @@ dependencies=savekeytest1
 | run\_month\_begin\_std | String | 数据统计时间所在月的第一天(标准日期格式)，格式为 yyyy-MM-dd | 2018-01-01 |
 | run\_month\_end | String | 数据统计时间所在月的最后一天，格式为 yyyyMMdd | 20180131 |
 | run\_month\_end\_std | String | 数据统计时间所在月的最后一天(标准日期格式)，格式为 yyyy-MM-dd | 2018-01-31 |
-| flow.dir | String | 工程所在路径 | /appcom/Install/AzkabanInstallwtss-exec-1.4.0/executions/210267 |
-| working.dir | String | 当前 Job 所在路径 | /appcom/Install/AzkabanInstall/wtss-exec-1.4.0/executions/210267/PrintHelloWorld |
+| flow.dir | String | 工程所在路径 | /appcom/Install/AzkabanInstallschedulis-exec-1.4.0/executions/210267 |
+| working.dir | String | 当前 Job 所在路径 | /appcom/Install/AzkabanInstall/schedulis-exec-1.4.0/executions/210267/PrintHelloWorld |
 
 具体说明：
 run\_date 核心变量定义：run\_date 支持用户自己设定，默认设置为当前系统时间的前一天。

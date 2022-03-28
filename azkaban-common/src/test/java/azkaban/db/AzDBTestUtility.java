@@ -16,8 +16,9 @@
  */
 package azkaban.db;
 
-import java.io.File;
 import org.apache.commons.dbutils.QueryRunner;
+
+import java.io.File;
 
 public class AzDBTestUtility {
 

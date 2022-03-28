@@ -1,11 +1,14 @@
 package azkaban.webapp.servlet;
 
 import azkaban.server.session.Session;
+import azkaban.server.session.SessionCache;
 import azkaban.user.User;
+import azkaban.user.UserManagerException;
 import azkaban.utils.StringUtils;
 import azkaban.utils.WebUtils;
 import azkaban.webapp.AzkabanWebServer;
 import com.webank.wedatasphere.dss.standard.app.sso.plugin.filter.HttpRequestUserInterceptor;
+import com.webank.wedatasphere.schedulis.common.user.SystemUserManager;
 import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,11 +53,22 @@ public class WTSSHttpRequestUserInterceptor implements HttpRequestUserIntercepto
             logger.error("no dss super user", e);
         }
         if (session == null) {
-
-            User user = new User(username);
-            final String randomUID = UUID.randomUUID().toString();
-            session = new Session(randomUID, user, ip);
-            this.application.getSessionCache().addSession(session);
+            SystemUserManager systemUserManager = new SystemUserManager();
+            User user = null;
+            try {
+                user = systemUserManager.getUser(username);
+            } catch (UserManagerException e) {
+                logger.error("get user error, caused by ", e);
+            }
+            SessionCache sessionCache = this.application.getSessionCache();
+            Session sessionByUsername = sessionCache.getSessionByUsername(username);
+            if (sessionByUsername == null) {
+                final String randomUID = UUID.randomUUID().toString();
+                session = new Session(randomUID, user, ip);
+                sessionCache.addSession(session);
+            } else {
+                session = sessionByUsername;
+            }
         }
         logger.info("dss exists session id {} for user {}.", session.getSessionId(), username);
         final Cookie cookie = new Cookie(LoginAbstractAzkabanServlet.SESSION_ID_NAME, session.getSessionId());

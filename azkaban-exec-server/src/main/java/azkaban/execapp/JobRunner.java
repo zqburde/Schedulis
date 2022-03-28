@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import azkaban.Constants.JobProperties;
 import azkaban.event.Event;
 import azkaban.event.EventData;
@@ -36,20 +38,28 @@ import azkaban.jobid.relation.JobIdRelationService;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
 import azkaban.spi.EventType;
-import azkaban.utils.*;
-
+import azkaban.utils.ExternalLinkUtils;
+import azkaban.utils.Props;
+import azkaban.utils.StringUtils;
 import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
 import com.webank.wedatasphere.schedulis.common.log.OperateType;
-
-import java.io.*;
-import java.util.*;
+import com.webank.wedatasphere.schedulis.common.utils.LogUtils;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import com.webank.wedatasphere.schedulis.common.utils.LogUtils;
 import org.slf4j.LoggerFactory;
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 public class JobRunner extends EventHandler implements Runnable {
 
@@ -278,7 +288,11 @@ public class JobRunner extends EventHandler implements Runnable {
         this.logger = LoggerFactory.getLogger(loggerName);
         this.flowLogger.info("Created file appender for job " + this.jobId);
       } catch (final Exception e) {
+        fireEvent(Event.create(this, EventType.JOB_FINISHED,
+            new EventData(changeStatus(Status.FAILED), this.node.getNestedId())), false);
         this.flowLogger.error("Could not open log file in " + this.workingDir
+            + " for job " + this.jobId, e);
+        throw new RuntimeException("Could not open log file in " + this.workingDir
             + " for job " + this.jobId, e);
       }
     }
@@ -1014,14 +1028,18 @@ public class JobRunner extends EventHandler implements Runnable {
     return this.logger;
   }
 
+  private Status jobRunHandle(boolean errorFound, Status finalStatus, boolean restartFailed) {
+    return this.jobRunHandle(errorFound, finalStatus, restartFailed, System.currentTimeMillis());
+  }
+
   /**
    * 执行Job的方法
    * @param errorFound
    * @param finalStatus
    */
-  private Status jobRunHandle(boolean errorFound, Status finalStatus, boolean restartFailed){
+  private Status jobRunHandle(boolean errorFound, Status finalStatus, boolean restartFailed, long startTime){
 //    // Start the node.
-    this.node.setStartTime(System.currentTimeMillis());
+    this.node.setStartTime(startTime);
 //    Status finalStatus = this.node.getStatus();
 //    //更新数据库中Job的状态信息
 //    uploadExecutableNode();
@@ -1103,7 +1121,7 @@ public class JobRunner extends EventHandler implements Runnable {
           if(i == count - 1){
             restartFailed = false;
           }
-          finalStatus = jobRunHandle(errorFound, finalStatus, restartFailed);
+          finalStatus = jobRunHandle(errorFound, finalStatus, restartFailed, this.node.getStartTime());
           if(Status.isSucceeded(finalStatus) || isKilled() || isSkipped()){
             logger.info("the job stop retry, job status is " + finalStatus);
             break;

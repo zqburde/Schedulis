@@ -562,4 +562,7 @@ public interface ExecutorLoader {
   List<ExecutionCycle> getAllRunningCycleFlows() throws ExecutorManagerException;
 
   List<UserVariable> fetchAllUserVariableByOwnerDepartment(Integer departmentId) throws ExecutorManagerException;
+
+  List<Integer> getRunningExecByLock(Integer projectName, String flowId) throws ExecutorManagerException;
+
 }

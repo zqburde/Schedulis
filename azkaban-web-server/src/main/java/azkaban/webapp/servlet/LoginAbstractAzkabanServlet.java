@@ -16,11 +16,17 @@
 
 package azkaban.webapp.servlet;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import azkaban.project.Project;
-import azkaban.project.ProjectManager;
 import azkaban.server.AzkabanServer;
 import azkaban.server.session.Session;
-import azkaban.user.*;
+import azkaban.server.session.SessionCache;
+import azkaban.user.Permission;
+import azkaban.user.Role;
+import azkaban.user.User;
+import azkaban.user.UserManager;
+import azkaban.user.UserManagerException;
 import azkaban.utils.Props;
 import azkaban.utils.StringUtils;
 import azkaban.utils.WebUtils;
@@ -33,22 +39,27 @@ import com.webank.wedatasphere.schedulis.common.system.entity.WtssUser;
 import com.webank.wedatasphere.schedulis.common.user.SystemUserManager;
 import com.webank.wedatasphere.schedulis.common.utils.RSAUtils;
 import com.webank.wedatasphere.schedulis.common.utils.XSSFilterUtils;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Writer;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.util.*;
-
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 /**
  * Abstract Servlet that handles auto login when the session hasn't been verified.
@@ -174,7 +185,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
     private boolean isRequestWithoutSession(HttpServletRequest req) {
         String ajaxName = getParam(req, "ajax", "");
-        return ajaxName.equals("executeFlowCycleFromExecutor");
+        return ajaxName.equals("executeFlowCycleFromExecutor") || "reloadWebData".equals(ajaxName);
     }
 
     /**
@@ -428,7 +439,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
                 final String ip = getRealClientIpAddr(req);
 
                 String wtss_secret_de = props.getString("dss.secret", "");
-                String wtss_private_key = props.getString("wtss.private.key", "");
+                String wtss_private_key = props.getString("schedulis.private.key", "");
                 String from_dss_secret_de = "";
                 if (params.containsKey("dss_secret")) {
                     String from_dss_secret_en = (String) params.get("dss_secret");
@@ -539,7 +550,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
         final Props props = this.application.getServerProps();
 
         if (hasParam(req, "encryption") && "true".equals(getParam(req, "encryption"))) {
-            String wtss_private_key = props.getString("wtss.private.key", "");
+            String wtss_private_key = props.getString("schedulis.private.key", "");
             logger.debug("encryption is enable , decode password {}", password);
             try {
                 if (password != null) {
@@ -555,7 +566,7 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
         try {
             String wtss_secret_de = props.getString("dss.secret", "");
-            String wtss_private_key = props.getString("wtss.private.key", "");
+            String wtss_private_key = props.getString("schedulis.private.key", "");
             String from_dss_secret_de = "";
             if (hasParam(req, "dss_secret")) {
                 String from_dss_secret_en = (String) getParam(req, "dss_secret");
@@ -581,9 +592,15 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
                         return cacheSession;
                     }
                 }
-                Session newSession = createSession(username, password, ip, wtss_secret_de);
-                getApplication().getSessionCache().addSession(newSession);
-                return newSession;
+                SessionCache sessionCache = getApplication().getSessionCache();
+                Session sessionByUsername = sessionCache.getSessionByUsername(username);
+                if (sessionByUsername == null) {
+                    Session newSession = createSession(username, password, ip, wtss_secret_de);
+                    sessionCache.addSession(newSession);
+                    return newSession;
+                } else {
+                    return sessionByUsername;
+                }
             }
         } catch (final Exception e) {
             logger.error("no super user", e);
@@ -620,10 +637,17 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
                 return cacheSession;
             }
         }
-        final String randomUID = UUID.randomUUID().toString();
-        final Session session = new Session(randomUID, user, ip);
-        getApplication().getSessionCache().addSession(session);
-        return session;
+
+        SessionCache sessionCache = getApplication().getSessionCache();
+        Session sessionByUsername = sessionCache.getSessionByUsername(username);
+        if (sessionByUsername == null) {
+            final String randomUID = UUID.randomUUID().toString();
+            final Session session = new Session(randomUID, user, ip);
+            sessionCache.addSession(session);
+            return session;
+        } else {
+            return sessionByUsername;
+        }
     }
 
     private Session createSession(final String username, final String password, final String ip,
@@ -716,28 +740,6 @@ public abstract class LoginAbstractAzkabanServlet extends AbstractAzkabanServlet
 
             ret.put("status", "success");
             ret.put("session.id", session.getSessionId());
-            //登录成功后刷新用户所有Project的权限
-            final ProjectManager projectManager = ((AzkabanWebServer) getApplication()).getProjectManager();
-            final User user = session.getUser();
-            final List<Project> projects = projectManager.getUserProjects(user);
-
-            projects.stream().forEach(project -> {
-                // 代理用户合集
-                Set<String> proxySet = new HashSet<>();
-                //添加当前用户的代理到项目中
-                for (String pUser : user.getProxyUsers()) {
-                    proxySet.add(pUser);
-                }
-                //代理用户更新时清理旧的代理用户
-                project.removeAllProxyUsers();
-                //添加当前用户的代理用户配置
-                project.addAllProxyUsers(proxySet);
-                //每次请求都更新当前项目的代理用户
-                projectManager.updateProjectSetting(project);
-            });
-            //刷新缓存里的用户项目信息
-            projectManager.loadAllProjects();
-            projectManager.loadUserProjects(user);
 
         } else {
             ret.put("error", "Login in error.");

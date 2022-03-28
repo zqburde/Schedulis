@@ -16,7 +16,10 @@
 
 package azkaban.project;
 
+import static java.util.Objects.requireNonNull;
+
 import azkaban.Constants;
+import azkaban.Constants.ConfigurationKeys;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.flow.Flow;
 import azkaban.project.ProjectLogEvent.EventType;
@@ -32,23 +35,28 @@ import azkaban.utils.Props;
 import azkaban.utils.PropsUtils;
 import com.google.common.io.Files;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
+import com.webank.wedatasphere.schedulis.common.project.entity.ProjectPermission;
 import com.webank.wedatasphere.schedulis.common.system.SystemManager;
+import com.webank.wedatasphere.schedulis.common.utils.HttpUtils;
 import com.webank.wedatasphere.schedulis.common.utils.PagingListStreamUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
-
-import static java.util.Objects.requireNonNull;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.apache.commons.collections4.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @Singleton
@@ -68,6 +76,8 @@ public class ProjectManager {
  
   private SystemManager systemManager;
 
+  private boolean isHaModel;
+
   @Inject
   public ProjectManager(final AzkabanProjectLoader azkabanProjectLoader,
       final ProjectLoader loader,
@@ -80,6 +90,7 @@ public class ProjectManager {
     this.systemManager = requireNonNull(systemManager);
     this.creatorDefaultPermissions =
         props.getBoolean("creator.default.proxy", true);
+    this.isHaModel = props.getBoolean(ConfigurationKeys.WEBSERVER_HA_MODEL, false);
 
     // The prop passed to XmlValidatorManager is used to initialize all the
     // validators
@@ -100,7 +111,7 @@ public class ProjectManager {
     final int latestFlowVersion = this.projectLoader.getLatestFlowVersion(project.getId(), flow
         .getVersion(), flowFileName);
     if (latestFlowVersion > 0) {
-      final File tempDir = com.google.common.io.Files.createTempDir();
+      final File tempDir = Files.createTempDir();
       final File flowFile;
       try {
         flowFile = this.projectLoader
@@ -157,7 +168,6 @@ public class ProjectManager {
 
   public List<Project> getUserProjects(final User user) {
     final ArrayList<Project> array = new ArrayList<>();
-    this.loadAllProjects();
     for (final Project project : this.projectsById.values()) {
       final Permission perm = project.getUserPermission(user);
 
@@ -177,7 +187,6 @@ public class ProjectManager {
 
   public List<Project> getGroupProjects(final User user) {
     final List<Project> array = new ArrayList<>();
-    this.loadAllProjects();
     for (final Project project : this.projectsById.values()) {
       if (project.hasGroupPermission(user, Type.READ)) {
         array.add(project);
@@ -191,7 +200,6 @@ public class ProjectManager {
   }
 
   public List<Project> getUserProjectsByRegex(final User user, final String regexPattern) {
-    this.loadAllProjects();
     final List<Project> array = new ArrayList<>();
     final Pattern pattern;
     try {
@@ -220,7 +228,6 @@ public class ProjectManager {
   }
 
   public List<Project> getProjects() {
-    this.loadAllProjects();
     List<Project> projectList = new ArrayList<>(this.projectsById.values());
     // FIXME Sort by project name.
     List<Project> newArray = projectList.stream().sorted(
@@ -254,7 +261,6 @@ public class ProjectManager {
    * Checks if a project is active using project_id
    */
   public Boolean isActiveProject(final int id) {
-    this.loadAllProjects();
     return this.projectsById.containsKey(id);
   }
 
@@ -267,6 +273,10 @@ public class ProjectManager {
       try {
         logger.info("Project " + name + " doesn't exist in cache, fetching from DB now.");
         fetchedProject = this.projectLoader.fetchProjectByName(name);
+        if (fetchedProject.isActive()) {
+          loadAllProjectFlows(fetchedProject);
+          this.projectsByName.put(fetchedProject.getName(), fetchedProject);
+        }
       } catch (final ProjectManagerException e) {
         logger.error("Could not load project from store.", e);
       }
@@ -329,7 +339,7 @@ public class ProjectManager {
     if (this.creatorDefaultPermissions) {
       // Add permission to project
       this.projectLoader.updatePermission(newProject, creator.getUserId(),
-          new Permission(Permission.Type.ADMIN), true);
+          new Permission(Type.ADMIN), true);
 
       // 需求 不把当前主用户添加到代理中
       //newProject.addProxyUser(creator.getUserId());
@@ -350,6 +360,10 @@ public class ProjectManager {
 
     this.projectLoader.postEvent(newProject, EventType.CREATED, creator.getUserId(),
         null);
+    if (this.isHaModel) {
+      HttpUtils.reloadWebData(this.getProps().getStringList("azkaban.all.web.url"), "reloadProject",
+          newProject.getName());
+    }
 
     return newProject;
   }
@@ -370,7 +384,6 @@ public class ProjectManager {
 
   public synchronized Project removeProject(final Project project, final User deleter)
       throws ProjectManagerException {
-    this.loadAllProjects();
     this.projectLoader.removeProject(project, deleter.getUserId());
     this.projectLoader.postEvent(project, EventType.DELETED, deleter.getUserId(),
         null);
@@ -378,14 +391,25 @@ public class ProjectManager {
     this.projectsByName.remove(project.getName());
     this.projectsById.remove(project.getId());
 
+    if (this.isHaModel) {
+      HttpUtils.reloadWebData(this.getProps().getStringList("azkaban.all.web.url"), "deleteProject",
+          project.getId() + "");
+    }
+
     return project;
   }
 
   public void updateProjectDescription(final Project project, final String description,
       final User modifier) throws ProjectManagerException {
     this.projectLoader.updateDescription(project, description, modifier.getUserId());
+    this.projectsByName.put(project.getName(), project);
+    this.projectsById.put(project.getId(), project);
     this.projectLoader.postEvent(project, EventType.DESCRIPTION,
         modifier.getUserId(), "Description changed to " + description);
+    if (this.isHaModel) {
+      HttpUtils.reloadWebData(this.getProps().getStringList("azkaban.all.web.url"), "reloadProject",
+          project.getName());
+    }
   }
 
   public List<ProjectLogEvent> getProjectEventLogs(final Project project,
@@ -405,7 +429,7 @@ public class ProjectManager {
           jobName == null ? flow.getId() : flow.getId() + Constants.PATH_DELIMITER + jobName;
       props = FlowLoaderUtils.getPropsFromYamlFile(path, flowFile);
     } catch (final Exception e) {
-      this.logger.error("Failed to get props from flow file. " + e);
+      logger.error("Failed to get props from flow file. " + e);
     } finally {
       FlowLoaderUtils.cleanUpDir(tempDir);
     }
@@ -453,7 +477,7 @@ public class ProjectManager {
         this.projectLoader
             .uploadFlowFile(flow.getProjectId(), flow.getVersion(), flowFile, flowVersion + 1);
       } catch (final Exception e) {
-        this.logger.error("Failed to set job override property. " + e);
+        logger.error("Failed to set job override property. " + e);
       } finally {
         FlowLoaderUtils.cleanUpDir(tempDir);
       }
@@ -478,6 +502,12 @@ public class ProjectManager {
   public void updateProjectSetting(final Project project)
       throws ProjectManagerException {
     this.projectLoader.updateProjectSettings(project);
+    this.projectsByName.put(project.getName(), project);
+    this.projectsById.put(project.getId(), project);
+    if (this.isHaModel) {
+      HttpUtils.reloadWebData(this.getProps().getStringList("azkaban.all.web.url"), "reloadProject",
+          project.getName());
+    }
   }
 
   public void addProjectProxyUser(final Project project, final String proxyName,
@@ -520,6 +550,10 @@ public class ProjectManager {
           modifier.getUserId(), "Permission for user " + name + " set to "
               + perm.toString());
     }
+    if (this.isHaModel) {
+      HttpUtils.reloadWebData(this.getProps().getStringList("azkaban.all.web.url"),
+          "refreshProjectPermission", project.getName());
+    }
   }
 
   public void removeProjectPermission(final Project project, final String name,
@@ -534,6 +568,10 @@ public class ProjectManager {
     } else {
       this.projectLoader.postEvent(project, EventType.USER_PERMISSION,
           modifier.getUserId(), "Permission for user " + name + " removed.");
+    }
+    if (this.isHaModel) {
+      HttpUtils.reloadWebData(this.getProps().getStringList("azkaban.all.web.url"),
+          "refreshProjectPermission", project.getName());
     }
   }
 
@@ -555,8 +593,13 @@ public class ProjectManager {
   public Map<String, ValidationReport> uploadProject(final Project project,
       final File archive, final String fileType, final User uploader, final Props additionalProps)
       throws ProjectManagerException, ExecutorManagerException {
-    return this.azkabanProjectLoader
-        .uploadProject(project, archive, fileType, uploader, additionalProps);
+    Map<String, ValidationReport> retMap = this.azkabanProjectLoader.uploadProject(project, archive,
+        fileType, uploader, additionalProps);
+    if (this.isHaModel) {
+      HttpUtils.reloadWebData(this.getProps().getStringList("azkaban.all.web.url"), "reloadProject",
+          project.getName());
+    }
+    return retMap;
   }
 
   public Boolean checkFlowName(final Project project,final File archive,
@@ -567,6 +610,12 @@ public class ProjectManager {
   public void updateFlow(final Project project, final Flow flow)
       throws ProjectManagerException {
     this.projectLoader.updateFlow(project, flow.getVersion(), flow);
+    this.projectsByName.put(project.getName(), project);
+    this.projectsById.put(project.getId(), project);
+    if (this.isHaModel) {
+      HttpUtils.reloadWebData(this.getProps().getStringList("azkaban.all.web.url"), "reloadProject",
+          project.getName());
+    }
   }
 
 
@@ -648,7 +697,7 @@ public class ProjectManager {
     if (this.creatorDefaultPermissions) {
       // Add permission to project
       this.projectLoader.updatePermission(newProject, creator.getUserId(),
-          new Permission(Permission.Type.ADMIN), "".equals(group) ? false : true,
+          new Permission(Type.ADMIN), "".equals(group) ? false : true,
           group);
 
       // 需求 不把当前主用户添加到代理中
@@ -670,6 +719,10 @@ public class ProjectManager {
 
     this.projectLoader.postEvent(newProject, EventType.CREATED, creator.getUserId(),
         null);
+    if (this.isHaModel) {
+      HttpUtils.reloadWebData(this.getProps().getStringList("azkaban.all.web.url"), "reloadProject",
+          newProject.getName());
+    }
 
     return newProject;
   }
@@ -737,6 +790,10 @@ public class ProjectManager {
 
     this.projectLoader.postEvent(project, EventType.USER_PERMISSION,
         modifier.getUserId(), "Permission for user " + userId + " removed.");
+    if (this.isHaModel) {
+      HttpUtils.reloadWebData(this.getProps().getStringList("azkaban.all.web.url"),
+          "refreshProjectPermission", project.getName());
+    }
   }
 
   /**
@@ -745,7 +802,6 @@ public class ProjectManager {
    * @return
    */
   public List<Project> getUserAllProjects(final User user, final String orderOption) {
-    this.loadAllProjects();
     final ArrayList<Project> array = new ArrayList<>();
     List<Integer> projectIds = systemManager.getMaintainedProjects(user);
     boolean isDepartmentMaintainer = systemManager.isDepartmentMaintainer(user);
@@ -783,7 +839,6 @@ public class ProjectManager {
   }
 
   public List<Project> getMaintainedProjects(final User user, final List<Integer> projectIds, final String orderOption) {
-    this.loadAllProjects();
     final ArrayList<Project> array = new ArrayList<>();
     for (final Project project : this.projectsById.values()) {
       final Permission permission = project.getUserPermission(user);
@@ -827,7 +882,6 @@ public class ProjectManager {
       logger.error("Bad regex pattern " + regexPattern);
       return array;
     }
-    this.loadAllProjects();
     for (final Project project : this.projectsById.values()) {
       final Permission perm = project.getUserPermission(user);
 
@@ -865,7 +919,6 @@ public class ProjectManager {
 
 
   public List<Project> getUserProjects(final User user, final String orderOption) {
-    this.loadAllProjects();
     final ArrayList<Project> array = new ArrayList<>();
     for (final Project project : this.projectsById.values()) {
 
@@ -898,7 +951,6 @@ public class ProjectManager {
   }
 
   public List<Project> getProjects(final String orderOption) {
-    this.loadAllProjects();
     List<Project> projectList = new ArrayList<>(this.projectsById.values());
 //    //按照项目名称排序
 //    List<Project> newArray = projectList.stream().sorted(
@@ -971,7 +1023,6 @@ public class ProjectManager {
       logger.error("Bad regex pattern " + regexPattern);
       return array;
     }
-    this.loadAllProjects();
     for (final Project project : this.projectsById.values()) {
       final Permission perm = project.getUserPermission(user);
 
@@ -1016,7 +1067,6 @@ public class ProjectManager {
       logger.error("Bad regex pattern " + regexPattern);
       return array;
     }
-    this.loadAllProjects();
     for (final Project project : this.projectsById.values()) {
       final Permission permission = project.getUserPermission(user);
       Predicate<Permission> hasPermission = perm -> perm != null && (perm.isPermissionSet(Type.ADMIN) || perm.isPermissionSet(Type.READ));
@@ -1099,5 +1149,47 @@ public class ProjectManager {
     }
 
     return todayCreateFlowNoRunFlowList;
+  }
+
+  public void refreshProjectPermission(String projectName) {
+    final Project project = this.getProject(projectName);
+    if (project != null) {
+      List<ProjectPermission> projectPermissionList = this.projectLoader.fetchAllPermissionsForProject(project);
+      if (CollectionUtils.isNotEmpty(projectPermissionList)) {
+        project.clearUserPermission();
+        project.clearGroupPermission();
+        for (ProjectPermission projectPermission : projectPermissionList) {
+          if (projectPermission.getIsGroup()) {
+            project.setGroupPermission(projectPermission.getProjectGroup(), projectPermission.getPermission());
+          }
+          project.setUserPermission(projectPermission.getUsername(), projectPermission.getPermission());
+        }
+      }
+    }
+  }
+
+  public void reloadProject(String projectName) {
+    Project project = this.projectLoader.fetchProjectByName(projectName);
+    Project pro = this.projectsByName.get(project.getName());
+    if (pro != null) {
+      if (pro.getVersion() != project.getVersion()) {
+        loadAllProjectFlows(project);
+      } else {
+        project.setFlows(pro.getFlowMap());
+      }
+    } else {
+      loadAllProjectFlows(project);
+    }
+    this.projectsByName.remove(project.getName());
+    this.projectsById.remove(project.getId());
+    if (project.isActive()) {
+      this.projectsByName.put(project.getName(), project);
+      this.projectsById.put(project.getId(), project);
+    }
+  }
+
+  public void deleteProjectByWeb(int projectId) {
+    this.projectsByName.remove(this.projectsById.get(projectId).getName());
+    this.projectsById.remove(projectId);
   }
 }

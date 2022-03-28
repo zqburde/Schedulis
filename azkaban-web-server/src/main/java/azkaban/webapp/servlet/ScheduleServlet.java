@@ -34,15 +34,14 @@ import azkaban.user.Permission.Type;
 import azkaban.user.User;
 import azkaban.utils.Utils;
 import azkaban.webapp.AzkabanWebServer;
-
 import com.google.common.collect.Lists;
+import com.google.gson.JsonObject;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import com.webank.wedatasphere.schedulis.common.system.SystemManager;
 import com.webank.wedatasphere.schedulis.common.system.SystemUserManagerException;
 import com.webank.wedatasphere.schedulis.common.system.common.TransitionService;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,18 +54,16 @@ import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import com.google.gson.JsonObject;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.joda.time.Minutes;
 import org.joda.time.ReadablePeriod;
 import org.joda.time.format.DateTimeFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
@@ -948,7 +945,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     }
 
     final Project project = this.projectManager.getProject(sched.getProjectId());
-    if (!hasPermission(project, user, Permission.Type.SCHEDULE)) {
+    if (!hasPermission(project, user, Type.SCHEDULE)) {
       logger.error("User " + user + " does not have permission to set SLA for this flow.");
       ret.put("error", "User " + user + " does not have permission to set SLA for this flow.");
       return false;
@@ -1002,7 +999,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       }
 
       final Project project = this.projectManager.getProject(sched.getProjectId());
-      if (!hasPermission(project, user, Permission.Type.SCHEDULE)) {
+      if (!hasPermission(project, user, Type.SCHEDULE)) {
         ret.put("error", "User " + user
             + " does not have permission to set SLA for this flow.");
         return;
@@ -1190,6 +1187,11 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
 
     final int projectId = getIntParam(req, "projectId");
     final String flowId = getParam(req, "flowId");
+    Project project = getProjectAjaxByPermission(ret, projectId, user, Type.READ);
+    if (project == null) {
+      ret.put("error", "Error fetching schedule. " + user.getUserId() + " has no permission.");
+      return;
+    }
     try {
       final Schedule schedule = this.scheduleManager.getSchedule(projectId, flowId);
 
@@ -1344,7 +1346,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
   }
 
   protected Project getProjectAjaxByPermission(final Map<String, Object> ret,
-      final int projectId, final User user, final Permission.Type type) {
+      final int projectId, final User user, final Type type) {
     final Project project = this.projectManager.getProject(projectId);
 
     if (project == null) {
@@ -1845,7 +1847,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         // everything in Azkaban functions is at the minute granularity, so we add 0 here
         // to let the expression to be complete.
         cronExpression = json.get("cronExpression").getAsString();
-        if (azkaban.utils.Utils.isCronExpressionValid(cronExpression, timezone) == false) {
+        if (Utils.isCronExpressionValid(cronExpression, timezone) == false) {
           ret.put("error", "Error," + dataMap.get("thisExpress") + cronExpression + dataMap.get("outRuleQuartz") + "<br/>");
           return false;
         }
@@ -1982,7 +1984,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         // everything in Azkaban functions is at the minute granularity, so we add 0 here
         // to let the expression to be complete.
         cronExpression = getParam(req, "cronExpression");
-        if (azkaban.utils.Utils.isCronExpressionValid(cronExpression, timezone) == false) {
+        if (Utils.isCronExpressionValid(cronExpression, timezone) == false) {
           ret.put("error",  dataMap.get("thisExpress") + cronExpression + dataMap.get("outRuleQuartz"));
           return;
         }
@@ -2065,7 +2067,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       String tmp[] = jobCronExpressOptions.get(key).split("#_#");
       String jobNestId = tmp[0];
       String cronExpress = tmp[1];
-      if (!azkaban.utils.Utils.isCronExpressionValid(cronExpress, timezone)) {
+      if (!Utils.isCronExpressionValid(cronExpress, timezone)) {
         ret.put("error", dataMap.get("skipRunTimeSet") + dataMap.get("thisExpress") + cronExpression + dataMap.get("outRuleQuartz"));
         return;
       }
@@ -2278,6 +2280,12 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     final int scheduleId = getIntParam(req, "scheduleId");
     try {
       final Schedule schedule = this.scheduleManager.getSchedule(scheduleId);
+      int projectId = schedule.getProjectId();
+      Project project = getProjectAjaxByPermission(ret, projectId, user, Type.READ);
+      if (project == null) {
+        ret.put("error", "Error getting schedule. " + user.getUserId() + " has no permission.");
+        return;
+      }
 
       if (schedule != null) {
         final Map<String, Object> jsonObj = new HashMap<>();
@@ -2326,7 +2334,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       }
 
       final Project project = this.projectManager.getProject(sched.getProjectId());
-      if (!hasPermission(project, user, Permission.Type.SCHEDULE)) {
+      if (!hasPermission(project, user, Type.SCHEDULE)) {
         ret.put("error", "User " + user
             + " does not have permission to set SLA for this flow.");
         return;
@@ -2451,7 +2459,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         String tmp[] = jobCronExpressOptions.get(key).split("#_#");
         String jobNestId = tmp[0];
         String cronExpress = tmp[1];
-        if (!azkaban.utils.Utils.isCronExpressionValid(cronExpress, timezone)) {
+        if (!Utils.isCronExpressionValid(cronExpress, timezone)) {
           ret.put("error", dataMap.get("skipRunTimeSet") + dataMap.get("thisExpress") + cronExpression + dataMap.get("outRuleQuartz"));
           return;
         }

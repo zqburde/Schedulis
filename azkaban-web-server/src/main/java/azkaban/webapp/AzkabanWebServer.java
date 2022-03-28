@@ -16,12 +16,21 @@
 
 package azkaban.webapp;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+import static java.util.Objects.requireNonNull;
+
 import azkaban.AzkabanCommonModule;
 import azkaban.Constants;
 import azkaban.Constants.ConfigurationKeys;
 import azkaban.database.AzkabanDatabaseSetup;
+import azkaban.executor.AlerterHolder;
+import azkaban.executor.ExecutableFlow;
+import azkaban.executor.ExecutionController;
+import azkaban.executor.ExecutionControllerUtils;
+import azkaban.executor.ExecutorManager;
+import azkaban.executor.ExecutorManagerAdapter;
+import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
-import azkaban.executor.*;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.quartz.FlowTriggerScheduler;
 import azkaban.jmx.JmxExecutionController;
@@ -34,14 +43,40 @@ import azkaban.scheduler.ScheduleManager;
 import azkaban.server.AzkabanServer;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.SessionCache;
+import azkaban.trigger.HATriggerManager;
 import azkaban.trigger.TriggerManager;
 import azkaban.trigger.TriggerManagerException;
-import azkaban.trigger.builtin.*;
-import azkaban.utils.*;
+import azkaban.trigger.builtin.BasicTimeChecker;
+import azkaban.trigger.builtin.CreateTriggerAction;
+import azkaban.trigger.builtin.ExecuteFlowAction;
+import azkaban.trigger.builtin.ExecutionChecker;
+import azkaban.trigger.builtin.KillExecutionAction;
+import azkaban.trigger.builtin.SlaAlertAction;
+import azkaban.trigger.builtin.SlaChecker;
+import azkaban.utils.FileIOUtils;
+import azkaban.utils.Props;
+import azkaban.utils.PropsUtils;
+import azkaban.utils.StdOutErrRedirect;
+import azkaban.utils.Utils;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.TriggerPlugin;
 import azkaban.webapp.plugin.ViewerPlugin;
-import azkaban.webapp.servlet.*;
+import azkaban.webapp.servlet.AbstractAzkabanServlet;
+import azkaban.webapp.servlet.DSSOriginSSOFilter;
+import azkaban.webapp.servlet.ExecutorServlet;
+import azkaban.webapp.servlet.FlowTriggerInstanceServlet;
+import azkaban.webapp.servlet.FlowTriggerServlet;
+import azkaban.webapp.servlet.HistoryServlet;
+import azkaban.webapp.servlet.IndexRedirectServlet;
+import azkaban.webapp.servlet.JMXHttpServlet;
+import azkaban.webapp.servlet.NoteServlet;
+import azkaban.webapp.servlet.ProjectManagerServlet;
+import azkaban.webapp.servlet.ProjectServlet;
+import azkaban.webapp.servlet.RecoverServlet;
+import azkaban.webapp.servlet.ScheduleServlet;
+import azkaban.webapp.servlet.StatsServlet;
+import azkaban.webapp.servlet.StatusServlet;
+import azkaban.webapp.servlet.TriggerManagerServlet;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.linkedin.restli.server.RestliServlet;
@@ -51,6 +86,34 @@ import com.webank.wedatasphere.schedulis.common.jmx.JmxExecutorManagerAdapter;
 import com.webank.wedatasphere.schedulis.common.system.common.TransitionService;
 import com.webank.wedatasphere.schedulis.web.webapp.LocaleFilter;
 import com.webank.wedatasphere.schedulis.web.webapp.servlet.CycleServlet;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Constructor;
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.concurrent.CompletableFuture;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.management.MBeanInfo;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.servlet.DispatcherType;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import joptsimple.internal.Strings;
 import org.apache.commons.lang.StringUtils;
 import org.apache.velocity.app.VelocityEngine;
@@ -66,33 +129,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.joda.time.DateTimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.management.MBeanInfo;
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-import javax.servlet.DispatcherType;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.management.ManagementFactory;
-import java.lang.reflect.Constructor;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.charset.StandardCharsets;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-
-import static azkaban.ServiceProvider.SERVICE_PROVIDER;
-import static java.util.Objects.requireNonNull;
 
 
 /**
@@ -134,6 +170,7 @@ public class AzkabanWebServer extends AzkabanServer {
   private final ScheduleManager scheduleManager;
   private final TransitionService transitionService;
   private final TriggerManager triggerManager;
+  private final HATriggerManager haTriggerManager;
   private final MetricsManager metricsManager;
   private final Props props;
   private final SessionCache sessionCache;
@@ -151,6 +188,7 @@ public class AzkabanWebServer extends AzkabanServer {
       final ExecutorManagerAdapter executorManagerAdapter,
       final ProjectManager projectManager,
       final TriggerManager triggerManager,
+      final HATriggerManager haTriggerManager,
       final MetricsManager metricsManager,
       final SessionCache sessionCache,
       final ScheduleManager scheduleManager,
@@ -165,6 +203,7 @@ public class AzkabanWebServer extends AzkabanServer {
     this.executorManagerAdapter = requireNonNull(executorManagerAdapter,"executorManagerAdapter is null.");
     this.projectManager = requireNonNull(projectManager, "projectManager is null.");
     this.triggerManager = requireNonNull(triggerManager, "triggerManager is null.");
+    this.haTriggerManager = requireNonNull(haTriggerManager, "triggerManager is null.");
     this.metricsManager = requireNonNull(metricsManager, "metricsManager is null.");
     this.sessionCache = requireNonNull(sessionCache, "sessionCache is null.");
     this.scheduleManager = requireNonNull(scheduleManager, "scheduleManager is null.");
@@ -274,8 +313,8 @@ public class AzkabanWebServer extends AzkabanServer {
             && new File("/usr/bin/head").exists()) {
           logger.info("logging top memory consumer");
 
-          final java.lang.ProcessBuilder processBuilder =
-              new java.lang.ProcessBuilder("/bin/bash", "-c",
+          final ProcessBuilder processBuilder =
+              new ProcessBuilder("/bin/bash", "-c",
                   "/bin/ps aux --sort -rss | /usr/bin/head");
           final Process p = processBuilder.start();
           p.waitFor();
@@ -487,7 +526,7 @@ public class AzkabanWebServer extends AzkabanServer {
     configureRoutes();
 
     // Todo jamiesjc: enable web metrics for azkaban poll model later
-    if (this.props.getBoolean(Constants.ConfigurationKeys.IS_METRICS_ENABLED, false)
+    if (this.props.getBoolean(ConfigurationKeys.IS_METRICS_ENABLED, false)
         && !this.props.getBoolean(ConfigurationKeys.AZKABAN_POLL_MODEL, false)) {
       startWebMetrics();
     }
@@ -609,7 +648,11 @@ public class AzkabanWebServer extends AzkabanServer {
   }
 
   public TriggerManager getTriggerManager() {
+    if(props.getBoolean(ConfigurationKeys.WEBSERVER_HA_MODEL, false)){
+      return this.haTriggerManager;
+    }else{
       return this.triggerManager;
+    }
   }
 
 
@@ -793,7 +836,7 @@ public class AzkabanWebServer extends AzkabanServer {
                 InetSocketAddress address = endp.getRemoteAddress();
                 if("/executor".equals(baseRequest.getMetaData().getURI().getDecodedPath())
                         && HttpRequestUtils.hasParam(request, "ajax")
-                        && "executeFlowCycleFromExecutor".equals(HttpRequestUtils.getParam(request,"ajax"))){
+                        && ("executeFlowCycleFromExecutor".equals(HttpRequestUtils.getParam(request,"ajax")) || "reloadWebData".equals(HttpRequestUtils.getParam(request,"ajax")))){
                   if (address != null && !this.isAddrUriAllowed(address.getHostString(), baseRequest.getMetaData().getURI().getDecodedPath())) {
                     logger.warn("Illegal access detected , ip >> {} , path >> {}",address.getHostString(),baseRequest.getMetaData().getURI());
                     response.sendError(403);

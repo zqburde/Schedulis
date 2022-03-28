@@ -47,7 +47,7 @@ public class NumRunningFlowMetric extends TimeBasedReportingMetric<Integer> {
   /**
    * Update value using flow manager {@inheritDoc}
    *
-   * @see azkaban.metric.TimeBasedReportingMetric#preTrackingEventMethod()
+   * @see TimeBasedReportingMetric#preTrackingEventMethod()
    */
   @Override
   protected synchronized void preTrackingEventMethod() {

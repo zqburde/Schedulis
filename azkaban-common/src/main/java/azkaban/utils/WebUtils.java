@@ -20,7 +20,6 @@ import azkaban.executor.Status;
 import java.text.NumberFormat;
 import java.util.Date;
 import java.util.Map;
-import java.util.Optional;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.DurationFieldType;
@@ -264,12 +263,13 @@ public class WebUtils {
    */
   public static DateTime getNextCronRuntime(final long scheduleTime, final DateTimeZone timezone,
       final CronExpression ce) {
-
-    Date date = new DateTime(scheduleTime).withZone(timezone).toDate();
     if (ce != null) {
-      date = ce.getNextValidTimeAfter(date);
+      Date date = ce.getNextValidTimeAfter(new DateTime(scheduleTime).withZone(timezone).toDate());
+      if (date != null) {
+        return new DateTime(date);
+      }
     }
-    return new DateTime(date);
+    return new DateTime(0);
   }
 
 }

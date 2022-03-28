@@ -220,14 +220,4 @@ public class TriggerBasedScheduleLoader implements ScheduleLoader {
     return schedules;
   }
 
-  @Override
-  public synchronized List<Integer> loadAllSchedulesId() throws TriggerLoaderException {
-    List<Integer> triggersId = null;
-    try {
-      triggersId = this.triggerManager.getAllTriggersId();
-    } catch (TriggerLoaderException e) {
-      logger.error("load updated schedules failed, caused by:" + e);
-    }
-    return triggersId;
-  }
 }

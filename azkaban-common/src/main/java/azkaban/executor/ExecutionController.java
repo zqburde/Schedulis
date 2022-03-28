@@ -171,7 +171,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
    * Gets a list of all the unfinished (both dispatched and non-dispatched) executions for a
    * given project and flow {@inheritDoc}.
    *
-   * @see azkaban.executor.ExecutorManagerAdapter#getRunningFlows(int, java.lang.String)
+   * @see ExecutorManagerAdapter#getRunningFlows(int, String)
    */
   @Override
   public List<Integer> getRunningFlows(final int projectId, final String flowId) {
@@ -296,7 +296,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       getExecutionIdsHelper(allIds, this.executorLoader.fetchUnfinishedFlows().values());
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get running flow ids.", e);
+      logger.error("Failed to get running flow ids.", e);
     }
     return allIds;
   }
@@ -309,7 +309,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       getExecutionIdsHelper(allIds, this.executorLoader.fetchQueuedFlows());
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get queued flow ids.", e);
+      logger.error("Failed to get queued flow ids.", e);
     }
     return allIds;
   }
@@ -330,7 +330,7 @@ public class ExecutionController extends EventHandler implements ExecutorManager
     try {
       size = this.executorLoader.fetchQueuedFlows().size();
     } catch (final ExecutorManagerException e) {
-      this.logger.error("Failed to get queued flow size.", e);
+      logger.error("Failed to get queued flow size.", e);
     }
     return size;
   }
@@ -523,6 +523,11 @@ public class ExecutionController extends EventHandler implements ExecutorManager
             + " isn't running.");
       }
     }
+  }
+
+  @Override
+  public void superKillFlow(ExecutableFlow exFlow, String userId) throws ExecutorManagerException {
+
   }
 
   @Override
@@ -1100,6 +1105,11 @@ public class ExecutionController extends EventHandler implements ExecutorManager
   @Override
   public List<ExecutionCycle> getAllRunningCycleFlows() throws ExecutorManagerException {
     return null;
+  }
+
+  @Override
+  public void reloadWebData() {
+
   }
 
   @Override

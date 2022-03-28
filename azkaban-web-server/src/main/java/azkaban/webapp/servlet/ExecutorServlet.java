@@ -47,6 +47,8 @@ import azkaban.scheduler.ScheduleManagerException;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.sla.SlaOption;
+import azkaban.trigger.TriggerManager;
+import azkaban.trigger.TriggerManagerException;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
@@ -135,6 +137,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     private SystemManager systemManager;
 
     private JobIdRelationService jobIdRelationService;
+    private TriggerManager triggerManager;
 
     @Override
     public void init(final ServletConfig config) throws ServletException {
@@ -151,6 +154,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         this.alerterHolder = server.getAlerterHolder();
         Props props = executorManagerAdapter.getAzkabanProps();
         this.systemManager = transitionService.getSystemManager();
+        this.triggerManager=server.getTriggerManager();
 
     }
 
@@ -343,6 +347,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         // FIXME Added interface to terminate job stream.
         } else if (ajaxName.equals("extCancelFlow")) {
             extCancelFlow(req, resp, ret, session.getUser());
+        } else if ("reloadWebData".equals(ajaxName)) {
+            try {
+                reloadWebData(req);
+            } catch (TriggerManagerException | ScheduleManagerException e) {
+                logger.error(e.getMessage(),e);
+            }
         } else {
             final String projectName = getParam(req, "project");
 
@@ -892,7 +902,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     protected Project getProjectPageByPermission(final Page page, final int projectId,
-        final User user, final Permission.Type type) {
+        final User user, final Type type) {
         final Project project = this.projectManager.getProject(projectId);
 
         Map<String, String> dataMap = loadExecutorServletI18nData();
@@ -910,7 +920,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     protected Project getProjectAjaxByPermission(final Map<String, Object> ret, final String projectName,
-        final User user, final Permission.Type type) {
+        final User user, final Type type) {
         final Project project = this.projectManager.getProject(projectName);
 
         Map<String, String> dataMap = loadExecutorServletI18nData();
@@ -928,7 +938,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     protected Project getProjectAjaxByPermission(final Map<String, Object> ret, final int projectId,
-        final User user, final Permission.Type type) {
+        final User user, final Type type) {
 
         final Project project = this.projectManager.getProject(projectId);
 
@@ -3408,7 +3418,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     private Permission getPermissionObject(final Project project, final User user,
-        final Permission.Type type) {
+        final Type type) {
         final Permission perm = project.getCollectivePermission(user);
 
         for (final String roleName : user.getRoles()) {
@@ -3811,6 +3821,44 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         String projectId = map.get("projectId");
         return projectIds.stream()
                 .anyMatch(id -> id.toString().equals(projectId));
+    }
+
+    /**
+     * reload data for ha
+     * @param req
+     * @throws ServletException
+     */
+    private void reloadWebData(final HttpServletRequest req)
+        throws ServletException, TriggerManagerException, ScheduleManagerException {
+
+        final String type = getParam(req, "reloadType");
+        final int triggerId = getIntParam(req, "triggerId", -1);
+        final String projectName = getParam(req, "projectName","");
+        switch (type) {
+            case "runningExecutions":
+                this.executorManagerAdapter.reloadWebData();
+                break;
+            case "deleteTrigger":
+                this.triggerManager.removeTriggerByWeb(triggerId);
+                break;
+            case "insertTrigger":
+                this.triggerManager.insertTriggerByWeb(triggerId);
+                break;
+            case "updateTrigger":
+                this.triggerManager.updateTriggerByWeb(triggerId);
+                break;
+            case "refreshProjectPermission":
+                this.projectManager.refreshProjectPermission(projectName);
+                break;
+            case "reloadProject":
+                this.projectManager.reloadProject(projectName);
+                break;
+            case "deleteProject":
+                this.projectManager.deleteProjectByWeb(getIntParam(req, "projectId", -1));
+                break;
+            default:
+        }
+
     }
 
 }

@@ -5,8 +5,8 @@
             <ThresholdFilter level="trace" onMatch="ACCEPT" onMismatch="DENY"/>
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} %L %M - %msg%xEx%n"/>
         </Console>
-        <RollingFile name="fixedTimeFileAppender" fileName="/appcom/logs/azkaban/wtss-execserver.log"
-                     filePattern="${date:yyyy-MM}/wtss--log-%d{yyyy-MM-dd}-%i.log.gz">
+        <RollingFile name="fixedTimeFileAppender" fileName="/appcom/logs/azkaban/schedulis-execserver.log"
+                     filePattern="${date:yyyy-MM}/schedulis--log-%d{yyyy-MM-dd}-%i.log.gz">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} %L %M - %msg%xEx%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy />

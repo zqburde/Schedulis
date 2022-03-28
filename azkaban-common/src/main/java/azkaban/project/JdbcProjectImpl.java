@@ -206,6 +206,7 @@ public class JdbcProjectImpl implements ProjectLoader {
     return permissions;
   }
 
+  @Override
   public List<Integer> fetchPermissionsProjectId(final String user) throws ProjectManagerException {
     final ResultSetHandler<List<Integer>> handler = rs -> {
         if (!rs.next()) {
@@ -1225,7 +1226,8 @@ public class JdbcProjectImpl implements ProjectLoader {
     }
   }
 
-  private List<ProjectPermission> fetchAllPermissionsForProject(
+  @Override
+  public List<ProjectPermission> fetchAllPermissionsForProject(
       final Project project)
       throws ProjectManagerException {
     final ProjectAllPermissionsResultHandler permHander = new ProjectAllPermissionsResultHandler();
@@ -1234,10 +1236,10 @@ public class JdbcProjectImpl implements ProjectLoader {
     try {
       projectPermissionList =
           this.dbOperator
-              .query(ProjectPermissionsResultHandler.SELECT_PROJECT_PERMISSION, permHander,
+              .query(ProjectAllPermissionsResultHandler.SELECT_PROJECT_PERMISSION, permHander,
                   project.getId());
     } catch (final SQLException ex) {
-      logger.error(ProjectPermissionsResultHandler.SELECT_PROJECT_PERMISSION + " failed.", ex);
+      logger.error(ProjectAllPermissionsResultHandler.SELECT_PROJECT_PERMISSION + " failed.", ex);
       throw new ProjectManagerException(
           "Query for permissions for " + project.getName() + " failed.", ex);
     }

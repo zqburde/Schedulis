@@ -17,6 +17,8 @@
 
 package azkaban.webapp;
 
+import azkaban.trigger.HATriggerManager;
+import azkaban.trigger.TriggerManager;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 
@@ -86,6 +88,9 @@ public class AzkabanWebServerModule extends AbstractModule {
     bind(ScheduleLoader.class).to(TriggerBasedScheduleLoader.class);
     bind(FlowTriggerInstanceLoader.class).to(JdbcFlowTriggerInstanceLoaderImpl.class);
     bind(ExecutorManagerAdapter.class).to(resolveExecutorManagerAdaptorClassType());
+    if (props.getBoolean(ConfigurationKeys.WEBSERVER_HA_MODEL, false)) {
+      bind(TriggerManager.class).to(HATriggerManager.class);
+    }
   }
 
   private Class<? extends ExecutorManagerAdapter> resolveExecutorManagerAdaptorClassType() {

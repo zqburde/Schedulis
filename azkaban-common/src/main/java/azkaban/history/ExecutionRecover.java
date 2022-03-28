@@ -36,6 +36,8 @@ public class ExecutionRecover {
   public static final String OTHEROPTIONS_PARAM = "otherOptions";
   public static final String SLAOPTIONS_PARAM = "slaOptions";
 
+  public static final String LAST_EXEC_ID = "lastExecId";
+
   private int recoverId = -1;
   private Status recoverStatus = Status.READY;
   private long recoverStartTime = -1;
@@ -65,6 +67,9 @@ public class ExecutionRecover {
   private String projectName;
 
   private boolean finishedAlert = true;
+
+  // 判断是否是准备执行提交的
+  private int lastExecId = -1;
 
 //  public ExecutionRecover(final Project project, final Flow flow) {
 //    this.projectId = project.getId();
@@ -296,6 +301,7 @@ public class ExecutionRecover {
 
     recoverObj.put("taskSize", this.taskSize);
     recoverObj.put("finishedAlert", this.finishedAlert);
+    recoverObj.put(LAST_EXEC_ID, this.lastExecId);
     return recoverObj;
   }
 
@@ -338,23 +344,31 @@ public class ExecutionRecover {
     //超时告警
     if (recoverObj.containsKey(SLAOPTIONS_PARAM)) {
       final List<SlaOption> slaOptions =
-              recoverObj.getList(SLAOPTIONS_PARAM).stream().map(SlaOption::fromObject)
-                      .collect(Collectors.toList());
+          recoverObj.getList(SLAOPTIONS_PARAM).stream().map(SlaOption::fromObject)
+              .collect(Collectors.toList());
       this.setSlaOptions(slaOptions);
     }
 
     this.proxyUsers = recoverObj.getString(PROXY_USER_PARAM);
 
     this.executionOptions =  ExecutionOptions.createFromObject(recoverObj
-              .getObject(EXECUTION_OPTIONS_PARAM));
+        .getObject(EXECUTION_OPTIONS_PARAM));
 
     this.recoverErrorOption = recoverObj.getString("recoverErrorOption");
     this.taskSize = recoverObj.getInt("taskSize", 1);
     this.finishedAlert = recoverObj.getBool("finishedAlert", true);
-
+    this.lastExecId = recoverObj.getInt(LAST_EXEC_ID, -1);
   }
 
-//  public Map<String, Object> toUpdateObject(final long lastUpdateTime) {
+  public int getLastExecId() {
+    return lastExecId;
+  }
+
+  public void setLastExecId(int lastExecId) {
+    this.lastExecId = lastExecId;
+  }
+
+  //  public Map<String, Object> toUpdateObject(final long lastUpdateTime) {
 //    final Map<String, Object> updateData = toUpdateObject(lastUpdateTime);
 //    updateData.put(EXECUTIONID_PARAM, this.executionId);
 //    return updateData;

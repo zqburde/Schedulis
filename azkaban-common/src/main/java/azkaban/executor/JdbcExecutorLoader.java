@@ -851,4 +851,10 @@ public class JdbcExecutorLoader implements ExecutorLoader {
 
     return this.userVariableDao.fetchAllUserVariableByOwnerDepartment(departmentId);
   }
+
+  @Override
+  public List<Integer> getRunningExecByLock(Integer projectName, String flowId) {
+    return this.executionFlowDao.getRunningExecByLock(projectName, flowId);
+  }
+
 }

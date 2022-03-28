@@ -1,6 +1,7 @@
 package azkaban.executor;
 
 import azkaban.utils.Pair;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -41,6 +42,15 @@ public class QueuedExecutions {
   public Pair<ExecutionReference, ExecutableFlow> fetchHead()
       throws InterruptedException {
     final Pair<ExecutionReference, ExecutableFlow> pair = this.queuedFlowList.take();
+    if (pair != null && pair.getFirst() != null) {
+      this.queuedFlowMap.remove(pair.getFirst().getExecId());
+    }
+    return pair;
+  }
+
+  public Pair<ExecutionReference, ExecutableFlow> fetchHeadPoll()
+      throws InterruptedException {
+    final Pair<ExecutionReference, ExecutableFlow> pair = this.queuedFlowList.poll(500, TimeUnit.MILLISECONDS);
     if (pair != null && pair.getFirst() != null) {
       this.queuedFlowMap.remove(pair.getFirst().getExecId());
     }

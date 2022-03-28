@@ -125,7 +125,7 @@ public class XmlValidatorManager implements ValidatorManager {
    *
    * {@inheritDoc}
    *
-   * @see azkaban.project.validator.ValidatorManager#loadValidators(azkaban.utils.Props,
+   * @see ValidatorManager#loadValidators(Props,
    * Logger)
    */
   @Override
