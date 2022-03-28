@@ -19,23 +19,18 @@ package com.webank.wedatasphere.schedulis.jobtype.util;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import okhttp3.*;
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
-import okhttp3.Call;
-import okhttp3.FormBody;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class HttpUtils {
 
@@ -198,12 +193,11 @@ public class HttpUtils {
   public static void main(String[] args) {
 
     Map resultMap = new HashMap();
-    String maskUrl = "http://10.255.10.90:8087/api/v1/mask-status?";
+    String maskUrl = "http://127.0.0.1:8087/api/v1/mask-status?";
 
     RequestBody requestBody = new FormBody.Builder()
         .add("targetDb", "bdp_test_ods_mask")
         .add("targetTable", "ccpd_dump")
-        .add("partition", "dcn_id=UA0/type_id=6042/ip=10.240.228.31/ds=2015-04-06")
         .build();
 
     FormBody.Builder formBuilder = new FormBody.Builder();

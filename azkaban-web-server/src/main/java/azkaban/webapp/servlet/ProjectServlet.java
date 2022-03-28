@@ -201,7 +201,7 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
 
     page.add("userGroups", user.getGroups());
 
-    if (this.lockdownCreateProjects && !UserUtils.hasPermissionforAction(user, Permission.Type.CREATEPROJECTS)) {
+    if (this.lockdownCreateProjects && !UserUtils.hasPermissionforAction(user, Type.CREATEPROJECTS)) {
       page.add("hideCreateProject", true);
     }
 
@@ -541,7 +541,7 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
       pmap.put("lastModifiedUser",project.getLastModifiedUser());
       pmap.put("lastModifiedTimestamp", webUtils.formatDateTime(project.getLastModifiedTimestamp()));
       // 页面删除按钮显示判断
-      if(isAdmin || hasPermission(project, user, Permission.Type.ADMIN)
+      if(isAdmin || hasPermission(project, user, Type.ADMIN)
           || hasPermission(project, user, Type.DEPMAINTAINER)){
         pmap.put("showDeleteBtn", "true");
       }

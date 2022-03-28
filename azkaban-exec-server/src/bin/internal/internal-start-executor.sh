@@ -23,7 +23,7 @@ azkaban_dir=$(dirname $0)/../..
 # Change if necessary
 conf=$azkaban_dir/conf
 
-hostConf=/appcom/config/wtss-config/host.properties
+hostConf=/appcom/config/schedulis-config/host.properties
 
 logFile=/appcom/logs/azkaban/executorServerLog__`date +%F+%T`.out
 

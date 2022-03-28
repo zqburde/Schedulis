@@ -59,6 +59,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
   public static final String RUN_DATE_PARAM = "runDate";
   public static final String NS_WTSS_PARAM = "nsWtss";
   public static final String LAST_NS_WTSS_PARAM = "lastNsWtss";
+  public static final String COMMENT_PARAM = "comment";
+  public static final String REPEAT_ID_PARAM = "repeatId";
 
   private final HashSet<String> proxyUsers = new HashSet<>();
   private int executionId = -1;
@@ -98,6 +100,10 @@ public class ExecutableFlow extends ExecutableFlowBase {
   private boolean nsWtss = true;
   //上一次执行全局变量值为
   private boolean lastNsWtss = true;
+  //备注信息
+  private String comment = "";
+
+  private Integer repeatId;
 
   public ExecutableFlow(final Project project, final Flow flow) {
     this.projectId = project.getId();
@@ -119,6 +125,14 @@ public class ExecutableFlow extends ExecutableFlowBase {
     exFlow.fillExecutableFromMapObject(flowObj);
 
     return exFlow;
+  }
+
+  public String getComment() {
+    return comment;
+  }
+
+  public void setComment(String comment) {
+    this.comment = comment;
   }
 
   @Override
@@ -177,6 +191,14 @@ public class ExecutableFlow extends ExecutableFlowBase {
 
   public void setSlaOptions(final List<SlaOption> slaOptions) {
     this.slaOptions = slaOptions;
+  }
+
+  public Integer getRepeatId() {
+    return repeatId;
+  }
+
+  public void setRepeatId(Integer repeatId) {
+    this.repeatId = repeatId;
   }
 
   @Override
@@ -385,6 +407,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
     flowObj.put(NS_WTSS_PARAM, this.getNsWtss());
     flowObj.put(LAST_NS_WTSS_PARAM, this.getLastNsWtss());
+    flowObj.put(COMMENT_PARAM, this.getComment());
+    flowObj.put(REPEAT_ID_PARAM, this.getRepeatId());
     return flowObj;
   }
 
@@ -476,6 +500,8 @@ public class ExecutableFlow extends ExecutableFlowBase {
     }
     this.setNsWtss(flowObj.getBool(NS_WTSS_PARAM, true));
     this.setLastNsWtss(flowObj.getBool(LAST_NS_WTSS_PARAM, true));
+    this.setComment(flowObj.getString(COMMENT_PARAM, ""));
+    this.setRepeatId(flowObj.getInt(REPEAT_ID_PARAM, null));
   }
 
   @Override

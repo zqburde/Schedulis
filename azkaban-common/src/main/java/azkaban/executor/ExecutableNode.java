@@ -79,6 +79,7 @@ public class ExecutableNode {
 
   // Record whether the execution link has task execution failure.
   private boolean isDependentlinkFailed = false;
+  private long lastStartTime = -1;
 
   public ExecutableNode(final Node node) {
     this.id = node.getId();
@@ -261,6 +262,14 @@ public class ExecutableNode {
     return this.attempt.get();
   }
 
+  public long getLastStartTime() {
+    return lastStartTime;
+  }
+
+  public void setLastStartTime(long lastStartTime) {
+    this.lastStartTime = lastStartTime;
+  }
+
   public void resetForRetry() {
     final ExecutionAttempt pastAttempt = new ExecutionAttempt(this.attempt.get(), this);
     this.attempt.incrementAndGet();
@@ -271,6 +280,10 @@ public class ExecutableNode {
       }
 
       this.pastAttempts.add(pastAttempt);
+    }
+
+    if (this.startTime > 0) {
+      this.setLastStartTime(this.startTime);
     }
 
     this.setStartTime(-1);

@@ -40,7 +40,7 @@ public final class ExecutableFlowPriorityComparator implements
    *
    * {@inheritDoc}
    *
-   * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
+   * @see Comparator#compare(Object, Object)
    */
   @Override
   public int compare(final Pair<ExecutionReference, ExecutableFlow> pair1,

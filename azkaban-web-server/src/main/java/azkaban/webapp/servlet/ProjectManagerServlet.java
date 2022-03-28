@@ -87,6 +87,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
@@ -104,7 +105,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         new NodeLevelComparator();
     private static final String LOCKDOWN_CREATE_PROJECTS_KEY = "lockdown.create.projects";
     private static final String LOCKDOWN_UPLOAD_PROJECTS_KEY = "lockdown.upload.projects";
-    private static final String WTSS_PROJECT_PRIVILEGE_CHECK = "wtss.project.privilege.check";
+    private static final String WTSS_PROJECT_PRIVILEGE_CHECK = "schedulis.project.privilege.check";
     private static final String WTSS_DEP_UPLOAD_PRIVILEGE_CHECK = "wtss.department.upload.privilege.check";
     private static final String PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES = "project.download.buffer.size";
     private static final Comparator<Flow> FLOW_ID_COMPARATOR = new Comparator<Flow>() {
@@ -932,7 +933,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     protected Project getProjectAjaxByPermission(final Map<String, Object> ret, final String projectName,
-                                                 final User user, final Permission.Type type) {
+                                                 final User user, final Type type) {
         final Project project = this.projectManager.getProject(projectName);
 
         Map<String, String> dataMap = loadProjectManagerServletI18nData();
@@ -2390,9 +2391,18 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                 }
 
                 final Set<String> proxyUsers = project.getProxyUsers();
-                final List<String> userProxyUsers = user.getProxyUsers();
                 if (proxyUsers != null && !proxyUsers.isEmpty()) {
-                    page.add("proxyUsers", userProxyUsers);
+                    WtssUser wtssUser = null;
+                    try {
+                        wtssUser = transitionService.getSystemUserByUserName(user.getUserId());
+                    } catch (SystemUserManagerException e){
+                        logger.error("get wtssUser failed, caused by: ", e);
+                    }
+                    if(wtssUser != null && wtssUser.getProxyUsers() != null) {
+                        String[] proxySplit = wtssUser.getProxyUsers().split("\\s*,\\s*");
+                        logger.info("add proxyUsers," + ArrayUtils.toString(proxySplit));
+                        page.add("proxyUsers", proxySplit);
+                    }
                 }
 
                 if (user.getRoles().contains("admin")) {
@@ -3209,6 +3219,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             } catch (final Exception e) {
                 logger.info("Installation Failed.", e);
                 String error = e.getMessage();
+                if(error != null && error.equals("MALFORMED")){
+                    error = "Decompressing files failed, please check if there are Chinese characters in the file name.";
+                }
                 if (error.length() > 512) {
                     error =
                         error.substring(0, 512) + "<br>Too many errors to display.<br>";
@@ -3251,7 +3264,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     private Permission getPermissionObject(final Project project, final User user,
-        final Permission.Type type) {
+        final Type type) {
         final Permission perm = project.getCollectivePermission(user);
         for (final String roleName : user.getRoles()) {
             if (roleName.equals("admin") || systemManager.isDepartmentMaintainer(user)) {
@@ -3266,7 +3279,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         final HttpServletResponse resp, final Session session) throws IOException {
         final HashMap<String, Object> ret = new HashMap<>();
 
-        if (hasPermission(session.getUser(), Permission.Type.ADMIN)) {
+        if (hasPermission(session.getUser(), Type.ADMIN)) {
             try {
                 if (this.projectManager.loadProjectWhiteList()) {
                     ret.put("success", "Project whitelist re-loaded!");
@@ -3286,12 +3299,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         this.writeJSON(resp, ret);
     }
 
-    protected boolean hasPermission(final User user, final Permission.Type type) {
+    protected boolean hasPermission(final User user, final Type type) {
         for (final String roleName : user.getRoles()) {
             //final Role role = this.userManager.getRole(roleName);
             final Role role = user.getRoleMap().get(roleName);
             if (role != null && role.getPermission().isPermissionSet(type)
-                || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+                || role.getPermission().isPermissionSet(Type.ADMIN)) {
                 return true;
             }
         }
@@ -3725,6 +3738,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
             flowInfo.put("startTime", flow.getStartTime());
             flowInfo.put("endTime", flow.getEndTime());
             flowInfo.put("submitUser", flow.getSubmitUser());
+            flowInfo.put(ExecutableFlow.COMMENT_PARAM, flow.getComment());
             Map<String, String> repeatMap = flow.getRepeatOption();
             if(flow.getRunDate() != null){
                 logger.info("run_date: " + flow.getRunDate());

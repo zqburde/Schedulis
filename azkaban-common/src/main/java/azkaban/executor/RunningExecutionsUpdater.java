@@ -77,7 +77,7 @@ public class RunningExecutionsUpdater {
     final ArrayList<ExecutableFlow> finalizeFlows =
         new ArrayList<>();
 
-    for (final Map.Entry<Optional<Executor>, List<ExecutableFlow>> entry : exFlowMap
+    for (final Entry<Optional<Executor>, List<ExecutableFlow>> entry : exFlowMap
         .entrySet()) {
 
       final Optional<Executor> executorOption = entry.getKey();

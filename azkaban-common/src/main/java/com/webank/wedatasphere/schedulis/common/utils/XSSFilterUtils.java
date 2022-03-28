@@ -16,9 +16,11 @@
 
 package com.webank.wedatasphere.schedulis.common.utils;
 
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang.StringUtils;
+
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
-import org.apache.commons.lang.*;
 
 public class XSSFilterUtils {
 
@@ -36,7 +38,7 @@ public class XSSFilterUtils {
 //      invalidFlag = true;
 //    }
     if(null != requestString){
-      if(org.apache.commons.lang.StringUtils.containsAny(requestString,
+      if(StringUtils.containsAny(requestString,
           new char[]{'<', '>', '\"', '\'', ';', '(', ')', '+'})
           || requestString.contains("%3") || requestString.contains("%2")){
         invalidFlag = true;

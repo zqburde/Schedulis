@@ -22,7 +22,7 @@
         <h4 class="modal-title" id="schedule-flow-panel-title" style="word-break:break-all;"></h4>
       </div><!-- /modal-header -->
       <div class="modal-body row">
-        <div class="col-xs-4">
+        <div class="col-xs-4" id="schedule-graph-options-box">
           <ul class="nav nav-pills nav-stacked" id="schedule-graph-options">
             <li id="schedule-flow-option" viewpanel="schedule-svg-div-custom">
               <a href="#">$flowStruct</a>
@@ -54,10 +54,12 @@
             </li>
           </ul>
         </div><!-- /col-xs-4 -->
-        <div class="col-xs-8">
+        <div class="col-xs-8" id="schedule-graph-panel-box">
           <div id="schedule-graph-options-panel">
-            <div class="graph-sidebar-open switching-flow-btn margin-left-15" id="switching-schedule-flow-btn" style="display:none">
-              <span class="glyphicon glyphicon-retweet" title="Flow Switching"></span>
+            <div class="graph-sidebar-open " >
+              <span class="glyphicon glyphicon-retweet switching-flow-btn margin-left-15" id="switching-schedule-flow-btn"  title="Flow Switching"></span>
+              <span class="glyphicon glyphicon-zoom-in margin-left-15" id="workflow-zoom-in" title="Zoom in"></span>
+              <span class="glyphicon glyphicon-zoom-out margin-left-15" id="workflow-zoom-out" style="display:none" title="Zoom out"></span>
             </div>
           ## SVG graph panel.
 

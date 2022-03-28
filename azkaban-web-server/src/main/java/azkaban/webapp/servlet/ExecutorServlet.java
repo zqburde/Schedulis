@@ -19,6 +19,7 @@ package azkaban.webapp.servlet;
 import static azkaban.ServiceProvider.SERVICE_PROVIDER;
 
 import azkaban.Constants;
+import azkaban.alert.Alerter;
 import azkaban.executor.AlerterHolder;
 import azkaban.executor.ConnectorParams;
 import azkaban.executor.ExecutableFlow;
@@ -36,6 +37,8 @@ import azkaban.flow.FlowUtils;
 import azkaban.flow.Node;
 import azkaban.flowtrigger.FlowTriggerService;
 import azkaban.flowtrigger.TriggerInstance;
+import azkaban.history.ExecutionRecover;
+import azkaban.jobid.relation.JobIdRelationService;
 import azkaban.project.Project;
 import azkaban.project.ProjectManager;
 import azkaban.scheduler.Schedule;
@@ -44,6 +47,8 @@ import azkaban.scheduler.ScheduleManagerException;
 import azkaban.server.HttpRequestUtils;
 import azkaban.server.session.Session;
 import azkaban.sla.SlaOption;
+import azkaban.trigger.TriggerManager;
+import azkaban.trigger.TriggerManagerException;
 import azkaban.user.Permission;
 import azkaban.user.Permission.Type;
 import azkaban.user.User;
@@ -59,7 +64,6 @@ import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.ViewerPlugin;
 
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
-import com.webank.wedatasphere.schedulis.common.executor.ExecutionRecover;
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
 import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
 import com.webank.wedatasphere.schedulis.common.system.SystemManager;
@@ -132,6 +136,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     private SystemManager systemManager;
 
+    private JobIdRelationService jobIdRelationService;
+    private TriggerManager triggerManager;
 
     @Override
     public void init(final ServletConfig config) throws ServletException {
@@ -144,9 +150,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         this.flowTriggerService = server.getFlowTriggerService();
         // TODO: reallocf fully guicify
         this.webMetrics = SERVICE_PROVIDER.getInstance(WebMetrics.class);
+        this.jobIdRelationService = SERVICE_PROVIDER.getInstance(JobIdRelationService.class);
         this.alerterHolder = server.getAlerterHolder();
         Props props = executorManagerAdapter.getAzkabanProps();
         this.systemManager = transitionService.getSystemManager();
+        this.triggerManager=server.getTriggerManager();
 
     }
 
@@ -168,6 +176,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
                 handleExecutionFlowPageByTriggerInstanceId(req, resp, session);
             } else {
                 handleExecutionsPage(req, resp, session);
+            }
+        } else if ("/recover".equals(req.getRequestURI())) {
+            if (hasParam(req, "ajax")) {
+                handleAJAXAction(req, resp, session);
+            } else {
+                ajaxHistoryRecoverPage(req, resp, session);
             }
         }
     }
@@ -225,6 +239,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 					      // FIXME Added interface to get job stream running parameters, including global variables for task output.
                 } else if (ajaxName.equals("getOperationParameters")) {
                     ajaxGetOperationParameters(req, resp, ret, session.getUser(), exFlow);
+                } else if (ajaxName.equals("getJobIdRelation")) {
+                    ajaxGetJobIdRelation(req, resp, ret, session.getUser(), exFlow);
                 } else if (ajaxName.equals("fetchExecJobStats")) {
                     ajaxFetchJobStats(req, resp, ret, session.getUser(), exFlow);
                 } else if (ajaxName.equals("retryFailedJobs")) {
@@ -262,6 +278,18 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
             ajaxFetchFlowInfo(req, resp, ret, session.getUser(), projectName,
                 flowName);
 		    // FIXME Added interface to submit historical rerun tasks.
+        } else if (ajaxName.equals("repeatCollection")) {
+            ajaxAttRepeatExecuteFlow(req, resp, ret, session.getUser());
+			  // FIXME Added interface to stop history and rerun ajax method.
+        } else if (ajaxName.equals("stopRepeat")) {
+            ajaxStopRepeat(req, resp, ret, session.getUser());
+			  // FIXME Added interface to get historical rerun data.
+        } else if (ajaxName.equals("historyRecover")) {
+            ajaxHistoryRecoverPage(req, resp, session);
+			  // FIXME Added interface to verify the existence of historical rerun tasks.
+        } else if (ajaxName.equals("recoverParamVerify")) {
+            ajaxRecoverParamVerify(req, resp, ret, session.getUser());
+			  // FIXME Added interface to get information about tasks performed.
         } else if (ajaxName.equals("fetchexecutionflowgraphNew")) {
             final String projectName = getParam(req, "project");
             final String flowName = getParam(req, "flow");
@@ -277,6 +305,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 			// FIXME Added interface to execute all job streams under the project.
         } else if(ajaxName.equals("executeAllFlow")){
             executeAllFlow(req, resp, ret, session.getUser());
+			// FIXME Added interface to get all historical rerun task information.
+        } else if(ajaxName.equals("ajaxExecuteAllHistoryRecoverFlow")){
+            ajaxExecuteAllHistoryRecoverFlow(req, resp, ret, session.getUser());
 			// FIXME Added interface to submit loop execution workflow.
         } else if (ajaxName.equals("submitCycleFlow")) {
             ajaxSubmitCycleFlow(req, resp, ret, session.getUser());
@@ -316,6 +347,12 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         // FIXME Added interface to terminate job stream.
         } else if (ajaxName.equals("extCancelFlow")) {
             extCancelFlow(req, resp, ret, session.getUser());
+        } else if ("reloadWebData".equals(ajaxName)) {
+            try {
+                reloadWebData(req);
+            } catch (TriggerManagerException | ScheduleManagerException e) {
+                logger.error(e.getMessage(),e);
+            }
         } else {
             final String projectName = getParam(req, "project");
 
@@ -714,10 +751,11 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
                     user.getUserId().equals(pair.getFirst().getSubmitUser())
                 ).collect(Collectors.toList());
             page.add("runningFlows", userRunningFlows.isEmpty() ? null : userRunningFlows);
+            List<Integer> projectIds = this.executorManagerAdapter.fetchPermissionsProjectId(user.getUserId());
 
             final List<ExecutableFlow> userFinishedFlows = finishedFlows.stream()
                 .filter(finishFlow ->
-                    user.getUserId().equals(finishFlow.getSubmitUser())
+                    hasPermission(finishFlow.getProjectId(), projectIds) || user.getUserId().equals(finishFlow.getSubmitUser())
                 )
                 .collect(Collectors.toList());
 
@@ -807,6 +845,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         final int execId = getIntParam(req, "execid");
         //当前节点的NestedId,如果查看整个工作流,则是空
         final String nodeNestedId = getParam(req, "nodeNestedId", "");
+        final String flowId = getParam(req, "flow", null);
         page.add("execid", execId);
         page.add("triggerInstanceId", "-1");
         page.add("loginUser", user.getUserId());
@@ -841,7 +880,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
         page.add("projectId", project.getId());
         page.add("projectName", project.getName());
-        page.add("flowid", flow.getFlowId());
+        page.add("flowid", flowId == null ? flow.getFlowId(): flowId);
 
         final Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
 
@@ -863,7 +902,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     protected Project getProjectPageByPermission(final Page page, final int projectId,
-        final User user, final Permission.Type type) {
+        final User user, final Type type) {
         final Project project = this.projectManager.getProject(projectId);
 
         Map<String, String> dataMap = loadExecutorServletI18nData();
@@ -881,7 +920,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     protected Project getProjectAjaxByPermission(final Map<String, Object> ret, final String projectName,
-        final User user, final Permission.Type type) {
+        final User user, final Type type) {
         final Project project = this.projectManager.getProject(projectName);
 
         Map<String, String> dataMap = loadExecutorServletI18nData();
@@ -899,7 +938,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     protected Project getProjectAjaxByPermission(final Map<String, Object> ret, final int projectId,
-        final User user, final Permission.Type type) {
+        final User user, final Type type) {
 
         final Project project = this.projectManager.getProject(projectId);
 
@@ -1040,6 +1079,28 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         }
         ret.put("flowParams", exFlow.getExecutionOptions().getFlowParameters());
         ret.put("jobOutputGlobalParams", exFlow.getJobOutputGlobalParam());
+    }
+
+    /**
+     * 获取jobid 关系信息
+     * @throws ServletException
+     */
+    private void ajaxGetJobIdRelation(final HttpServletRequest req, final HttpServletResponse resp,
+                                            final HashMap<String, Object> ret, final User user,
+                                            final ExecutableFlow exFlow) throws ServletException {
+        final Project project = getProjectAjaxByPermission(ret, exFlow.getProjectId(), user, Type.READ);
+        if (project == null) {
+            return;
+        }
+        try {
+            Integer execId = getIntParam(req, "execid");
+            String jobNamePath = getParam(req, "nested_id");
+            ret.put("data", jobIdRelationService.getJobIdRelation(execId, jobNamePath));
+        }catch (Exception e){
+            logger.error("get job id relation failed", e);
+            ret.put("error", e.getMessage());
+        }
+
     }
 
 
@@ -1251,7 +1312,8 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         // FIXME Returns alarm information, which is used to prepare to perform page data echo.
         boolean useTimeoutSetting;
         List<SlaOption> slaOptions = exflow.getSlaOptions();
-        if (CollectionUtils.isNotEmpty(slaOptions)) {
+        // Only the non scheduled scheduling type is displayed.
+        if (exflow.getFlowType() != 3 && CollectionUtils.isNotEmpty(slaOptions)) {
             useTimeoutSetting = true;
             List<String> slaEmails = new ArrayList<>();
             String type="FlowSucceed";
@@ -2072,7 +2134,385 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         }
     }
 
+    private void ajaxExecuteAllHistoryRecoverFlow(final HttpServletRequest req, final HttpServletResponse resp,
+        final HashMap<String, Object> ret, final User user) throws ServletException {
+        JsonObject request = HttpRequestUtils.parseRequestToJsonObject(req);
+        String projectName = request.get("project").getAsString();
+        Project project = getProjectAjaxByPermission(ret, projectName, user, Type.EXECUTE);
+        if (project == null) {
+            ret.put("error", "Project '" + projectName + "' doesn't exist.");
+            logger.error("Project '" + projectName + "' doesn't exist.");
+            return;
+        }
+        Map<String, String> dataMap = loadExecutorServletI18nData();
 
+        if (project.getFlows() == null || project.getFlows().size() == 0) {
+            ret.put("error", projectName + dataMap.get("haveNoFlows"));
+            logger.error(projectName + ", 没有作业流。");
+            return;
+        }
+        List<Flow> rootFlows = project.getAllRootFlows();
+        StringBuilder sb = new StringBuilder();
+        for(Flow flow: rootFlows){
+            try {
+                executeHistoryRecoverFlow(project, flow, ret, request, user, sb);
+            }catch (ServletException se){
+                logger.warn("submit HistoryRecoverFlow failed, " + se);
+            }
+        }
+        ret.put("code", "200");
+        ret.put("message", sb.toString());
+    }
+
+    private boolean executeHistoryRecoverFlow(Project project, Flow flow, Map<String, Object> ret, JsonObject json, User user, StringBuilder msg) throws ServletException {
+        String projectName = project.getName();
+        String flowId = flow.getId();
+        ret.put("flow", flowId);
+        ExecutionRecover nowRuningRecover = null;
+
+        Map<String, String> dataMap = loadExecutorServletI18nData();
+        //查询这个Flow的补采记录
+        try {
+            nowRuningRecover =
+                this.executorManagerAdapter.getHistoryRecoverFlowByPidAndFid(String.valueOf(project.getId()), flow.getId());
+        } catch (ExecutorManagerException e) {
+            logger.error(e.getMessage());
+        }
+        //校验这个Flow是否已经开始补采
+        if (null != nowRuningRecover && (Status.RUNNING.equals(nowRuningRecover.getRecoverStatus())
+            || Status.PREPARING.equals(nowRuningRecover.getRecoverStatus()))) {
+            logger.error("This flow '" + flow.getId() + "' has running history recover.");
+            msg.append(String.format("Error, flow:%s, msg: " + dataMap.get("haveHisReRun")+"<br/>", flow.getId()));
+            return false;
+        }
+        final ExecutionOptions options = HttpRequestUtils.parseFlowOptions(json);
+        if (!options.isFailureEmailsOverridden()) {
+            options.setFailureEmails(flow.getFailureEmails());
+        }
+        if (!options.isSuccessEmailsOverridden()) {
+            options.setSuccessEmails(flow.getSuccessEmails());
+        }
+        options.setMailCreator(flow.getMailCreator());
+
+        Map<String, String> reqMap = new HashMap<>();
+        reqMap.put("projectName", projectName);
+        reqMap.put("projectId", project.getId() + "");
+        reqMap.put("flowId", flow.getId());
+        //获取前端的历史重跑错误设置
+        String recoverErrorOption = json.get("recoverErrorOption").getAsString();
+        reqMap.put("recoverErrorOption", recoverErrorOption);
+        final Map<String, Object> repeatOptionMap = new HashMap<>();
+        try {
+            //解析前端的参数 获取数据补采参数集合
+            repeatOptionMap.putAll(repeatDateCompute(json));
+        } catch (Exception e) {
+            logger.error("数据补采输入参数处理异常!", e);
+            msg.append(String.format("Error, flow:%s, msg: %s <br/>", flow.getId(), dataMap.get("dataCompensateinputParamError")));
+            return false;
+        }
+
+        ExecutionRecover executionRecover = new ExecutionRecover();
+        //组装历史补采数据
+        executionRecover.setSubmitUser(user.getUserId());
+        executionRecover.setRecoverStatus(Status.PREPARING);
+        executionRecover.setRecoverStartTime(Long.valueOf(String.valueOf(repeatOptionMap.get("recoverStartTime"))));
+        executionRecover.setRecoverEndTime(Long.valueOf(String.valueOf(repeatOptionMap.get("recoverEndTime"))));
+        executionRecover.setExInterval(String.valueOf(repeatOptionMap.get("exInterval")));
+
+        executionRecover.setProjectId(project.getId());
+        executionRecover.setFlowId(flowId);
+        executionRecover.setExecutionOptions(options);
+
+        //repeatOptionMap.put("repeatOptionList", repeatOptionMap);
+        executionRecover.setRepeatOption(repeatOptionMap);
+        //放入用户代理
+        executionRecover.setProxyUsers(ArrayUtils.toString(user.getProxyUsers()));
+        executionRecover.setRecoverErrorOption(recoverErrorOption);
+        int taskSize = 1;
+        if(json.has("taskSize")){
+            taskSize = json.get("taskSize").getAsInt();
+        }
+        executionRecover.setTaskSize(taskSize);
+
+        Map<String, Object> otherOptions = new HashMap<>();
+        //设置通用告警级别failureAlertLevel
+        if (json.has("failureAlertLevel")) {
+            otherOptions.put("failureAlertLevel", json.get("failureAlertLevel").getAsString());
+        }
+        if (json.has("successAlertLevel"))
+        {
+            otherOptions.put("successAlertLevel", json.get("successAlertLevel").getAsString());
+        }
+        //设置失败重跑配置
+        List<Map<String, String>> jobRetryList = new ArrayList<>();
+        otherOptions.put("jobFailedRetryOptions", jobRetryList);
+
+        //设置失败跳过配置
+        List<String> jobSkipList = new ArrayList<>();
+        otherOptions.put("jobSkipFailedOptions", jobSkipList);
+
+        executionRecover.setOtherOption(otherOptions);
+        ret.put("repeatOptionMap", repeatOptionMap);
+
+        //---超时告警设置---
+        boolean useTimeoutSetting = false;
+        if(json.get("useTimeoutSetting").getAsBoolean()) {
+            useTimeoutSetting = json.get("useTimeoutSetting").getAsBoolean();
+        }
+        final List<SlaOption> slaOptions = new ArrayList<>();
+        if (useTimeoutSetting) {
+            final String emailStr = json.get("slaEmails").getAsString();
+            final String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+            final List<String> slaEmails = Arrays.asList(emailSplit);
+            final Map<String, String> settings = GsonUtils.jsonToJavaObject(json.getAsJsonObject("settings"), new TypeToken<Map<String, String>>() {}.getType());;
+            //设置SLA 超时告警配置项
+            for (final String set : settings.keySet()) {
+                SlaOption sla = null;
+                try {
+                    sla = AlertUtil.parseSlaSetting(settings.get(set), flow, project);
+                } catch (final Exception e) {
+                    logger.warn("parse sla setting failed." + e);
+                }
+                if (sla != null) {
+                    sla.getInfo().put(SlaOption.INFO_FLOW_NAME, flowId);
+                    sla.getInfo().put(SlaOption.INFO_EMAIL_LIST, slaEmails);
+                    sla.getInfo().put(SlaOption.INFO_TIME_SET, sla.getTimeSet());
+                    sla.getInfo().put(SlaOption.INFO_EMAIL_ACTION_SET, sla.getEmailAction());
+                    sla.getInfo().put(SlaOption.INFO_KILL_FLOW_ACTION_SET, sla.getKillAction());
+                    slaOptions.add(sla);
+                }
+            }
+        }
+        executionRecover.setSlaOptions(slaOptions);
+        //---超时告警设置---
+
+        //新增历史补采数据记录
+        try {
+            this.executorManagerAdapter.saveHistoryRecoverFlow(executionRecover);
+            logger.info("提交历史重跑成功" + project.getId() + " - " + flowId);
+            msg.append(String.format("Success, flow:%s, msg:"+dataMap.get("submitHisReRunSuccess")+"<br/>", flow.getId()));
+        } catch (Exception e) {
+            logger.error("新增历史重跑任务失败 ", e);
+            msg.append(String.format("Error, flow:%s, msg:"+dataMap.get("submitHisReRunFail")+"。<br/>", flow.getId()));
+            return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * 数据补采 前端入口方法
+     *
+     * @param req
+     * @param resp
+     * @param ret
+     * @param user
+     * @throws ServletException
+     */
+    private void ajaxAttRepeatExecuteFlow(final HttpServletRequest req, final HttpServletResponse resp,
+        final HashMap<String, Object> ret, final User user) throws ServletException {
+        JsonObject json = HttpRequestUtils.parseRequestToJsonObject(req);
+        if (json == null) {
+            logger.error("解析请求参数异常.");
+            return;
+        }
+        final String projectName = json.get("project").getAsString();
+        final String flowId = json.get("flow").getAsString();
+
+        final Project project = getProjectAjaxByPermission(ret, projectName, user, Type.EXECUTE);
+        if (project == null) {
+            logger.error("Project '" + projectName + "' doesn't exist.");
+            return;
+        }
+
+        ret.put("flow", flowId);
+        final Flow flow = project.getFlow(flowId);
+        if (flow == null) {
+            logger.error("Flow '" + flowId + "' cannot be found in project " + project);
+            return;
+        }
+
+        ExecutionRecover nowRuningRecover = null;
+
+        //查询这个Flow的补采记录
+        try {
+            nowRuningRecover =
+                this.executorManagerAdapter.getHistoryRecoverFlowByPidAndFid(String.valueOf(project.getId()), flow.getId());
+        } catch (ExecutorManagerException e) {
+            logger.error("get flow history recover failed, caused by:", e);
+        }
+        //校验这个Flow是否已经开始补采
+        if (null != nowRuningRecover && (Status.RUNNING.equals(nowRuningRecover.getRecoverStatus())
+            || Status.PREPARING.equals(nowRuningRecover.getRecoverStatus()))) {
+            logger.error("This flow '" + flow.getId() + "' has running history recover.");
+            return;
+        }
+
+        final ExecutionOptions options = HttpRequestUtils.parseFlowOptions(json);
+        if (!options.isFailureEmailsOverridden()) {
+            options.setFailureEmails(flow.getFailureEmails());
+        }
+        if (!options.isSuccessEmailsOverridden()) {
+            options.setSuccessEmails(flow.getSuccessEmails());
+        }
+        options.setMailCreator(flow.getMailCreator());
+        options.setConcurrentOption(ExecutionOptions.CONCURRENT_OPTION_IGNORE);
+        Map<String, String> reqMap = new HashMap<>();
+        reqMap.put("projectName", projectName);
+        reqMap.put("projectId", project.getId() + "");
+        reqMap.put("flowId", flow.getId());
+        //获取前端的历史重跑错误设置
+        String recoverErrorOption = json.get("recoverErrorOption").getAsString();
+        reqMap.put("recoverErrorOption", recoverErrorOption);
+
+
+        final Map<String, Object> repeatOptionMap = new HashMap<>();
+        try {
+            //解析前端的参数 获取数据补采参数集合
+            repeatOptionMap.putAll(repeatDateCompute(json));
+        } catch (Exception e) {
+            logger.error("数据补采输入参数处理异常!", e);
+            e.printStackTrace();
+        }
+
+        //repeatOptionMap.put("flowOption", options);
+
+        ExecutionRecover executionRecover = new ExecutionRecover();
+        //组装历史补采数据
+        executionRecover.setSubmitUser(user.getUserId());
+        executionRecover.setRecoverStatus(Status.PREPARING);
+        executionRecover.setRecoverStartTime(Long.valueOf(String.valueOf(repeatOptionMap.get("recoverStartTime"))));
+        executionRecover.setRecoverEndTime(Long.valueOf(String.valueOf(repeatOptionMap.get("recoverEndTime"))));
+        executionRecover.setExInterval(String.valueOf(repeatOptionMap.get("exInterval")));
+
+        executionRecover.setProjectId(project.getId());
+        executionRecover.setFlowId(flowId);
+        executionRecover.setExecutionOptions(options);
+
+        //repeatOptionMap.put("repeatOptionList", repeatOptionMap);
+        executionRecover.setRepeatOption(repeatOptionMap);
+        //放入用户代理
+        executionRecover.setProxyUsers(ArrayUtils.toString(user.getProxyUsers()));
+        executionRecover.setRecoverErrorOption(recoverErrorOption);
+        int taskSize = 1;
+        if(json.has("taskSize")){
+            taskSize = json.get("taskSize").getAsInt();
+        }
+        executionRecover.setTaskSize(taskSize);
+        boolean finishedAlert = true;
+        if(json.has("finishedAlert")){
+            finishedAlert = json.get("finishedAlert").getAsBoolean();
+        }
+        executionRecover.setFinishedAlert(finishedAlert);
+
+        Map<String, Object> otherOptions = new HashMap<>();
+        //设置通用告警级别failureAlertLevel
+        if (json.has("failureAlertLevel")) {
+            otherOptions.put("failureAlertLevel", json.get("failureAlertLevel").getAsString());
+        }
+        if (json.has("successAlertLevel")) {
+            otherOptions.put("successAlertLevel", json.get("successAlertLevel").getAsString());
+        }
+
+        //设置失败重跑配置
+        Map<String, String> jobFailedRetrySettings = new HashMap<>();
+        if(json.has("jobFailedRetryOptions")){
+            jobFailedRetrySettings = GsonUtils.jsonToJavaObject(json.get("jobFailedRetryOptions").getAsJsonObject(), new TypeToken<Map<String, String>>() {
+            }.getType());
+        }
+        final List<Map<String, String>> jobRetryList = new ArrayList<>();
+        for (final String set : jobFailedRetrySettings.keySet()) {
+            String[] setOption = jobFailedRetrySettings.get(set).split(",");
+            Map<String, String> jobOption = new HashMap<>();
+            String jobName = setOption[0].trim();
+            String interval = setOption[1].trim();
+            String count = setOption[2].trim();
+            if (jobName.split(" ")[0].equals("all_jobs")) {
+                Map<String, String> flowFailedRetryOption = new HashMap<>();
+                flowFailedRetryOption.put("job.failed.retry.interval", interval);
+                flowFailedRetryOption.put("job.failed.retry.count", count);
+                otherOptions.put("flowFailedRetryOption", flowFailedRetryOption);
+            }
+            jobOption.put("jobName", jobName);
+            jobOption.put("interval", interval);
+            jobOption.put("count", count);
+            jobRetryList.add(jobOption);
+        }
+        otherOptions.put("jobFailedRetryOptions", jobRetryList);
+
+        // 设置历史重跑告警
+        otherOptions.put("historyRerunAlertLevel", json.get("historyRerunAlertLevel").getAsString());
+        otherOptions.put("historyRerunAlertEmails", json.get("historyRerunAlertEmails").getAsString());
+
+
+        //设置失败跳过配置
+        Map<String, String> jobSkipFailedSettings = new HashMap<>();
+        if(json.has("jobSkipFailedOptions")){
+            jobSkipFailedSettings = GsonUtils.jsonToJavaObject(json.get("jobSkipFailedOptions").getAsJsonObject(), new TypeToken<Map<String, String>>() {
+            }.getType());
+        }
+        final List<String> jobSkipList = new ArrayList<>();
+        for (final String set : jobSkipFailedSettings.keySet()) {
+            String jobName = jobSkipFailedSettings.get(set).trim();
+            if(jobName.split(" ")[0].equals("all_jobs")){
+                otherOptions.put("flowFailedSkiped", true);
+            }
+            jobSkipList.add(jobName);
+        }
+
+        otherOptions.put("jobSkipFailedOptions", jobSkipList);
+
+        executionRecover.setOtherOption(otherOptions);
+
+        ret.put("repeatOptionMap", repeatOptionMap);
+
+        //---超时告警设置---
+        boolean useTimeoutSetting = false;
+        if(json.has("useTimeoutSetting")){
+            useTimeoutSetting = json.get("useTimeoutSetting").getAsBoolean();
+        }
+        final List<SlaOption> slaOptions = new ArrayList<>();
+        if (useTimeoutSetting) {
+            final String emailStr = json.get("slaEmails").getAsString();
+            final String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+            final List<String> slaEmails = Arrays.asList(emailSplit);
+            final Map<String, String> settings = GsonUtils.jsonToJavaObject(json.getAsJsonObject("settings"), new TypeToken<Map<String, String>>() {}.getType());;
+            //设置SLA 超时告警配置项
+            for (final String set : settings.keySet()) {
+                final SlaOption sla;
+                try {
+                    sla = AlertUtil.parseSlaSetting(settings.get(set), flow, project);
+                } catch (final Exception e) {
+                    logger.error("parse sla setting failed.");
+                    throw new ServletException(e);
+                }
+                if (sla != null) {
+                    sla.getInfo().put(SlaOption.INFO_FLOW_NAME, flowId);
+                    sla.getInfo().put(SlaOption.INFO_EMAIL_LIST, slaEmails);
+                    sla.getInfo().put(SlaOption.INFO_TIME_SET, sla.getTimeSet());
+                    sla.getInfo().put(SlaOption.INFO_EMAIL_ACTION_SET, sla.getEmailAction());
+                    sla.getInfo().put(SlaOption.INFO_KILL_FLOW_ACTION_SET, sla.getKillAction());
+                    slaOptions.add(sla);
+                }
+            }
+        }
+        executionRecover.setSlaOptions(slaOptions);
+        //---超时告警设置---
+
+        //新增历史补采数据记录
+        try {
+            Map<String, Object> recoverHandleMap = new HashMap<>();
+            recoverHandleMap.putAll(repeatOptionMap);
+            recoverHandleMap.put("project", project);
+            recoverHandleMap.put("flow", flow);
+
+            this.executorManagerAdapter.saveHistoryRecoverFlow(executionRecover);
+            logger.info("提交历史重跑成功" + project.getId() + " - " + flowId);
+        } catch (Exception e) {
+            logger.info("历史补采线程终止： ", e);
+        }
+
+    }
 
     private void ajaxCycleParamVerify(HttpServletRequest req, HttpServletResponse resp, HashMap<String, Object> ret, User user)
         throws ServletException {
@@ -2380,18 +2820,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
             //拼接前端的执行间隔字符串
             String executeInterval = "";
-//      if(!"0".equals(month)){
-//        executeInterval = month + "month";
-//      }
-//      if(!"0".equals(day)){
-//        executeInterval = executeInterval + day + "day";
-//      }
-//      if(!"0".equals(hour)){
-//        executeInterval = executeInterval + hour + "hour";
-//      }
-//      if(!"0".equals(min)){
-//        executeInterval = executeInterval + min + "min";
-//      }
             if (!"0".equals(recoverNum)) {
                 executeInterval = recoverNum + recoverInterval;
             }
@@ -2440,10 +2868,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
             //多天数据补采时间
             while (startTime.isBefore(endTime) && !startTime.isEqual(endTime)) {
-//        //先记录第一次执行时间再开始相加
-//        if (repeatTimeList.size() != 0) {//执行间隔计算
-//
-//        }
+            //先记录第一次执行时间再开始相加
                 //执行间隔计算
                 if ("month".equals(recoverInterval)) {
 
@@ -2468,10 +2893,6 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
                     startTime = startTime.plus(Long.valueOf(recoverNum), ChronoUnit.DAYS);
                 }
 
-
-//        startTime = startTime.plus(Long.valueOf(hour), ChronoUnit.HOURS);
-//        startTime = startTime.plus(Long.valueOf(min), ChronoUnit.MINUTES);
-
                 Map<String, String> jobStartTime = new HashMap<>();
                 //组装repeatOption的参数
                 jobStartTime.put("RepeatType", "RepeatFlow");
@@ -2487,13 +2908,17 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
             }
 
-//      repeatOptionMap.put("repeatTimeList", repeatTimeList);
         } catch (Exception e) {
             e.printStackTrace();
         }
         repeatTimeList.clear();
         List<Long> flowDateList = new ArrayList<>(timeList);
         Collections.sort(flowDateList);
+        // 检查是否设置逆序执行
+        String reverseExecuteFlag = jsonObject.get("reverseExecuteFlag").getAsString();
+        if ("true".equals(reverseExecuteFlag)) {
+            Collections.reverse(flowDateList);
+        }
         for (Long t : flowDateList) {
             Map<String, String> jobStartTime = new HashMap<>();
             //组装repeatOption的参数
@@ -2547,6 +2972,304 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         }
 
     }
+
+    /**
+     * 处理数据补采终止的方法
+     *
+     * @param req
+     * @param resp
+     * @param ret
+     * @param user
+     * @throws ServletException
+     */
+    private void ajaxStopRepeat(final HttpServletRequest req, final HttpServletResponse resp,
+        final HashMap<String, Object> ret, final User user)
+        throws ServletException {
+
+        final String repeatId = getParam(req, "repeatId");
+
+        this.repeatStopMap.put(repeatId, repeatId);
+        ExecutionRecover executionRecover = null;
+        try {
+            Integer recoverId = Integer.valueOf(repeatId);
+            synchronized (Constants.HISTORY_RERUN_LOCK) {
+                logger.info("set history recover flow status to killed, recover id: {}.", recoverId);
+                executionRecover = this.executorManagerAdapter.getHistoryRecoverFlow(recoverId);
+                if (null != executionRecover) {
+                    executionRecover.setRecoverStatus(Status.KILLED);
+                    executionRecover.setEndTime(System.currentTimeMillis());
+                    executorManagerAdapter.updateHistoryRecover(executionRecover);
+                }
+            }
+            //终止 Flow 的逻辑方法
+            List<ExecutableFlow> executableFlows = this.executorManagerAdapter.getExecutableFlowByRepeatId(recoverId);
+            for(ExecutableFlow executableFlow: executableFlows) {
+                logger.info("cancel flow: {}", executableFlow.getExecutionId());
+                this.executorManagerAdapter.cancelFlow(executableFlow, user.getUserId());
+            }
+        } catch (final ExecutorManagerException e) {
+            ret.put("error", e.getMessage());
+        } finally {
+            // 状态已经终止, 状态为完成,触发告警
+            try {
+                if (null != executionRecover && executionRecover.isFinishedAlert()) {
+                    Alerter mailAlerter = alerterHolder.get("email");
+                    if(null == mailAlerter){
+                        mailAlerter = alerterHolder.get("default");
+                    }
+                    Project project = this.projectManager.getProject(executionRecover.getProjectId());
+                    executionRecover.setProjectName(project.getName());
+                    mailAlerter.alertOnHistoryRecoverFinish(executionRecover);
+                } else {
+                    logger.error("正在运行页面KILL历史重跑, executionRecover is null or alarm not set.");
+                }
+            } catch (Exception e) {
+                logger.error("正在运行页面KILL历史重跑, 触发历史重跑告警失败, 失败原因:{}", e);
+            }
+        }
+
+    }
+
+    /**
+     * 数据补采历史页面
+     *
+     * @param req
+     * @param resp
+     * @param session
+     * @throws ServletException
+     */
+    private void ajaxHistoryRecoverPage(final HttpServletRequest req, final HttpServletResponse resp, final Session session)
+        throws ServletException {
+        final Page page =
+            newPage(req, resp, session, "azkaban/webapp/servlet/velocity/history-recover-page.vm");
+
+        String languageType = LoadJsonUtils.getLanguageType();
+        Map<String, String> historyRecoverPageMap;
+        Map<String, String> subPageMap1;
+        Map<String, String> subPageMap2;
+        if (languageType.equalsIgnoreCase("zh_CN")) {
+            // 添加国际化标签
+            historyRecoverPageMap = LoadJsonUtils.transJson("/conf/azkaban-web-server-zh_CN.json",
+                "azkaban.webapp.servlet.velocity.history-recover-page.vm");
+            subPageMap1 = LoadJsonUtils.transJson("/conf/azkaban-web-server-zh_CN.json",
+                "azkaban.webapp.servlet.velocity.nav.vm");
+            subPageMap2 = LoadJsonUtils.transJson("/conf/azkaban-web-server-zh_CN.json",
+                "azkaban.webapp.servlet.velocity.messagedialog.vm");
+        }else {
+            historyRecoverPageMap = LoadJsonUtils.transJson("/conf/azkaban-web-server-en_US.json",
+                "azkaban.webapp.servlet.velocity.history-recover-page.vm");
+            subPageMap1 = LoadJsonUtils.transJson("/conf/azkaban-web-server-en_US.json",
+                "azkaban.webapp.servlet.velocity.nav.vm");
+            subPageMap2 = LoadJsonUtils.transJson("/conf/azkaban-web-server-en_US.json",
+                "azkaban.webapp.servlet.velocity.messagedialog.vm");
+        }
+        historyRecoverPageMap.forEach(page::add);
+        subPageMap1.forEach(page::add);
+        subPageMap2.forEach(page::add);
+        page.add("currentlangType", languageType);
+        int pageNum = getIntParam(req, "page", 1);
+        final int pageSize = getIntParam(req, "size", 16);
+
+        if (pageNum < 0) {
+            pageNum = 1;
+        }
+
+        final User user = session.getUser();
+        Set<String> userRoleSet = new HashSet<>();
+        userRoleSet.addAll(user.getRoles());
+
+        List<ExecutionRecover> historyRecover = new ArrayList<>();
+
+        //添加权限判断 admin 用户能查看所有flow历史 user用户只能查看自己的flow历史
+        if (userRoleSet.contains("admin")) {
+            //查询数据补采全部记录
+            try {
+                historyRecover = this.executorManagerAdapter.listHistoryRecoverFlows(new HashMap(), (pageNum - 1) * pageSize, pageSize);
+            } catch (ExecutorManagerException e) {
+                logger.error("查询数据补采全部记录失败,原因为:" + e);
+            }
+        } else {
+            try {
+
+                Map paramMap = new HashMap();
+
+                paramMap.put("userName", user.getUserId());
+
+                historyRecover =
+                    this.executorManagerAdapter.listHistoryRecoverFlows(paramMap, (pageNum - 1) * pageSize, pageSize);
+            } catch (ExecutorManagerException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (null != historyRecover && !historyRecover.isEmpty()) {
+            historyRecover.stream().forEach(historyFlow -> {
+                Map<String, Object> repeatMap = historyFlow.getRepeatOption();
+                if (!repeatMap.isEmpty()) {
+                    List<Map<String, String>> list = (List<Map<String, String>>) repeatMap.get("repeatTimeList");
+                    for (Map<String, String> repMap : list) {
+                        if (!repMap.get("exeId").isEmpty() && historyFlow.getNowExecutionId() == Integer.valueOf(repMap.get("exeId"))) {
+                            historyFlow.setUpdateTime(Long.valueOf(String.valueOf(repMap.get("startTimeLong"))));
+                        }
+                    }
+                }
+            });
+        }
+
+        page.add("historyRecover", historyRecover.isEmpty() ? null : historyRecover);
+
+        page.add("vmutils", new VelocityUtil(this.projectManager));
+
+        page.add("size", pageSize);
+        page.add("page", pageNum);
+
+        if (pageNum == 1) {
+            page.add("previous", new PageSelection(1, pageSize, true, false));
+        } else {
+            page.add("previous", new PageSelection(pageNum - 1, pageSize, false,false));
+        }
+        page.add("next", new PageSelection(pageNum + 1, pageSize, false, false));
+        // Now for the 5 other values.
+        int pageStartValue = 1;
+        if (pageNum > 3) {
+            pageStartValue = pageNum - 2;
+        }
+
+        page.add("page1", new PageSelection(pageStartValue, pageSize, false,
+            pageStartValue == pageNum));
+        pageStartValue++;
+        page.add("page2", new PageSelection(pageStartValue, pageSize, false,
+            pageStartValue == pageNum));
+        pageStartValue++;
+        page.add("page3", new PageSelection(pageStartValue, pageSize, false,
+            pageStartValue == pageNum));
+        pageStartValue++;
+        page.add("page4", new PageSelection(pageStartValue, pageSize, false,
+            pageStartValue == pageNum));
+        pageStartValue++;
+        page.add("page5", new PageSelection(pageStartValue, pageSize, false,
+            pageStartValue == pageNum));
+        pageStartValue++;
+
+
+        page.render();
+
+    }
+
+//  /**
+//   * 日志按级别分割处理方法
+//   * @param logData
+//   * @param logType
+//   * @return
+//   */
+//  private String handleLogData(String logData, String logType){
+//    String logResult = "";
+//
+//    String nowCutType = "";
+//
+//    StringBuilder sb = new StringBuilder();
+//
+//    String[] handleData = logData.split("\n");
+//
+//    if("error".equals(logType)){
+//      String errorBegin = "";
+//      for(String lineLog : handleData){
+//        //ERROR日志切割
+//        if(lineLog.contains(" ERROR - ")){
+//          errorBegin = "START";
+//          nowCutType = "ERROR";
+//          sb.append(lineLog).append("\n");
+//        }else if((lineLog.contains(" ERROR - ") || lineLog.contains(" INFO - ")) && "START".equals(errorBegin) && "ERROR".equals(nowCutType)){
+//          errorBegin = "END";
+//        }else if("START".equals(errorBegin) && "ERROR".equals(nowCutType)){
+//          sb.append(lineLog).append("\n");
+//        }
+//        //INFO 日志里的异常情况
+//        if(lineLog.contains(" INFO - ") && (lineLog.contains("Exception") || lineLog.contains("Error"))){
+//          errorBegin = "START";
+//          nowCutType = "INFO";
+//          sb.append(lineLog).append("\n");
+//        }else if(lineLog.contains(" INFO - ") && !lineLog.contains("Exception") && !lineLog.contains(" INFO - \t") && "INFO".equals(nowCutType)){
+//          errorBegin = "END";
+//        }else if("START".equals(errorBegin) && "INFO".equals(nowCutType)){
+//          sb.append(lineLog).append("\n");
+//        }
+//      }
+//    }else if("info".equals(logType)){
+//      for(String lineLog : handleData){
+//        if(lineLog.contains(" INFO - ") && !lineLog.contains("Exception") && !lineLog.contains(" INFO - \t") ){
+//          sb.append(lineLog).append("\n");
+//        }
+//      }
+//    }
+//    logResult = sb.toString();
+//
+//    return logResult;
+//  }
+
+    /**
+     * 数据补采 执行数据校验 通过之后才能执行数据补采
+     *
+     * @param req
+     * @param resp
+     * @param ret
+     * @param user
+     * @throws ServletException
+     */
+    private void ajaxRecoverParamVerify(final HttpServletRequest req, final HttpServletResponse resp,
+        final HashMap<String, Object> ret, final User user) throws ServletException {
+        final String projectName = getParam(req, "project");
+        final String flowId = getParam(req, "flow");
+        // 检查项目是否存在，工作流基于project这一层级
+        final Project project = getProjectAjaxByPermission(ret, projectName, user, Type.EXECUTE);
+
+        Map<String, String> dataMap = loadExecutorServletI18nData();
+
+        if (project == null) {
+            ret.put("error", "Project '" + projectName + "' doesn't exist.");
+            return;
+        }
+        ret.put("flow", flowId);
+        // 检查工作流是否存在
+        final Flow flow = project.getFlow(flowId);
+        if (flow == null) {
+            ret.put("error", "Flow '" + flowId + "' cannot be found in project "
+                + project);
+            return;
+        }
+
+        ExecutionRecover nowRuningRecover = null;
+        //查询这个Flow的补采记录
+        try {
+            nowRuningRecover =
+                this.executorManagerAdapter.getHistoryRecoverFlowByPidAndFid(String.valueOf(project.getId()), flow.getId());
+        } catch (ExecutorManagerException e) {
+            logger.error("获取历史重跑任务失败" + e);
+        }
+        //校验这个Flow是否已经开始补采
+        if (null != nowRuningRecover && (Status.RUNNING.equals(nowRuningRecover.getRecoverStatus())
+            || Status.PREPARING.equals(nowRuningRecover.getRecoverStatus()))) {
+            logger.error("recover id: " + nowRuningRecover.getRecoverId() + ", status : " + nowRuningRecover.getRecoverStatus());
+            ret.put("error", dataMap.get("existHisJob"));
+            return;
+        }
+
+        //concurrentOption,
+        final String concurrentOption = getParam(req, "concurrentOption");
+        //判断flow是否真正运行
+        if (concurrentOption.equals("skip") && this.executorManagerAdapter.getRunningFlows(project.getId(), flowId).size() != 0) {
+            ret.put("error", "flow: " + flowId + dataMap.get("runningCanNotCommit"));
+            return;
+        }
+
+        //参数校验
+        if (!repeatOptionCheck(req)) {
+            ret.put("error", dataMap.get("dataCompensateinputParamError"));
+            return;
+        }
+
+    }
+
 
     /**
      * Job日志下载处理方法
@@ -2695,7 +3418,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     }
 
     private Permission getPermissionObject(final Project project, final User user,
-        final Permission.Type type) {
+        final Type type) {
         final Permission perm = project.getCollectivePermission(user);
 
         for (final String roleName : user.getRoles()) {
@@ -3044,23 +3767,38 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         if (userRoleSet.contains("admin")) {
 
             ret.put("executingFlowData", runningFlowsList);
+            return;
         //运维管理员可以查看自己运维部门下所有人提交且正在运行的工作流
         } else if (systemManager.isDepartmentMaintainer(user)) {
             List<Integer> maintainedProjectIds = systemManager.getMaintainedProjects(user);
             final List<Map<String, String>> userRunningFlowsList = runningFlowsList.stream()
                     .filter(map -> isMaintainedProject(map, maintainedProjectIds) || isOwner(map, user))
                     .collect(Collectors.toList());
-            ret.put("executingFlowData", userRunningFlowsList);
+            // #164643 查询该用户能查看的项目id
+            List<Integer> projectIds = this.executorManagerAdapter.fetchPermissionsProjectId(user.getUserId());
+            final Set<Map<String, String>> userRunningFlowsList2 = runningFlowsList.stream()
+                .filter(map -> hasPermission(Integer.valueOf(map.get("projectId")), projectIds) || isOwner(map, user))
+                .collect(Collectors.toSet());
+            userRunningFlowsList2.addAll(userRunningFlowsList);
+            ret.put("executingFlowData", userRunningFlowsList2);
         } else {
-
+            // 查询该用户能查看的项目id
+            List<Integer> projectIds = this.executorManagerAdapter.fetchPermissionsProjectId(user.getUserId());
             final List<Map<String, String>> userRunningFlowsList = runningFlowsList.stream()
-                .filter(map -> isOwner(map, user))
+                .filter(map -> hasPermission(Integer.valueOf(map.get("projectId")), projectIds) || isOwner(map, user))
                 .collect(Collectors.toList());
             ret.put("executingFlowData", userRunningFlowsList);
 
         }
 
 
+    }
+
+    private boolean hasPermission(int projectId, List<Integer> projectList){
+        if(projectList.contains(projectId)){
+            return true;
+        }
+        return false;
     }
 
     private boolean isOwner(Map<String, String> map, User user) {
@@ -3083,6 +3821,44 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
         String projectId = map.get("projectId");
         return projectIds.stream()
                 .anyMatch(id -> id.toString().equals(projectId));
+    }
+
+    /**
+     * reload data for ha
+     * @param req
+     * @throws ServletException
+     */
+    private void reloadWebData(final HttpServletRequest req)
+        throws ServletException, TriggerManagerException, ScheduleManagerException {
+
+        final String type = getParam(req, "reloadType");
+        final int triggerId = getIntParam(req, "triggerId", -1);
+        final String projectName = getParam(req, "projectName","");
+        switch (type) {
+            case "runningExecutions":
+                this.executorManagerAdapter.reloadWebData();
+                break;
+            case "deleteTrigger":
+                this.triggerManager.removeTriggerByWeb(triggerId);
+                break;
+            case "insertTrigger":
+                this.triggerManager.insertTriggerByWeb(triggerId);
+                break;
+            case "updateTrigger":
+                this.triggerManager.updateTriggerByWeb(triggerId);
+                break;
+            case "refreshProjectPermission":
+                this.projectManager.refreshProjectPermission(projectName);
+                break;
+            case "reloadProject":
+                this.projectManager.reloadProject(projectName);
+                break;
+            case "deleteProject":
+                this.projectManager.deleteProjectByWeb(getIntParam(req, "projectId", -1));
+                break;
+            default:
+        }
+
     }
 
 }

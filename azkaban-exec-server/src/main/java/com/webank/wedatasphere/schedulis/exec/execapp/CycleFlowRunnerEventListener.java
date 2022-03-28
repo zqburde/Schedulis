@@ -285,9 +285,7 @@ public class CycleFlowRunnerEventListener implements EventListener {
     }
 
     private Map<String, String> parseFlowParams(Map<String, String> flowParams) {
-        if (MapUtils.isEmpty(flowParams)){
-            return new HashMap<>();
-        }
+        if (MapUtils.isEmpty(flowParams)) return new HashMap<>();
         Map<String, String> newFlowParams = new HashMap<>();
         flowParams.forEach((k, v) -> {
             String key = "flowOverride[" + k + "]";
@@ -298,9 +296,7 @@ public class CycleFlowRunnerEventListener implements EventListener {
 
     private Map<String, String> parseJobFailedParams(Map<String, Object> otherOption, String flowId) {
         Object jobFailedObj = otherOption.get("jobFailedRetryOptions");
-        if (jobFailedObj == null){
-            return new HashMap<>();
-        }
+        if (jobFailedObj == null) return new HashMap<>();
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> jobFailedList = (List<Map<String, Object>>) jobFailedObj;
         Map<String, String> jobFailedParams = new HashMap<>();
@@ -326,9 +322,7 @@ public class CycleFlowRunnerEventListener implements EventListener {
 
     private Map<String, String> parseJobSkipParams(Map<String, Object> otherOption) {
         Object jobSkipObj = otherOption.get("jobSkipFailedOptions");
-        if (jobSkipObj == null){
-            return new HashMap<>();
-        }
+        if (jobSkipObj == null) return new HashMap<>();
         @SuppressWarnings("unchecked")
         List<String> jobSkipList = (List<String>) jobSkipObj;
         Map<String, String> jobSkipParams = new HashMap<>();
@@ -354,18 +348,14 @@ public class CycleFlowRunnerEventListener implements EventListener {
     }
 
     private String parseSlaEmails(List<SlaOption> slaOptions) {
-        if (slaOptions.isEmpty()){
-            return "";
-        }
+        if (slaOptions.isEmpty()) return "";
         @SuppressWarnings("unchecked")
         List<String> slaEmails = (List<String>) slaOptions.get(0).getInfo().get(SlaOption.INFO_EMAIL_LIST);
         return String.join(",", slaEmails);
     }
 
     private Map<String, String> parseSettingParams(List<SlaOption> slaOptions) {
-        if (slaOptions.isEmpty()) {
-            return new HashMap<>();
-        }
+        if (slaOptions.isEmpty()) return new HashMap<>();
         SlaOption slaOption = slaOptions.get(0);
         String id = (String) slaOption.getInfo().getOrDefault(SlaOption.INFO_JOB_NAME, "");
         String rule = slaOption.getType().equals(SlaOption.TYPE_FLOW_SUCCEED)? "SUCCESS": "FINISH";
@@ -394,9 +384,7 @@ public class CycleFlowRunnerEventListener implements EventListener {
 
     private Map<String, Object> response2Map(Response response) throws IOException {
         ResponseBody body = response.body();
-        if (body == null) {
-            return null;
-        }
+        if (body == null) return null;
         String bodyString = body.string();
         GsonBuilder gb = new GsonBuilder();
         Gson g = gb.create();

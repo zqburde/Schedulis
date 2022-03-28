@@ -234,7 +234,7 @@ public class AzkabanProcess {
    * @param process The process to get the id from
    * @return The id of the process
    */
-  private int processId(final java.lang.Process process) {
+  private int processId(final Process process) {
     int processId = 0;
     try {
       final Field f = process.getClass().getDeclaredField("pid");

@@ -73,13 +73,11 @@ public class JavaJobRunnerMain {
     try {
       _jobName = System.getenv(ProcessJob.JOB_NAME_ENV);
       String propsFile = System.getenv(ProcessJob.JOB_PROP_ENV);
-
-      _logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-
+      _logger = LoggerFactory.getLogger(JavaJobRunnerMain.class);
+      _logger.info("Running job " + _jobName);
       Properties props = new Properties();
       props.load(new BufferedReader(new FileReader(propsFile)));
 
-      _logger.info("Running job " + _jobName);
       String className = props.getProperty(JOB_CLASS);
       if (className == null) {
         throw new Exception("Class name is not set.");

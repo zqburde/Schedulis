@@ -20,6 +20,10 @@ import azkaban.db.AzkabanDataSource;
 import azkaban.db.H2FileDataSource;
 import azkaban.db.MySQLDataSource;
 import azkaban.executor.*;
+import azkaban.jobid.relation.JobIdRelationDao;
+import azkaban.jobid.relation.JobIdRelationDaoImpl;
+import azkaban.jobid.relation.JobIdRelationService;
+import azkaban.jobid.relation.JobIdRelationServiceImpl;
 import azkaban.project.JdbcProjectImpl;
 import azkaban.project.ProjectLoader;
 import azkaban.spi.Storage;
@@ -73,6 +77,8 @@ public class AzkabanCommonModule extends AbstractModule {
     bind(ExecutionLogsAdapter.class).to(resolveExecutionLogsType());
     bind(TransitionService.class);
     bind(UserManager.class).to(SystemUserManager.class);
+    bind(JobIdRelationDao.class).to(JobIdRelationDaoImpl.class);
+    bind(JobIdRelationService.class).to(JobIdRelationServiceImpl.class);
   }
 
   public Class<? extends Storage> resolveStorageClassType() {

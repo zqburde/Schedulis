@@ -40,6 +40,67 @@ $(function () {
       scheduleModel.set({"page": 1});
       scheduleListView.handlePageChange(this);
     }
+  });
+
+  // 批量告警页面
+  batchSetSlaView = new azkaban.BatchSetSlaView({
+    el: $('#schedule-view'),
+    model: scheduleModel
+  });
+
+  // 设置批量告警对话框
+  $("#batch-setSla-btn").click(function () {
+    var ids = batchSetSlaView.model.get('allScheduleIdList');
+    if (ids) {
+      $('#batch-sla-options').modal();
+    } else {
+      alert(wtssI18n.view.scheduleIsNotExist);
+    }
+
+  });
+
+  // 设置批量告警
+  $("#batch-set-sla-btn").click(function () {
+    $('#batch-set-sla-valid-modal').show();
+  });
+  $("#batch-set-sla-valid-btn").click(function () {
+    var batchSetSla = batchSetSlaView.handleBatchSetSla();
+    $('#batch-set-sla-valid-modal').hide();
+    if (batchSetSla === undefined) {
+      setTimeout(function () {
+        scheduleListView.handlePageChange();
+      }, 1000);
+    }
+  });
+
+  $("#batch-set-sla-cancel-btn").click(function () {
+    $('#batch-set-sla-valid-modal').hide();
+  });
+
+  $("#batch-set-sla-close-btn").click(function () {
+    $('#batch-set-sla-valid-modal').hide();
+  });
+
+  // 工作流超时告警规则设置-新增一条
+  $("#batch-add-btn").click(function () {
+    batchSetSlaView.handleBatchAddRow();
+  });
+
+  // 工作流事件告警规则设置-新增一条
+  $("#batch-finish-add-btn").click(function () {
+    batchSetSlaView.handleBatchFinishAddRow();
+  });
+
+  // 工作流超时告警规则设置-删除一条
+  $("#batchFlowRulesTbl").on('click', '.btn-danger-type1', function () {
+    var row = this.parentElement.parentElement.parentElement;
+    $(row).remove();
+  })
+
+  // 工作流事件告警规则设置-删除一条
+  $("#batchFinishRulesTbl").on('click', '.btn-danger-type2', function () {
+    var row = this.parentElement.parentElement.parentElement;
+    $(row).remove();
   })
 
 
@@ -103,6 +164,365 @@ azkaban.ScheduleShowArgsView = Backbone.View.extend({
   }
 });
 
+var batchSetSlaView;
+azkaban.BatchSetSlaView = Backbone.View.extend({
+  events: {
+  },
+
+  //关闭SLA配置页面时的操作
+  handleSlaCancel: function () {
+    console.log("Clicked cancel button");
+    var scheduleURL = "/schedule";
+    //清空SLA定时告警配置选项
+    if (document.getElementById("batchFlowRulesTbl")) {
+      var tFlowRules = document.getElementById("batchFlowRulesTbl").tBodies[0];
+      var rows = tFlowRules.rows;
+      var rowLength = rows.length
+      for (var i = 0; i < rowLength - 1; i++) {
+        tFlowRules.deleteRow(0);
+      }
+    }
+
+    if (document.getElementById("batchFinishRulesTbl")) {
+      //清空成功失败告警配置选项
+      var tFinishRules = document.getElementById("batchFinishRulesTbl").tBodies[0];
+      var fRows = tFinishRules.rows;
+      var fRowLength = fRows.length
+      for (var i = 0; i < fRowLength - 1; i++) {
+        tFinishRules.deleteRow(0);
+      }
+    }
+    $('#batch-add-btn').attr('disabled', false);
+  },
+
+  initialize: function (settings) {
+    this.getCurrentScheduleAllFlowSetSla();
+    $('#batch-sla-options').on('hidden.bs.modal', function () {
+      batchSetSlaView.handleSlaCancel();
+    });
+  },
+
+  getCurrentScheduleAllFlowSetSla: function (evt) {
+    var requestURL = "/schedule?ajax=fetchAllScheduleFlowInfo";
+
+    var model = this.model;
+    $.ajax({
+      url: requestURL,
+      type: "get",
+      async: false,
+      dataType: "json",
+      success: function (data) {
+        model.set({
+          "currentFlowNameList": data.scheduleFlowNameList,
+          "allScheduleIdList": data.scheduleIdList
+        });
+      }
+    });
+  },
+
+  handleBatchSetSla: function (evt) {
+    var scheduleURL = "/schedule";
+    var allScheduleIdList = this.model.get("allScheduleIdList").join(',');
+    var departmentSlaInform;
+    if ($("#batch-sla-via-department").is(":checked")) {
+      console.log("batch-sla-via-department set")
+      departmentSlaInform = "true";
+    } else {
+      console.log("batch-sla-via-department unset")
+      departmentSlaInform = "false";
+    }
+
+    var batchSlaEmails = $('#batchSlaEmails').val();
+    //工作流超时告警规则设置
+    var settings = {};
+    var timeoutScheduleIdList = {};
+    var eventScheduleIdList = {};
+    var tFlowRules = document.getElementById("batchFlowRulesTbl").tBodies[0];
+    for (var row = 0; row < tFlowRules.rows.length - 1; row++) {
+      var rFlowRule = tFlowRules.rows[row];
+      var id = rFlowRule.cells[0].firstChild.value;
+      var rule = rFlowRule.cells[1].firstChild.value;
+      var duration = rFlowRule.cells[2].firstChild.value;
+      var level = rFlowRule.cells[3].firstChild.value;
+      var email = rFlowRule.cells[4].firstChild.checked;
+      var kill = rFlowRule.cells[5].firstChild.checked;
+      settings[row] = id + "," + rule + "," + duration + "," + level + "," + email + "," + kill;
+      // 设置超时告警选中的scheduleId
+
+      timeoutScheduleIdList[row] = rFlowRule.innerText.replace(/[\r\n\t]/g, "").replace("Delete", "");
+
+      if (duration == "") {
+        alert(timeoutScheduleIdList[row] + ": " + wtssI18n.view.timeoutAlarmTime);
+        return false;
+      }
+
+      if (email == false && kill == false) {
+        alert(timeoutScheduleIdList[row] + ": " + wtssI18n.view.timeoutAlarmRuleLessOne);
+        return false;
+      }
+
+    }
+    //工作流事件告警规则设置
+    var finishSettings = {};
+    var tFinishRules = document.getElementById("batchFinishRulesTbl").tBodies[0];
+    for (var row = 0; row < tFinishRules.rows.length - 1; row++) {
+      var tFinishRule = tFinishRules.rows[row];
+      var id = tFinishRule.cells[0].firstChild.value;
+      var rule = tFinishRule.cells[1].firstChild.value;
+      var level = tFinishRule.cells[2].firstChild.value;
+      finishSettings[row] = id + "," + rule + "," + level;
+      // 设置事件告警选中的scheduleId
+      eventScheduleIdList[row] = tFinishRule.innerText.replace(/[\r\n\t]/g, "").replace("Delete", "");
+    }
+
+    //检查是否有重复的规则
+    if (this.checkSlaRepeatRule(settings)) {
+      alert(wtssI18n.view.timeoutAlarmFormat);
+      return false;
+    }
+
+    //检查是否有重复的规则
+    if (this.checkFinishRepeatRule(finishSettings)) {
+      alert(wtssI18n.view.eventAlarmFormat);
+      return false;
+    }
+
+    var batchSlaData = {
+      timeoutScheduleIdList: timeoutScheduleIdList,
+      eventScheduleIdList: eventScheduleIdList,
+      allScheduleIdList: allScheduleIdList,
+      ajax: "batchSetSla",
+      batchSlaEmails: batchSlaEmails,
+      departmentSlaInform: departmentSlaInform,
+      settings: settings,
+      finishSettings: finishSettings,
+    };
+
+    var successHandler = function (data) {
+      if (data.error) {
+        alert(data.error);
+      } else {
+        tFlowRules.length = 0;
+        // 隐藏告警设置对话框, 触发变更
+        $('#batch-sla-options').modal("hide");
+        scheduleListView.handlePageChange();
+      }
+    };
+    $.post(scheduleURL, batchSlaData, successHandler, "json");
+  },
+
+  checkSlaRepeatRule: function (data) {
+    var new_arr = [];
+    var oldlength = 0;
+    for (var i in data) {
+      oldlength++;
+      var items = data[i].substring(0, find(data[i], ",", 1));;
+      //判断元素是否存在于new_arr中，如果不存在则插入到new_arr的最后
+      if ($.inArray(items, new_arr) == -1) {
+        new_arr.push(items);
+      }
+    }
+    if (new_arr.length < oldlength) {
+      return true;
+    }
+  },
+
+  checkFinishRepeatRule: function (data) {
+    var new_arr = [];
+    var oldlength = 0;
+    for (var i in data) {
+      oldlength++;
+      var items = data[i];
+      //判断元素是否存在于new_arr中，如果不存在则插入到new_arr的最后
+      if ($.inArray(items, new_arr) == -1) {
+        new_arr.push(items);
+      }
+    }
+    if (new_arr.length < oldlength) {
+      return true;
+    }
+  },
+
+
+  // 工作流超时告警规则设置-新增一行
+  handleBatchAddRow: function (evt) {
+    var flowNameList = this.model.get("currentFlowNameList");
+    var ruleBoxOptions = ["SUCCESS", "FINISH"];
+
+    var tFlowRules = document.getElementById("batchFlowRulesTbl").tBodies[0];
+    var rFlowRule = tFlowRules.insertRow(tFlowRules.rows.length - 1);
+    var retryTr = rFlowRule.rowIndex;
+    if (retryTr == flowNameList.length) {
+      $('#batch-add-btn').attr('disabled', 'disabled');
+    }
+
+    //设置工作流
+    var cId = rFlowRule.insertCell(-1);
+    var idSelect = "<select class='schedule-select2-search'>"
+    for (var i = 0; i < flowNameList.length; i++) {
+      idSelect += "<option value=\"" + i + "\" title=\"" + flowNameList[i] + "\">" + flowNameList[i] + "</option>"
+    }
+
+    idSelect += "</select>"
+    cId.innerHTML = idSelect;
+    $('.schedule-select2-search').select2();
+    //设置告警规则
+    var cRule = rFlowRule.insertCell(-1);
+    var ruleSelect = document.createElement("select");
+    ruleSelect.setAttribute("class", "form-control");
+    for (var i in ruleBoxOptions) {
+      ruleSelect.options[i] = new Option(ruleBoxOptions[i], ruleBoxOptions[i]);
+    }
+    cRule.appendChild(ruleSelect);
+    //设置超时时间
+    var cDuration = rFlowRule.insertCell(-1);
+    var duration = document.createElement("input");
+    duration.type = "text";
+    duration.setAttribute("class", "durationpick form-control");
+    cDuration.appendChild(duration);
+
+    //设置告警级别
+    var cLevel = rFlowRule.insertCell(-1);
+    var levelSelect = document.createElement("select");
+    levelSelect.setAttribute("class", "form-control");
+    $(levelSelect).append("<option value='INFO'>INFO</option>");
+    $(levelSelect).append("<option value='WARNING'>WARNING</option>");
+    $(levelSelect).append("<option value='MINOR'>MINOR</option>");
+    $(levelSelect).append("<option value='MAJOR'>MAJOR</option>");
+    $(levelSelect).append("<option value='CRITICAL'>CRITICAL</option>");
+    $(levelSelect).append("<option value='CLEAR'>CLEAR</option>");
+    cLevel.appendChild(levelSelect);
+    //设置发送邮件
+    var cEmail = rFlowRule.insertCell(-1);
+    var emailCheck = document.createElement("input");
+    emailCheck.type = "checkbox";
+    cEmail.appendChild(emailCheck);
+    //设置终止工作流/任务
+    var cKill = rFlowRule.insertCell(-1);
+    var killCheck = document.createElement("input");
+    killCheck.type = "checkbox";
+    cKill.appendChild(killCheck);
+
+    $('.durationpick').datetimepicker({
+      format: 'HH:mm'
+    });
+
+    //删除按钮
+    var cDelete = rFlowRule.insertCell(-1);
+    var remove = document.createElement("div");
+    $(remove).addClass("center-block").addClass('remove-timeout-btn');
+    var removeBtn = document.createElement("button");
+    $(removeBtn).attr('type', 'button');
+    $(removeBtn).addClass('btn').addClass('btn-sm').addClass('btn-danger-type1');
+    $(removeBtn).text('Delete');
+    $(remove).append(removeBtn);
+    cDelete.appendChild(remove);
+
+    return rFlowRule;
+  },
+
+
+  //工作流事件告警规则设置-新增一行
+  handleBatchFinishAddRow: function (evt) {
+    var flowNameList = this.model.get("currentFlowNameList");
+    var finshRuleBoxOptions = ["FAILURE EMAILS", "SUCCESS EMAILS", "FINISH EMAILS"];
+
+    var ruleTr = $("#batchFinishRulesTbl tr").length - 1;
+
+    var jslength = 0;
+
+    for (var i = 0; i < flowNameList.length; i++) {
+      jslength++;
+    }
+
+    if (jslength * finshRuleBoxOptions.length < ruleTr) {
+      alert(wtssI18n.view.alarmRulesFormat);
+      return;
+    }
+
+    var tFlowRules = document.getElementById("batchFinishRulesTbl").tBodies[0];
+    var rFlowRule = tFlowRules.insertRow(tFlowRules.rows.length - 1);
+
+    //alert($("#FinishRulesTbl tr").length);
+
+    //设置 flow
+    var cId = rFlowRule.insertCell(-1);
+    var idSelect = "<select class='schedule-select2-search'>"
+    for (var i = 0; i < flowNameList.length; i++) {
+      idSelect += "<option value=\"" + i + "\" title=\"" + flowNameList[i] + "\">" + flowNameList[i] + "</option>"
+    }
+    idSelect += "</select>"
+
+    cId.innerHTML = idSelect;
+    $('.schedule-select2-search').select2();
+    //设置规则选项
+    var cRule = rFlowRule.insertCell(-1);
+    var ruleSelect = document.createElement("select");
+    ruleSelect.setAttribute("class", "form-control");
+    for (var i in finshRuleBoxOptions) {
+      ruleSelect.options[i] = new Option(finshRuleBoxOptions[i], finshRuleBoxOptions[i]);
+    }
+    cRule.appendChild(ruleSelect);
+
+    //设置告警级别
+    var cLevel = rFlowRule.insertCell(-1);
+    var levelSelect = document.createElement("select");
+    levelSelect.setAttribute("class", "form-control");
+    $(levelSelect).append("<option value='INFO'>INFO</option>");
+    $(levelSelect).append("<option value='WARNING'>WARNING</option>");
+    $(levelSelect).append("<option value='MINOR'>MINOR</option>");
+    $(levelSelect).append("<option value='MAJOR'>MAJOR</option>");
+    $(levelSelect).append("<option value='CRITICAL'>CRITICAL</option>");
+    $(levelSelect).append("<option value='CLEAR'>CLEAR</option>");
+    cLevel.appendChild(levelSelect);
+
+    //删除按钮
+    var cDelete = rFlowRule.insertCell(-1);
+    var remove = document.createElement("div");
+    $(remove).addClass("center-block").addClass('remove-btn');
+    var removeBtn = document.createElement("button");
+    $(removeBtn).attr('type', 'button');
+    $(removeBtn).addClass('btn').addClass('btn-sm').addClass('btn-danger-type2');
+    $(removeBtn).text('Delete');
+    $(remove).append(removeBtn);
+    cDelete.appendChild(remove);
+
+    return rFlowRule;
+  },
+
+  handleEditColumn: function (evt) {
+    var curTarget = evt.currentTarget;
+    if (this.editingTarget != curTarget) {
+      this.closeEditingTarget();
+
+      var text = $(curTarget).children(".spanValue").text();
+      $(curTarget).empty();
+
+      var input = document.createElement("input");
+      $(input).attr("type", "text");
+      $(input).css("width", "100%");
+      $(input).val(text);
+      $(curTarget).addClass("editing");
+      $(curTarget).append(input);
+      $(input).focus();
+      this.editingTarget = curTarget;
+    }
+  },
+
+  closeEditingTarget: function (evt) {
+  },
+
+  render: function () {
+  }
+});
+
+function find (str, cha, num) {
+  var x = str.indexOf(cha);
+  for (var i = 0; i < num; i++) {
+    x = str.indexOf(cha, x + 1);
+  }
+  return x;
+}
 
 var tableSorterView;
 
@@ -397,26 +817,17 @@ azkaban.ScheduleListView = Backbone.View.extend({
     var searchText = this.model.get("searchterm");
 
     var model = this.model;
-    var requestData;
-    if(searchText){
-      requestData = {
-        "ajax": "ajaxFetchAllSchedules",
-        "page": start,
-        "size": pageSize,
-        "pageNum": this.model.get("page"),
-        "searchterm": searchText,
-        "search": "true",
-      };
-    } else {
-      requestData = {
-        "ajax": "ajaxFetchAllSchedules",
-        "page": start,
-        "size": pageSize,
-        "pageNum": this.model.get("page"),
-        "searchterm": searchText,
-      };
+    var requestData = {
+      "ajax": "ajaxFetchAllSchedules",
+      "page": start,
+      "size": pageSize,
+      "pageNum": this.model.get("page"),
+      "searchterm": searchText,
+    };
+    if (searchText) {
+      requestData.search = "true"
     }
-
+    requestData.time = new Date().getTime()
 
     var successHandler = function(data) {
       model.set({

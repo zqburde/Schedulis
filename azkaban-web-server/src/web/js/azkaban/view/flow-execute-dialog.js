@@ -22,6 +22,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     "click .closeExecPanel": "hideExecutionOptionPanel",
     "click #schedule-btn": "scheduleClick",
     "click #execute-btn": "handleExecuteFlow",
+    "click #history-recover-btn": "handleHistoryRecover",
   },
 
   initialize: function (settings) {
@@ -45,6 +46,56 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
       }
     });
 
+    $('#datetimebegin').datetimepicker({
+      format: 'YYYY/MM/DD',
+      // cancel max current date limit
+      // maxDate: new Date()
+    });
+    $('#datetimeend').datetimepicker({
+      format: 'YYYY/MM/DD',
+      // cancel max current date limit
+      // maxDate: new Date()
+    });
+    $('#datetimebegin').on('change.dp', function (e) {
+      $('#datetimeend').data('DateTimePicker').setStartDate(e.date);
+    });
+    $('#datetimeend').on('change.dp', function (e) {
+      $('#datetimebegin').data('DateTimePicker').setEndDate(e.date);
+    });
+
+    $('#datetimebegin').val("");
+    $('#datetimeend').val("");
+    // 自然日重置
+    $("#resetRunDateTime").click(function () {
+      $('#runDateTime').val('')
+    })
+    //历史重跑开关点击事件添加
+    $("#enable-history-recover").click(function (evt) {
+      if ($(this).is(':checked')) {
+        $('#datetimebegin').attr('disabled', null);
+        $('#datetimeend').attr('disabled', null);
+        $('#repeat-num').attr('disabled', null);
+        $('#recover-interval').attr('disabled', null);
+        $('#recover-error-option').attr('disabled', null);
+        $('#runDateTime').attr('disabled', null);
+      } else {
+        $('#datetimebegin').attr('disabled', 'disabled');
+        $('#datetimeend').attr('disabled', 'disabled');
+        $('#repeat-num').attr('disabled', 'disabled');
+        $('#recover-interval').attr('disabled', 'disabled');
+        $('#recover-error-option').attr('disabled', 'disabled');
+        $('#runDateTime').attr('disabled', 'disabled');
+      }
+    });
+
+    // 点击历史重跑执行完成告警，告警列表启用
+    $("#enable-history-recover-finished-alert").click(function (evt) {
+      if ($(this).is(':checked')) {
+        $('#flow-history-rerun-finish-emails').attr('disabled', null);
+      } else {
+        $('#flow-history-rerun-finish-emails').attr('disabled', "disabled");
+      }
+    })
 
     //循环执行开关点击事件添加
     $("#enable-cycle-execution").click(function () {
@@ -57,8 +108,14 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
 
     //前端校验循环执行和历史补采互斥
     $('li[viewpanel=cycle-execution-panel]').click(function () {
-      $("#enable-cycle-execution").attr("disabled", null);
-      $("#cycle-error-option").attr('disabled', null);
+      if ($("#enable-history-recover").is(":checked")) {
+        $("#enable-cycle-execution").attr("disabled", "disabled");
+        $("#enable-cycle-execution").attr("checked", false);
+        $("#cycle-error-option").attr('disabled', 'disabled');
+      } else {
+        $("#enable-cycle-execution").attr("disabled", null);
+        $("#cycle-error-option").attr('disabled', null);
+      }
     })
   },
 
@@ -115,8 +172,8 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var failureAction = $('#failure-action').val();
     var failureEmails = $('#failure-emails').val();
     var successEmails = $('#success-emails').val();
-    var notifyFailureFirst = $('#notify-failure-first').is(':checked');
-    var notifyFailureLast = $('#notify-failure-last').is(':checked');
+    var notifyFailureFirst = $('#notify-failure-first').parent().attr('class').search('active') != -1 ? true : false;
+    var notifyFailureLast = !notifyFailureFirst;
     var failureEmailsOverride = $("#override-failure-emails").is(':checked');
     var successEmailsOverride = $("#override-success-emails").is(':checked');
     //告警级别选择
@@ -228,8 +285,10 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
   },
 
   changeFlowInfo: function () {
-    var successEmails = this.model.get("successEmails");
-    var failureEmails = this.model.get("failureEmails");
+    var successEmails = this.model.get("successEmails").length == 0 ? [loginUser] : this.model.get("successEmails");
+    var failureEmails = this.model.get("failureEmails").length == 0 ? [loginUser] : this.model.get("failureEmails");
+    var historyEmails = this.model.get("historyEmails") ? this.model.get("historyEmails") : [loginUser];
+    var cycleFlowEmails = this.model.get("cycleFlowEmails") ? this.model.get("cycleFlowEmails") : [loginUser];
     var failureActions = this.model.get("failureAction");
     var notifyFailure = this.model.get("notifyFailure");
     var flowParams = this.model.get("flowParams");
@@ -311,7 +370,40 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
         });
       }
     }
-
+    //历史重跑界面初始化方法
+    if (enableHistoryRecover) {
+      $('#datetimebegin').attr('disabled', null);
+      $('#datetimeend').attr('disabled', null);
+      $('#repeat-num').attr('disabled', null);
+      $('#recover-interval').attr('disabled', null);
+      $('#recover-error-option').attr('disabled', null);
+      $('#runDateTime').attr('disabled', null);
+      $('#flow-history-rerun-finish-emails').attr('disabled', null);
+    }
+    else {
+      $("#enable-history-recover").attr('checked', false);
+      $("#enable-reverse-execute-history-recover").attr('checked', false);
+      $("#enable-history-recover-finished-alert").attr('checked', false);
+      var currentTime = new Date()
+      var year = currentTime.getFullYear()
+      var month = currentTime.getMonth() + 1
+      month = month > 9 ? month : '0' + month
+      var day = currentTime.getDate()
+      day = day > 9 ? day : '0' + day
+      var timeStr = year + '/' + month + '/' + day
+      $('#datetimebegin').attr('disabled', 'disabled').val(timeStr);
+      $('#datetimeend').attr('disabled', 'disabled').val(timeStr);
+      $('#repeat-num').attr('disabled', 'disabled').val('1');
+      $('#recover-interval').attr('disabled', 'disabled').val('day');
+      $('#runDateTime').attr('disabled', 'disabled').val('');
+      $('#recover-error-option').attr('disabled', 'disabled').val('errorStop');
+      $('#recover-Concurrent-option').val('1');
+      $('#flow-history-rerun-finish-alert-level').val('INFO');
+      $('#flow-history-rerun-finish-emails').attr('disabled', 'disabled');
+      $('#id-show-start-five-date').click();
+    }
+    $('#flow-history-rerun-finish-emails').val(historyEmails.join());
+    $('#cycleFlow-interrupt-emails').val(cycleFlowEmails.join());
     //初始化循环执行的页面
     $("#enable-cycle-execution").attr("checked", false);
     $("#cycle-error-option").attr('disabled', 'disabled');
@@ -358,6 +450,9 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     $("#start-all-div").hide();
     $('#flow-option').show();
     $('#flow-execution-option').show();
+
+    $("#show-start-five-date").prop("checked", true);
+    $('#history-recover-li').show();
     $('#cycle-execution-li').show();
 
     // 判断是否设置了邮件,没有默认使用当前用户,有则保持数据不变
@@ -411,6 +506,7 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
       $('#timeout-slaEmails').val(slaEmails);
     } else {
       $("#flow-timeout-model").hide();
+      $('#timeout-slaEmails').val(loginUser);
     }
 
     if (ruleType == "FlowSucceed") {
@@ -617,7 +713,10 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var executeURL = contextURL + "/executor";
     var executingData = this.getExecutionOptionData();
     //todo 历史重跑功能和循环执行功能在前端需要做互斥校验
-    if ($("#enable-cycle-execution").is(':checked')) {
+    //判断是否启用历史重跑功能
+    if ($("#enable-history-recover").is(':checked')) {
+      this.handleHistoryRecover();
+    } else if ($("#enable-cycle-execution").is(':checked')) {
       this.handleCycleExecution();
     } else {
       if (typeof execId != "undefined" && execId) {
@@ -630,6 +729,29 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     }
   },
 
+  handleHistoryRecover: function (evt) {
+    console.log("click History Recover button.");
+    if (!this.checkTimeoutAlertSetting()) {
+      return;
+    }
+
+    var executingData = this.getExecutionOptionData();
+    //单独的JS方法处理历史补采
+    HistoryRecoverExecute(executingData);
+  },
+
+  userHistoryRecover: function (evt) {
+    console.log("userHistoryRecover.");
+    var beginTime = $('#datetimebegin').val();
+    var endTime = $('#datetimeend').val();
+    var monthNum = $('#repeat-month').val();
+    var dayNum = $('#repeat-day').val();
+    if (beginTime || endTime || 0 != monthNum || 0 != dayNum) {
+      return true;
+    } else {
+      return false;
+    }
+  },
 
   reloadWindow: function () {
     window.location.reload();
@@ -919,8 +1041,11 @@ azkaban.SideMenuDialogView = Backbone.View.extend({
     // 当点击定时调度工作流时，显示隐藏流程图切换按钮
     if ((target[0] && target[0].id === "flow-option") || target.id === "flow-option") {
       $("#switching-execute-flow-btn").show()
+      $("#workflow-execute-zoom-in").show()
     } else {
       $("#switching-execute-flow-btn").hide()
+      $("#workflow-execute-zoom-in").hide()
+      $("#workflow-execute-zoom-out").hide()
     }
 
     $(".menu-header").each(function () {
@@ -1457,13 +1582,46 @@ $(function () {
   $("#switching-execute-flow-btn").on('click', function () {
     var trimFlowName = !JSON.parse(sessionStorage.getItem('trimFlowName'));//标识是否剪切节点名称
     sessionStorage.setItem('trimFlowName', trimFlowName)
-    var data = executingSvgGraphView.model.get('data') //获取流程图数据
-    data.switchingFlow = true
-    $(executingSvgGraphView.mainG).empty() //清空流程图
-    executingSvgGraphView.renderGraph(data, executingSvgGraphView.mainG)
+    executingReRenderWorflow(true)
   })
-
+  $("#workflow-execute-zoom-in").on('click', function () {
+    $(this).hide()
+    $("#workflow-execute-zoom-out").show()
+    $('#execute-flow-panel .modal-header').hide()
+    $('#execute-flow-panel .modal-footer').hide()
+    $('#execution-graph-options-box').hide()
+    $('#execution-graph-panel-box').removeClass('col-xs-8').addClass('col-xs-12')
+    $('#execute-flow-panel .modal-dialog')[0].style.width = "98%"
+    $('#flow-executing-graph')[0].style.height = window.innerHeight * 0.88
+    executingZoomInWorflow() // 参数是否切换工作流
+  })
+  $("#workflow-execute-zoom-out").on('click', function () {
+    $(this).hide()
+    $("#workflow-execute-zoom-in").show()
+    $('#execute-flow-panel .modal-header').show()
+    $('#execute-flow-panel .modal-footer').show()
+    $('#execution-graph-options-box').show()
+    $('#execution-graph-panel-box').removeClass('col-xs-12').addClass('col-xs-8')
+    $('#execute-flow-panel .modal-dialog')[0].style.width = "80%"
+    $('#flow-executing-graph')[0].style.height = '500px'
+    executingZoomInWorflow() // 参数是否切换工作流
+  })
 });
+// 放大缩小重新收拢工作流，并居中
+function executingZoomInWorflow () {
+  executingSvgGraphView.collapseAllFlows()
+  executingSvgGraphView.resetPanZoom()
+}
+
+function executingReRenderWorflow (switchingFlow) {
+  var data = executingSvgGraphView.model.get('data') //获取流程图数据
+  if (switchingFlow) {
+    data.switchingFlow = true
+  }
+  $(executingSvgGraphView.mainG).empty() //清空流程图
+  executingSvgGraphView.renderGraph(data, executingSvgGraphView.mainG)
+}
+
 
 //用于保存浏览数据，切换页面也能返回之前的浏览进度。
 var jobRetryModel;
@@ -1597,7 +1755,7 @@ azkaban.JobFailedRetryView = Backbone.View.extend({
     $(trRetry).addClass('jobRetryTr');
     //设置失败重跑 job 名称
     var cJob = trRetry.insertCell(-1);
-
+    $(cJob).attr("style", "width: 65%");
     //var tr = $("<tr></tr>");
     //var td = $("<td></td>");
 
@@ -1615,6 +1773,7 @@ azkaban.JobFailedRetryView = Backbone.View.extend({
 
     //设置失败重跑时间间隔
     var cInterval = trRetry.insertCell(-1);
+    $(cInterval).attr("style", "width: 10%");
     var retryInterval = $("<input></input>");
     retryInterval.attr("class", "form-control");
     retryInterval.attr("id", "interval-input");
@@ -1627,21 +1786,24 @@ azkaban.JobFailedRetryView = Backbone.View.extend({
 
     //设置失败重跑次数
     var cCount = trRetry.insertCell(-1);
+    $(cCount).attr("style", "width: 15%");
     var idSelect = $("<select></select>");
     idSelect.attr("class", "form-control");
     idSelect.attr("id", "count-select");
+    var idSelectHtml = ''
     for (var i = 1; i < 4; i++) {
-      idSelect.append("<option value='" + i + "'>" + i + " " + wtssI18n.view.times + "</option>");
+      idSelectHtml += "<option value='" + i + "'>" + i + " " + wtssI18n.view.times + "</option>"
     }
+    idSelect.append(idSelectHtml);
     $(cCount).append(idSelect);
 
     //删除按钮
     var cDelete = trRetry.insertCell(-1);
     var remove = document.createElement("div");
-    $(remove).addClass("center-block").addClass('remove-btn');
+    $(remove).addClass("center-block");
     var removeBtn = document.createElement("button");
     $(removeBtn).attr('type', 'button');
-    $(removeBtn).addClass('btn').addClass('btn-sm').addClass('btn-danger');
+    $(removeBtn).addClass('btn btn-sm remove-btn btn-danger');
     $(removeBtn).text('Delete');
     $(remove).append(removeBtn);
     cDelete.appendChild(remove);
@@ -1654,7 +1816,7 @@ azkaban.JobFailedRetryView = Backbone.View.extend({
   handleRemoveColumn: function (evt) {
     var curTarget = evt.currentTarget;
     // Should be the table
-    var row = curTarget.parentElement.parentElement;
+    var row = curTarget.parentElement.parentElement.parentElement;
     $(row).remove();
 
     var jobList = this.model.get("jobList");
@@ -1860,27 +2022,28 @@ azkaban.JobSkipFailedView = Backbone.View.extend({
     $(trSkip).addClass('jobSkipTr');
     //设置失败重跑 job 名称
     var cJob = trSkip.insertCell(-1);
-
+    $(cJob).attr("style", "width: 80%");
     var jobSelectId = "job-skip-failed-select" + skipFailedTable.rows.length;
 
     var idSelect = $("<select></select>");
     idSelect.attr("class", "form-control");
     idSelect.attr("id", jobSelectId);
     idSelect.attr("style", "width: 100%");
-
+    var optionHtml = ''
     for (var i = 0; i < jobList.length; i++) {
-      idSelect.append("<option value='" + jobList[i].id + "'>" + jobList[i].id + "</option>");
+      optionHtml += "<option value='" + jobList[i].id + "'>" + jobList[i].id + "</option>"
     }
+    idSelect.append(optionHtml);
 
     $(cJob).append(idSelect);
 
     //删除按钮
     var cDelete = trSkip.insertCell(-1);
     var remove = document.createElement("div");
-    $(remove).addClass("center-block").addClass('remove-btn');
+    $(remove).addClass("center-block");
     var removeBtn = document.createElement("button");
     $(removeBtn).attr('type', 'button');
-    $(removeBtn).addClass('btn').addClass('btn-sm').addClass('btn-danger');
+    $(removeBtn).addClass('btn btn-sm remove-btn btn-danger');
     $(removeBtn).text('Delete');
     $(remove).append(removeBtn);
     cDelete.appendChild(remove);
@@ -1909,7 +2072,7 @@ azkaban.JobSkipFailedView = Backbone.View.extend({
     $(trSkip).addClass('jobSkipTr');
     //设置失败重跑 job 名称
     var cJob = trSkip.insertCell(-1);
-
+    $(cJob).attr("style", "width: 80%");
     //var tr = $("<tr></tr>");
     //var td = $("<td></td>");
 
@@ -1927,10 +2090,10 @@ azkaban.JobSkipFailedView = Backbone.View.extend({
     //删除按钮
     var cDelete = trSkip.insertCell(-1);
     var remove = document.createElement("div");
-    $(remove).addClass("center-block").addClass('remove-btn');
+    $(remove).addClass("center-block");
     var removeBtn = document.createElement("button");
     $(removeBtn).attr('type', 'button');
-    $(removeBtn).addClass('btn').addClass('btn-sm').addClass('btn-danger');
+    $(removeBtn).addClass('btn btn-sm remove-btn btn-danger');
     $(removeBtn).text('Delete');
     $(remove).append(removeBtn);
     cDelete.appendChild(remove);
@@ -1943,7 +2106,7 @@ azkaban.JobSkipFailedView = Backbone.View.extend({
   handleRemoveColumn: function (evt) {
     var curTarget = evt.currentTarget;
     // Should be the table
-    var row = curTarget.parentElement.parentElement;
+    var row = curTarget.parentElement.parentElement.parentElement;
     $(row).remove();
 
     var jobList = this.model.get("jobList");

@@ -16,7 +16,7 @@ import azkaban.utils.Props;
 public class TestHadoopJobUtilsResolveJarSpec {
   Props jobProps = null;
 
-  Logger logger = Logger.getRootLogger();
+  private static final Logger logger = LoggerFactory.getLogger(TestHadoopJobUtilsResolveJarSpec.class);
 
   String workingDirString = "/tmp/TestHadoopSpark";
 

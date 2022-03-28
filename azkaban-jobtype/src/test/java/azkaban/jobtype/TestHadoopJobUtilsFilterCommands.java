@@ -17,7 +17,7 @@ import junit.framework.Assert;
  * Test class for filterCommands method in HadoopJobUtils
  */
 public class TestHadoopJobUtilsFilterCommands {
-  private Logger logger = Logger.getRootLogger();
+  private Logger logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
   private List<String> originalCommands;
 

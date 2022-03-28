@@ -21,7 +21,6 @@ import azkaban.execapp.JobRunner;
 import azkaban.executor.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
@@ -30,7 +29,7 @@ import static azkaban.Constants.FAILED_PAUSED_MAX_WAIT_MS;
 
 public class KillFlowTrigger extends Thread {
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(KillFlowTrigger.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(KillFlowTrigger.class);
 
     private final Logger logger;
     private FlowRunner flowRunner;

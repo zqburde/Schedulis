@@ -371,6 +371,7 @@ azkaban.ProjectView = Backbone.View.extend({
           $('#user-onekey-schedule-flow-permit-panel').modal();
         }
         $("#switching-execute-flow-btn").hide()
+        $("#workflow-execute-zoom-in").hide()
       }
     });
   },
@@ -401,6 +402,7 @@ azkaban.ProjectView = Backbone.View.extend({
           $('#user-onekey-execute-flow-permit-panel').modal();
         }
         $("#switching-execute-flow-btn").hide()
+        $("#workflow-execute-zoom-in").hide()
       }
     });
   },
@@ -477,6 +479,7 @@ azkaban.ProjectView = Backbone.View.extend({
           $('#delete-project-permit-change-panel').modal();
         }
         $("#switching-execute-flow-btn").hide()
+        $("#workflow-execute-zoom-in").hide()
       }
     });
 

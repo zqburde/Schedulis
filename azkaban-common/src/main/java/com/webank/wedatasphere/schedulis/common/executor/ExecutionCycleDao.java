@@ -47,11 +47,19 @@ public class ExecutionCycleDao {
 
     private final DatabaseOperator dbOperator;
 
-    private static final String GET_CYCLE_FLOWS_TOTAL_SQL = "SELECT count(*) FROM execution_cycle_flows WHERE status = 30";
+    private static final String GET_CYCLE_FLOWS_TOTAL_SQL = "SELECT count(DISTINCT e.id) FROM execution_cycle_flows e " +
+        " LEFT JOIN project_permissions p ON e.`project_id` = p.`project_id` WHERE e.status = 30 ";
 
     private static final String LIST_CYCLE_fLOWS_SQL =
-            "SELECT id, status, now_exec_id, project_id, flow_id, submit_user, submit_time, update_time, start_time, end_time, enc_type, data " +
-                    "FROM execution_cycle_flows WHERE status = 30";
+            "SELECT DISTINCT e.id, e.status, e.now_exec_id, e.project_id, e.flow_id, e.submit_user, e.submit_time, e.update_time, e.start_time, e.end_time, e.enc_type, e.data " +
+                " FROM execution_cycle_flows e  " +
+                " LEFT JOIN project_permissions p ON e.`project_id` = p.`project_id` WHERE e.status = 30 ";
+
+    private static final String GET_CYCLE_FLOWS_BY_MAINTAINER_TOTAL_SQL = "SELECT count(*) FROM execution_cycle_flows WHERE status = 30";
+
+    private static final String LIST_CYCLE_FLOWS_BY_MAINTAINER_SQL =
+        "SELECT id, status, now_exec_id, project_id, flow_id, submit_user, submit_time, update_time, start_time, end_time, enc_type, data " +
+            "FROM execution_cycle_flows WHERE status = 30";
 
     private static final String UPLOAD_CYCLE_FLOW_SQL =
             "INSERT INTO execution_cycle_flows (status, now_exec_id, project_id, flow_id, submit_user, submit_time, update_time, " +
@@ -185,7 +193,7 @@ public class ExecutionCycleDao {
         ResultSetHandler<Integer> handler = rs -> rs.next() ? rs.getInt(1) : 0;
         try {
             if (usernameOp.isPresent()) {
-                String querySQL = GET_CYCLE_FLOWS_TOTAL_SQL + " AND submit_user = ?";
+                String querySQL = GET_CYCLE_FLOWS_TOTAL_SQL + " AND p.`name` = ?";
                 return dbOperator.query(querySQL, handler, usernameOp.get());
             } else {
                 return dbOperator.query(GET_CYCLE_FLOWS_TOTAL_SQL, handler);
@@ -202,8 +210,14 @@ public class ExecutionCycleDao {
             String projectIds = maintainedProjectIds.stream()
                     .map(Objects::toString)
                     .collect(joining(",", "(", ")"));
-            String querySQL = GET_CYCLE_FLOWS_TOTAL_SQL + " AND (project_id IN " + projectIds + " OR submit_user = ?)";
-            return dbOperator.query(querySQL, handler, username);
+            final String querySQL = " SELECT COUNT(1) FROM ((SELECT id, `status`, now_exec_id, project_id, flow_id, submit_user, submit_time, update_time, start_time, end_time, enc_type, `data`" +
+                "   FROM execution_cycle_flows WHERE STATUS = 30 " +
+                "   AND (project_id IN " + projectIds + " OR submit_user = ?)) " +
+                " UNION " +
+                " (SELECT DISTINCT e.id, e.status, e.now_exec_id, e.project_id, e.flow_id, e.submit_user, e.submit_time, e.update_time, e.start_time, e.end_time, e.enc_type, e.data " +
+                "   FROM execution_cycle_flows e  " +
+                "   LEFT JOIN project_permissions p ON e.`project_id` = p.`project_id` WHERE e.status = 30 AND p.`name` = ? )) tmp;";
+            return dbOperator.query(querySQL, handler, username, username);
         } catch (SQLException e) {
             logger.error("get cycle flows count failed", e);
             throw new ExecutorManagerException("get cycle flows count failed", e);
@@ -214,7 +228,7 @@ public class ExecutionCycleDao {
     public List<ExecutionCycle> listCycleFlows(Optional<String> usernameOp, int offset, int length) throws ExecutorManagerException {
         try {
             if (usernameOp.isPresent()) {
-                String querySQL = LIST_CYCLE_fLOWS_SQL + " AND submit_user = ? LIMIT ?, ?";
+                String querySQL = LIST_CYCLE_fLOWS_SQL + " AND p.`name` = ? LIMIT ?, ?";
                 Object[] params = new Object[]{usernameOp.get(), offset, length};
                 return dbOperator.query(querySQL, this::resultSet2CycleFlows, params);
             } else {
@@ -233,10 +247,15 @@ public class ExecutionCycleDao {
             String projectIds = maintainedProjectIds.stream()
                     .map(Objects::toString)
                     .collect(joining(",", "(", ")"));
-            String querySQL = LIST_CYCLE_fLOWS_SQL
-                    + " AND (project_id IN " + projectIds + " OR submit_user = ?)"
-                    + " LIMIT ?, ?";
-            Object[] params = new Object[]{username, offset, length};
+            final String querySQL = " (SELECT id, `status`, now_exec_id, project_id, flow_id, submit_user, submit_time, update_time, start_time, end_time, enc_type, `data` " +
+                "    FROM execution_cycle_flows WHERE STATUS = 30 " +
+                "    AND (project_id IN " + projectIds + " OR submit_user = ? )) " +
+                " UNION " +
+                " (SELECT DISTINCT e.id, e.status, e.now_exec_id, e.project_id, e.flow_id, e.submit_user, e.submit_time, e.update_time, e.start_time, e.end_time, e.enc_type, e.data " +
+                "    FROM execution_cycle_flows e  " +
+                "    LEFT JOIN project_permissions p ON e.`project_id` = p.`project_id` WHERE e.status = 30 AND p.`name` = ? ) " +
+                " LIMIT ?, ? ";
+            Object[] params = new Object[]{username, username, offset, length};
             return dbOperator.query(querySQL, this::resultSet2CycleFlows, params);
         } catch (SQLException e) {
             logger.error("list cycle flows failed", e);

@@ -87,7 +87,7 @@ public class SessionFilter extends HttpServlet implements Filter {
 
           //-----------------复制session
           for (Iterator it = old.entrySet().iterator(); it.hasNext();) {
-            Map.Entry entry = (Entry) it.next();
+            Entry entry = (Entry) it.next();
             session.setAttribute((String) entry.getKey(), entry.getValue());
           }
         }

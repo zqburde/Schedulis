@@ -17,6 +17,7 @@
 package azkaban.execapp;
 
 import static azkaban.Constants.ConfigurationKeys.AZKABAN_SERVER_HOST_NAME;
+import static azkaban.Constants.USER_DEFINED_PARAM;
 import static azkaban.execapp.ConditionalWorkflowUtils.FAILED;
 import static azkaban.execapp.ConditionalWorkflowUtils.PENDING;
 import static azkaban.execapp.ConditionalWorkflowUtils.checkConditionOnJobStatus;
@@ -113,7 +114,7 @@ public class FlowRunner extends EventHandler implements Runnable {
   private final ProjectLoader projectLoader;
   private final int execId;
   private final File execDir;
-  private final ExecutionOptions.FailureAction failureAction;
+  private final FailureAction failureAction;
   // Properties map
   private final Props azkabanProps;
   private final Map<String, Props> sharedProps = new HashMap<>();
@@ -1456,7 +1457,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     // jobs, we just
     // kill everything else. We also kill, if the flow has been cancelled.
     if (this.flowFailed
-            && this.failureAction == ExecutionOptions.FailureAction.FINISH_CURRENTLY_RUNNING) {
+            && this.failureAction == FailureAction.FINISH_CURRENTLY_RUNNING) {
       return Status.CANCELLED;
     } else if (isKilled()) {
       return Status.CANCELLED;
@@ -1803,6 +1804,7 @@ public class FlowRunner extends EventHandler implements Runnable {
       if (this.flowKilled) {
         return;
       }
+      Status lastStatus = this.flow.getStatus();
       this.logger.info("Kill has been called on flow " + this.execId);
       this.flow.setStatus(Status.KILLING);
       // If the flow is paused, then we'll also unpause
@@ -1841,6 +1843,9 @@ public class FlowRunner extends EventHandler implements Runnable {
           }
           FlowRunner.this.finishedNodes.add(failedNode);
         }
+      }
+      if (Status.FAILED.equals(lastStatus)) {
+        this.flow.setStatus(Status.KILLED);
       }
       updateFlow();
     }
@@ -2139,7 +2144,12 @@ public class FlowRunner extends EventHandler implements Runnable {
       if (event.getType() == EventType.JOB_STATUS_CHANGED) {
         updateFlow();
       } else if (event.getType() == EventType.JOB_FINISHED) {
+        final JobRunner jobRunner = (JobRunner) event.getRunner();
+        final ExecutableNode node = jobRunner.getNode();
         // FIXME The task execution needs to update the database information.
+        if (node.getLastStartTime() > 0) {
+          node.setStartTime(node.getLastStartTime());
+        }
         updateFlow();
         try {
           if(FlowRunner.this.executorServiceForCheckers!=null) {
@@ -2149,8 +2159,7 @@ public class FlowRunner extends EventHandler implements Runnable {
           FlowRunner.this.logger.error("获取当前活跃的线程数失败:" + e);
         }
         final EventData eventData = event.getData();
-        final JobRunner jobRunner = (JobRunner) event.getRunner();
-        final ExecutableNode node = jobRunner.getNode();
+
         FlowRunner.this.logger.info("finished node: " + node.getNestedId());
         if (FlowRunner.this.azkabanEventReporter != null) {
           final Map<String, String> jobMetadata = getJobMetadata(jobRunner);
@@ -2174,6 +2183,7 @@ public class FlowRunner extends EventHandler implements Runnable {
           FlowRunner.this.activeJobRunners.remove(jobRunner);
           // FIXME Added task processing for FAILED_WAITING status.
           failedWaitingJobHandle(node);
+          setUserDefined(node);
           node.getParentFlow().setUpdateTime(System.currentTimeMillis());
           interrupt();
           fireEventListeners(event);
@@ -2190,6 +2200,12 @@ public class FlowRunner extends EventHandler implements Runnable {
         // FIXME Added job and subflow execution timeout alarms.
         handleJobAndEmbeddedFlowExecTimeoutAlter(jobRunner, eventData);
       }
+    }
+  }
+
+  private void setUserDefined(ExecutableNode node){
+    if(node.getOutputProps() != null && node.getOutputProps().containsKey(USER_DEFINED_PARAM)) {
+      FlowRunner.this.flow.setComment(node.getOutputProps().getString(USER_DEFINED_PARAM, ""));
     }
   }
 
@@ -2301,7 +2317,7 @@ public class FlowRunner extends EventHandler implements Runnable {
         }
       }
     } catch (Exception e){
-      logger.error("发送子flow告警失败: " + e);
+      logger.error("发送子flow告警失败: ", e);
     }
   }
 
@@ -2365,7 +2381,7 @@ public class FlowRunner extends EventHandler implements Runnable {
           }
         }
       } catch (Exception e) {
-        logger.error("发送job告警失败" + e);
+        logger.error("发送job告警失败", e);
       }
     }
   }
@@ -2541,7 +2557,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     // jobs, we just
     // kill everything else. We also kill, if the flow has been cancelled.
     if (this.flowFailed
-            && this.failureAction == ExecutionOptions.FailureAction.FINISH_CURRENTLY_RUNNING) {
+            && this.failureAction == FailureAction.FINISH_CURRENTLY_RUNNING) {
       return Status.CANCELLED;
     } else if (shouldKill || isKilled()) {
       logger.info("this flow has been killed or dependent link has been failed, this job:" + node.getNestedId() + " will be canceled");

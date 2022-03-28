@@ -260,12 +260,12 @@ public class HttpRequestUtils {
   /**
    * returns true if user has access of type
    */
-  public static boolean hasPermission(final User user, final Permission.Type type) {
+  public static boolean hasPermission(final User user, final Type type) {
     for (final String roleName : user.getRoles()) {
       final Role role = user.getRoleMap().get(roleName);
 
       if (role !=null && role.getPermission().isPermissionSet(type)
-          || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+          || role.getPermission().isPermissionSet(Type.ADMIN)) {
         return true;
       }
     }

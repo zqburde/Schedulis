@@ -107,17 +107,18 @@
           <tr>
             <th>#</th>
             <th class="execid">$execId</th>
-                <th>$flow</th>
-                <th>$program</th>
-                <th>$user</th>
-                <th class="date">$startTime</th>
-                <th class="date">$endTime</th>
-                <th class="date">$runBatchDate</th>
-                <th class="elapse">$timeOfExec</th>
-                <th class="status">$execstatus</th>
-                <th class="col-xs-1">$flowexecType</th>
-                <!--
-                <th class="col-xs-1">操作</th>-->
+            <th>$flow</th>
+            <th>$program</th>
+            <th>$user</th>
+            <th class="date">$startTime</th>
+            <th class="date">$endTime</th>
+            <th class="date">$runBatchDate</th>
+            <th class="elapse">$timeOfExec</th>
+            <th class="status">$execstatus</th>
+            <th class="col-xs-1">$flowexecType</th>
+            <th>$comment</th>
+            <!--
+            <th class="col-xs-1">操作</th>-->
           </tr>
           </thead>
           <tbody id="historyTbody">
@@ -219,6 +220,7 @@
                     <select id="flowType" class="form-control">
                       <option value=-1>$all</option>
                       <option value=0>$once</option>
+                      <option value=2>$historyReRun</option>
                       <option value=3>$sch</option>
                       <option value=4>$cycleExe</option>
                     </select>

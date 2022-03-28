@@ -22,6 +22,7 @@ import azkaban.user.Permission;
 import azkaban.user.User;
 import azkaban.utils.Props;
 import azkaban.utils.Triple;
+import com.webank.wedatasphere.schedulis.common.project.entity.ProjectPermission;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -269,5 +270,15 @@ public interface ProjectLoader {
    * @throws ProjectManagerException
    */
   int getTodayRunFlow(int projectId, String flowName) throws ProjectManagerException;
+
+  /**
+   * 获取用户有权限的projectId
+   * @param user
+   * @return
+   * @throws ProjectManagerException
+   */
+  List<Integer> fetchPermissionsProjectId(String user) throws ProjectManagerException;
+
+  List<ProjectPermission> fetchAllPermissionsForProject(Project project) throws ProjectManagerException;
 
 }

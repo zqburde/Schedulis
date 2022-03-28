@@ -21,23 +21,21 @@ import java.util.Map;
 
 public interface TriggerManagerAdapter {
 
-  public void insertTrigger(Trigger t, String user)
+  void insertTrigger(Trigger t, String user)
       throws TriggerManagerException;
 
-  public void removeTrigger(int id, String user) throws TriggerManagerException;
+  void removeTrigger(int id, String user) throws TriggerManagerException;
 
-  public void updateTrigger(Trigger t, String user)
+  void updateTrigger(Trigger t, String user)
       throws TriggerManagerException;
 
-  public List<Trigger> getAllTriggerUpdates(long lastUpdateTime)
+  List<Trigger> getAllTriggerUpdates(long lastUpdateTime)
       throws TriggerManagerException;
 
-  public List<Trigger> getTriggerUpdates(String triggerSource,
+  List<Trigger> getTriggerUpdates(String triggerSource,
       long lastUpdateTime) throws TriggerManagerException;
 
-  public List<Integer> getAllTriggersId() throws TriggerLoaderException;
-
-  public List<Trigger> getTriggers(String trigegerSource);
+  List<Trigger> getTriggers(String triggerSource);
 
   public void start() throws TriggerManagerException;
 

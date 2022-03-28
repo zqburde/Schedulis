@@ -19,13 +19,14 @@ package azkaban;
 import azkaban.executor.*;
 import azkaban.executor.ExecutorLogEvent.EventType;
 import azkaban.flow.Flow;
+import azkaban.history.ExecutionRecover;
+import azkaban.history.RecoverTrigger;
 import azkaban.project.Project;
 import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
 import com.webank.wedatasphere.schedulis.common.executor.DepartmentGroup;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
-import com.webank.wedatasphere.schedulis.common.executor.ExecutionRecover;
 import com.webank.wedatasphere.schedulis.common.executor.UserVariable;
 import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
 import com.webank.wedatasphere.schedulis.common.system.entity.WtssUser;
@@ -77,6 +78,12 @@ public class MockExecutorLoader implements ExecutorLoader {
       throws ExecutorManagerException {
     final ExecutableFlow flow = this.flows.get(execId);
     return ExecutableFlow.createExecutableFlowFromObject(flow.toObject());
+  }
+
+  @Override
+  public List<ExecutableFlow> fetchExecutableFlowByRepeatId(int repeatId)
+      throws ExecutorManagerException {
+    return null;
   }
 
   @Override
@@ -557,6 +564,11 @@ public class MockExecutorLoader implements ExecutorLoader {
   }
 
   @Override
+  public List<RecoverTrigger> fetchHistoryRecoverTriggers() {
+    return null;
+  }
+
+  @Override
   public void updateHistoryRecover(ExecutionRecover executionRecover) throws ExecutorManagerException {
 
   }
@@ -813,6 +825,12 @@ public class MockExecutorLoader implements ExecutorLoader {
 
   @Override
   public List<UserVariable> fetchAllUserVariableByOwnerDepartment(Integer departmentId) throws ExecutorManagerException {
+    return null;
+  }
+
+  @Override
+  public List<Integer> getRunningExecByLock(Integer projectName, String flowId)
+      throws ExecutorManagerException {
     return null;
   }
 }

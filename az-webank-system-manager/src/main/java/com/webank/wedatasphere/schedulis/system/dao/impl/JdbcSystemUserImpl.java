@@ -21,24 +21,21 @@ import azkaban.utils.Props;
 import com.webank.wedatasphere.schedulis.common.executor.DepartmentGroup;
 import com.webank.wedatasphere.schedulis.common.utils.MD5Utils;
 import com.webank.wedatasphere.schedulis.system.dao.SystemUserLoader;
-import com.webank.wedatasphere.schedulis.system.entity.WebankDepartment;
-import com.webank.wedatasphere.schedulis.system.entity.WebankUser;
-import com.webank.wedatasphere.schedulis.system.entity.WtssPermissions;
-import com.webank.wedatasphere.schedulis.system.entity.WtssRole;
-import com.webank.wedatasphere.schedulis.system.entity.WtssUser;
+import com.webank.wedatasphere.schedulis.system.entity.*;
 import com.webank.wedatasphere.schedulis.system.exception.SystemUserManagerException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Singleton
 public class JdbcSystemUserImpl implements SystemUserLoader {
@@ -757,7 +754,7 @@ public class JdbcSystemUserImpl implements SystemUserLoader {
         throws SystemUserManagerException {
         List<WebankDepartment> webankDepartmentList = null;
 
-        String querySQL = WebankDepartmentHandler.FIND_WEBANK_DEPARTMENT_NO_ORG;
+        String querySQL = WebankDepartmentHandler.BASE_SQL_FIND_ALL_WEBANK_DEPARTMENT;
 
         final List<Object> params = new ArrayList<>();
         boolean first = true;

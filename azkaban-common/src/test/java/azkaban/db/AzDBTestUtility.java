@@ -16,8 +16,9 @@
  */
 package azkaban.db;
 
-import java.io.File;
 import org.apache.commons.dbutils.QueryRunner;
+
+import java.io.File;
 
 public class AzDBTestUtility {
 
@@ -56,7 +57,7 @@ public class AzDBTestUtility {
 
     public EmbeddedMysqlDataSource() {
       super();
-      final String url = "jdbc:mysql://10.255.0.76:3306/wtss_qyh_test?useUnicode=true&characterEncoding=UTF-8";
+      final String url = "jdbc:mysql://127.0.0.1:3306/wtss_qyh_test?useUnicode=true&characterEncoding=UTF-8";
       setDriverClassName("com.mysql.jdbc.Driver");
       setUrl(url);
       setUsername("root");

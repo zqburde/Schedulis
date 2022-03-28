@@ -60,6 +60,18 @@
   <link rel="stylesheet" type="text/css" href="${context}/css/morris.css?version=1.10.0"/>
   <link rel="stylesheet" type="text/css" href="${context}/css/jquery-ui-1.10.1.custom.css?version=1.10.0"/>
   <link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css?version=1.10.0"/>
+  <style type="text/css">
+    .select2-container .select2-selection--single .select2-selection__rendered {
+      display: block;
+      padding-left: 8px;
+      padding-right: 20px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: break-all;
+      height: 28px;
+      white-space: unset;
+    }
+  </style>
 </head>
 <body>
 
@@ -272,6 +284,45 @@
     </div>
   </div>
 
+  ## jobid关系展示
+  <div class="modal" id="jobid-relation-modal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h5 id="jobid-relation-title" class="modal-title">jobid关系信息</h5>
+        </div>
+        <div class="modal-body">
+          <div id="jobIdRelationView" style="word-break:break-all;">
+            <div class="row">
+              <table class="table table-striped table-bordered table-hover table-condensed ">
+                <thead>
+                <tr>
+                  <th>jobServerId</th>
+                  <th>applicationId</th>
+                  <th>attempt</th>
+                </tr>
+                </thead>
+                <tbody id="jobIdRelationBody">
+                  <tr>
+                    <th>job_123_123</th>
+                    <th>application_23_32423</th>
+                    <th>1</th>
+                  </tr>
+                  <tr>
+                    <th>job_123_123</th>
+                    <th>application_23_32423</th>
+                    <th>0</th>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
   ## Graph View
 
@@ -358,7 +409,7 @@
             <th class="elapse">$timeOfExec</th>
             <th class="status">$status</th>
             <th class="logs">$detail</th>
-            <th class="col-xs-1">$operate</th>
+            <th style="width:12%">$operate</th>
           </tr>
           </thead>
           <tbody id="executableBody">
@@ -404,7 +455,7 @@
           <table class="table table-striped table-bordered properties-table" id="param-table">
             <thead>
               <tr>
-                <th class="tb-pname">$paramName</th>
+                <th class="col-xs-2 tb-pname">$paramName</th>
                 <th class="tb-pvalue">$paramValue</th>
               </tr>
             </thead>
@@ -425,7 +476,7 @@
           <table class="table table-striped table-bordered properties-table" id="job-output-param-table">
             <thead>
               <tr>
-                <th class="tb-pname">$paramName</th>
+                <th class="col-xs-2 tb-pname">$paramName</th>
                 <th class="tb-pvalue">$paramValue</th>
               </tr>
             </thead>

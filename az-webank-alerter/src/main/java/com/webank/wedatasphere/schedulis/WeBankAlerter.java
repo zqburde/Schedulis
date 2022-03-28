@@ -27,6 +27,7 @@ import azkaban.executor.Executor;
 import azkaban.executor.ExecutorManagerException;
 import azkaban.executor.Status;
 import azkaban.flow.FlowUtils;
+import azkaban.history.ExecutionRecover;
 import azkaban.sla.SlaOption;
 import azkaban.utils.Props;
 import azkaban.utils.Utils;
@@ -36,13 +37,10 @@ import com.webank.wedatasphere.schedulis.common.utils.HttpUtils;
 import com.webank.wedatasphere.schedulis.ims.IMSAlert;
 import com.webank.wedatasphere.schedulis.ims.IMSAlert.AlertLevel;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.joda.time.DateTime;
@@ -60,8 +58,8 @@ public class WeBankAlerter implements Alerter {
   private String alerterWay;
   private String alerterReciver;
   private String toEcc;
-  private static DateTimeFormatter fmt = DateTimeFormat
-      .forPattern("YYYY-MM-dd HH:mm:ss");
+  private static DateTimeFormatter fmt = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss");
+  private static DateTimeFormatter fmt2 = DateTimeFormat.forPattern("YYYY-MM-dd");
 
   public WeBankAlerter(Props props){
     this.props =props;
@@ -1321,6 +1319,151 @@ public class WeBankAlerter implements Alerter {
     return stringBuffer.toString();
   }
 
+  @Override
+  public void alertOnHistoryRecoverFinish(ExecutionRecover executionRecover) throws Exception{
 
+    String historyRerunAlertLevel = (String)executionRecover.getOtherOption().get("historyRerunAlertLevel");
+    //设置告警邮件列表
+    String emails = (String)executionRecover.getOtherOption().get("historyRerunAlertEmails");
+    List<String> emailList = spliterEmails(emails);
+
+    //设置告警级别
+    String historyRecoverAlertLevel;
+    if(StringUtils.isNotBlank(historyRerunAlertLevel)){
+      historyRecoverAlertLevel = historyRerunAlertLevel;
+    }else{
+      //历史版本兼容
+      historyRecoverAlertLevel = "MAJOR";
+    }
+
+    this.doAlertByWeBankForHistoryRecover(executionRecover, emailList, AlertLevel.valueOf(historyRecoverAlertLevel));
+
+  }
+
+  private List<String> spliterEmails(String emails){
+    Set<String> list = new HashSet<>();
+    if (emails.contains(",")) {
+      for (String s : emails.split(",")) {
+        list.add(s.trim());
+      }
+    } else if (emails.contains(";")) {
+      for (String s : emails.split(";")) {
+        list.add(s.trim());
+      }
+    } else if (emails.contains(" ") ) {
+      for (String s : emails.split(" ")) {
+        if (StringUtils.isNotBlank(s)) {
+          list.add(s.trim());
+        }
+      }
+    } else {
+      if (StringUtils.isNotBlank(emails.trim())) {
+        list.add(emails.trim());
+      }
+    }
+
+    return new ArrayList<>(list);
+  }
+
+  private void doAlertByWeBankForHistoryRecover(ExecutionRecover executionRecover, List<String> emails, AlertLevel alertLevel){
+
+    String newTitle = String.format("[%s:%s] %s", executionRecover.getProjectName(), executionRecover.getFlowId(), this.title);
+    final String imsAlerterWays = this.props.getString("alarm.alerterWay");
+    if(imsAlerterWays.contains("2")){
+      //2 邮箱渠道
+      this.setAlerterWay("2");
+      logger.info("发送 webank 邮箱告警");
+      //组装Email格式信息
+      String webankAlertEmail = createAlertMessageForHistoryRecover(executionRecover, emails, "</br>");
+
+      if (CollectionUtils.isEmpty(emails)) {
+        List<String> emailEmp = new ArrayList<>();
+        emailEmp.add(executionRecover.getSubmitUser());
+        // 默认发给提交者
+        handleWebankAlert(webankAlertEmail, emailEmp, alertLevel, newTitle);
+      } else {
+        handleWebankAlert(webankAlertEmail, emails, alertLevel, newTitle);
+      }
+
+    }
+    if(imsAlerterWays.contains("3")){
+      //3 微信渠道
+      this.setAlerterWay("3");
+      logger.info("发送 webank 微信告警");
+      //组装微信格式信息
+      String slaMessageWeChat = createAlertMessageForHistoryRecover(executionRecover, emails, "\n");
+
+      if (CollectionUtils.isEmpty(emails)) {
+        List<String> emailEmp = new ArrayList<>();
+        emailEmp.add(executionRecover.getSubmitUser());
+        // 默认发给提交者
+        handleWebankAlert(slaMessageWeChat, emailEmp, alertLevel, newTitle);
+      } else {
+        handleWebankAlert(slaMessageWeChat, emails, alertLevel, newTitle);
+      }
+
+    }
+
+  }
+
+
+  /**
+   * 历史重跑普通告警Email模板
+   * @return
+   */
+  private String createAlertMessageForHistoryRecover(ExecutionRecover executionRecover, List<String> emails, String separator){
+    //获取选项设置
+
+    StringBuffer stringBuffer = new StringBuffer();
+
+    stringBuffer.append(separator);
+    if (CollectionUtils.isEmpty(emails)) {
+      stringBuffer.append("请立即联系提交人 " + executionRecover.getSubmitUser() + separator);
+    } else {
+      List<String> contacts = emails.stream().map(x -> x.contains("@") ? x.split("@")[0] : x).collect(Collectors.toList());
+      stringBuffer.append("请立即联系 " + contacts.toString() + " 或者 提交人 " + executionRecover.getSubmitUser() + separator);
+    }
+
+    Status status = executionRecover.getRecoverStatus();
+    if (status.equals(Status.SUCCEEDED)) {
+      stringBuffer.append("WTSS系统消息，您的历史重跑任务运行结束，详情如下：");
+    } else if (status.equals(Status.KILLED)){
+      stringBuffer.append("WTSS系统消息，您的历史重跑任务因KILL而中止，详情如下：");
+    } else if(status.equals(Status.FAILED)){
+      stringBuffer.append("WTSS系统消息，您的历史重跑任务因失败而中止，详情如下：");
+    } else {
+      stringBuffer.append("WTSS系统消息，您的历史重跑任务运行结束,但存在部分执行失败，详情如下：");
+    }
+
+    stringBuffer.append("  " + separator +"项目ID: ");
+    stringBuffer.append(executionRecover.getProjectId());
+
+    stringBuffer.append(";  " + separator +"项目名称: ");
+    stringBuffer.append(executionRecover.getProjectName());
+
+    stringBuffer.append(";  " + separator+ "工作流名称: ");
+    stringBuffer.append(executionRecover.getFlowId());
+
+    stringBuffer.append(";  " + separator + "提交人: ") ;
+    stringBuffer.append(executionRecover.getSubmitUser());
+
+    stringBuffer.append(";  " + separator + "提交时间: ") ;
+    stringBuffer.append(fmt.print(new DateTime(executionRecover.getSubmitTime())));
+
+    stringBuffer.append(";  " + separator + "开始执行日期: ");
+    String endTime = fmt2.print(new DateTime(executionRecover.getStartTime()));
+    if(executionRecover.getRecoverStatus().equals(Status.FAILED_FINISHING)){
+      endTime = "工作流正在运行中，还未结束.";
+    }
+    stringBuffer.append(endTime);
+
+    stringBuffer.append(";  " + separator + "结束执行日期: ");
+    stringBuffer.append(fmt2.print(new DateTime(executionRecover.getEndTime())));
+
+    stringBuffer.append(";  " + separator + "最后一次任务执行状态: ");
+    stringBuffer.append(executionRecover.getRecoverStatus());
+
+    return stringBuffer.toString();
+  }
 
 }

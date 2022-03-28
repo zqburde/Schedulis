@@ -25,8 +25,6 @@ import azkaban.utils.Props;
 import azkaban.webapp.servlet.HistoryServlet;
 import azkaban.webapp.servlet.LoginAbstractAzkabanServlet;
 import azkaban.webapp.servlet.Page;
-import azkaban.webapp.servlet.ProjectManagerServlet;
-
 import com.google.common.base.Joiner;
 import com.google.gson.JsonObject;
 import com.google.inject.Injector;
@@ -39,25 +37,21 @@ import com.webank.wedatasphere.schedulis.system.entity.WtssUser;
 import com.webank.wedatasphere.schedulis.system.exception.SystemUserManagerException;
 import com.webank.wedatasphere.schedulis.system.module.SystemModule;
 import com.webank.wedatasphere.schedulis.system.service.impl.SystemManager;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class SystemServlet extends LoginAbstractAzkabanServlet {
 
@@ -109,6 +103,17 @@ public class SystemServlet extends LoginAbstractAzkabanServlet {
             IOException {
         final HashMap<String, Object> ret = new HashMap<>();
         final String ajaxName = getParam(req, "ajax");
+
+        final User user = session.getUser();
+        if (!user.getRoles().contains("admin")) {
+            if (!"loadSystemUserSelectData".equals(ajaxName)) {
+                ret.put("error", "No Access Permission");
+                if (ret != null) {
+                    this.writeJSON(resp, ret);
+                }
+                return;
+            }
+        }
 
         if (ajaxName.equals("addSystemUserViaFastTrack")) {
             // 通过非登录页面的快速通道新增用户

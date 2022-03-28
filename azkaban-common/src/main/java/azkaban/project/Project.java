@@ -286,6 +286,10 @@ public class Project {
     this.userPermissionMap.clear();
   }
 
+  public void clearGroupPermission() {
+    this.groupPermissionMap.clear();
+  }
+
   public long getCreateTimestamp() {
     return this.createTimestamp;
   }

@@ -5,8 +5,8 @@
             <ThresholdFilter level="trace" onMatch="ACCEPT" onMismatch="DENY"/>
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} %L %M - %msg%xEx%n"/>
         </Console>
-        <RollingFile name="fixedTimeFileAppender" fileName="/appcom/logs/azkaban/wtss-webserver.log"
-                     filePattern="${date:yyyy-MM}/wtss-webserver-log-%d{yyyy-MM-dd}-%i.log.gz">
+        <RollingFile name="fixedTimeFileAppender" fileName="/appcom/logs/azkaban/schedulis-webserver.log"
+                     filePattern="${date:yyyy-MM}/schedulis-webserver-log-%d{yyyy-MM-dd}-%i.log.gz">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} %L %M - %msg%xEx%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy />
@@ -14,8 +14,8 @@
             </Policies>
             <DefaultRolloverStrategy max="24"/>
         </RollingFile>
-        <RollingFile name="loginTimeFileAppender" fileName="/appcom/logs/azkaban/wtss-access.log"
-                     filePattern="${date:yyyy-MM}/wtss-acces-log-%d{yyyy-MM-dd}-%i.log.gz">
+        <RollingFile name="loginTimeFileAppender" fileName="/appcom/logs/azkaban/schedulis-access.log"
+                     filePattern="${date:yyyy-MM}/schedulis-acces-log-%d{yyyy-MM-dd}-%i.log.gz">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{36} %L %M - %msg%xEx%n"/>
             <Policies>
                 <TimeBasedTriggeringPolicy />

@@ -16,6 +16,8 @@
 
 package azkaban.execapp;
 
+import static azkaban.ServiceProvider.SERVICE_PROVIDER;
+
 import azkaban.Constants.JobProperties;
 import azkaban.event.Event;
 import azkaban.event.EventData;
@@ -31,25 +33,37 @@ import azkaban.flow.CommonJobProperties;
 import azkaban.jobExecutor.AbstractProcessJob;
 import azkaban.jobExecutor.JavaProcessJob;
 import azkaban.jobExecutor.Job;
+import azkaban.jobid.relation.JobIdRelation;
+import azkaban.jobid.relation.JobIdRelationService;
 import azkaban.jobtype.JobTypeManager;
 import azkaban.jobtype.JobTypeManagerException;
 import azkaban.spi.EventType;
-import azkaban.utils.*;
-
+import azkaban.utils.ExternalLinkUtils;
+import azkaban.utils.Props;
+import azkaban.utils.StringUtils;
 import com.webank.wedatasphere.schedulis.common.log.LogFilterEntity;
 import com.webank.wedatasphere.schedulis.common.log.OperateType;
+import com.webank.wedatasphere.schedulis.common.utils.LogUtils;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FilenameFilter;
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import com.webank.wedatasphere.schedulis.common.utils.LogUtils;
 import org.slf4j.LoggerFactory;
-
 
 public class JobRunner extends EventHandler implements Runnable {
 
+  public static final Pattern APPLICATION_JOB_ID_PATTERN = Pattern.compile("(application|job)_\\d+_\\d+");
   public static final String AZKABAN_WEBSERVER_URL = "azkaban.webserver.url";
 
   public static final String JOB_FAILED_RETRY_COUNT = "job.failed.retry.count";
@@ -274,7 +288,11 @@ public class JobRunner extends EventHandler implements Runnable {
         this.logger = LoggerFactory.getLogger(loggerName);
         this.flowLogger.info("Created file appender for job " + this.jobId);
       } catch (final Exception e) {
+        fireEvent(Event.create(this, EventType.JOB_FINISHED,
+            new EventData(changeStatus(Status.FAILED), this.node.getNestedId())), false);
         this.flowLogger.error("Could not open log file in " + this.workingDir
+            + " for job " + this.jobId, e);
+        throw new RuntimeException("Could not open log file in " + this.workingDir
             + " for job " + this.jobId, e);
       }
     }
@@ -481,6 +499,60 @@ public class JobRunner extends EventHandler implements Runnable {
     }
   }
 
+  private void uploadJobIdRelation(){
+    JobIdRelationService jobIdRelationService = SERVICE_PROVIDER.getInstance(JobIdRelationService.class);
+    try {
+      final File[] files = this.logFile.getParentFile().listFiles(new FilenameFilter() {
+        @Override
+        public boolean accept(final File dir, final String name) {
+          return name.startsWith(JobRunner.this.logFile.getName());
+        }
+      });
+      Arrays.sort(files, Collections.reverseOrder());
+      Set<String> appId = new HashSet<>();
+      Set<String> bdpId = new HashSet<>();
+      for (File file : files) {
+        BufferedReader br = null;
+        try {
+          br = new BufferedReader(new FileReader(file));
+          String line;
+          while ((line = br.readLine()) != null) {
+            Matcher m = APPLICATION_JOB_ID_PATTERN.matcher(line);
+            while (m.find()) {
+              String match = m.group(0);
+              if (match.startsWith("application")) {
+                appId.add(match);
+              } else if (match.startsWith("job")) {
+                bdpId.add(match);
+              }
+            }
+          }
+        } catch (IOException e) {
+          logger.error("Error while trying to find applicationId for log", e);
+        } finally {
+          try {
+            if (br != null) {
+              br.close();
+            }
+          } catch (IOException e) {
+            logger.error("close io failed.", e);
+          }
+        }
+      }
+      if(!appId.isEmpty() || !bdpId.isEmpty()) {
+        JobIdRelation jobIdRelation = new JobIdRelation();
+        jobIdRelation.setExecId(executionId);
+        jobIdRelation.setAttempt(node.getAttempt());
+        jobIdRelation.setJobNamePath(node.getNestedId());
+        jobIdRelation.setApplicationId(org.apache.commons.lang3.StringUtils.join(appId, ","));
+        jobIdRelation.setJobServerJobId(org.apache.commons.lang3.StringUtils.join(bdpId, ","));
+        jobIdRelationService.addJobIdRelation(jobIdRelation);
+      }
+
+    } catch (Exception e){
+      logger.error("add job id relation failed.", e);
+    }
+  }
   /**
    * The main run thread.
    */
@@ -600,6 +672,7 @@ public class JobRunner extends EventHandler implements Runnable {
     try {
       finalizeLogFile(this.node.getAttempt());
       finalizeAttachmentFile();
+      uploadJobIdRelation();
       writeStatus();
     } finally {
       serverLogger.info("execId:" + this.executionId + ",node:" + node.getNestedId() + ", status: " + finalStatus);
@@ -955,14 +1028,18 @@ public class JobRunner extends EventHandler implements Runnable {
     return this.logger;
   }
 
+  private Status jobRunHandle(boolean errorFound, Status finalStatus, boolean restartFailed) {
+    return this.jobRunHandle(errorFound, finalStatus, restartFailed, System.currentTimeMillis());
+  }
+
   /**
    * 执行Job的方法
    * @param errorFound
    * @param finalStatus
    */
-  private Status jobRunHandle(boolean errorFound, Status finalStatus, boolean restartFailed){
+  private Status jobRunHandle(boolean errorFound, Status finalStatus, boolean restartFailed, long startTime){
 //    // Start the node.
-    this.node.setStartTime(System.currentTimeMillis());
+    this.node.setStartTime(startTime);
 //    Status finalStatus = this.node.getStatus();
 //    //更新数据库中Job的状态信息
 //    uploadExecutableNode();
@@ -1044,7 +1121,7 @@ public class JobRunner extends EventHandler implements Runnable {
           if(i == count - 1){
             restartFailed = false;
           }
-          finalStatus = jobRunHandle(errorFound, finalStatus, restartFailed);
+          finalStatus = jobRunHandle(errorFound, finalStatus, restartFailed, this.node.getStartTime());
           if(Status.isSucceeded(finalStatus) || isKilled() || isSkipped()){
             logger.info("the job stop retry, job status is " + finalStatus);
             break;

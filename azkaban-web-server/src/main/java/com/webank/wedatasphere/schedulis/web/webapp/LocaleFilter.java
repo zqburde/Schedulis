@@ -17,17 +17,13 @@
 package com.webank.wedatasphere.schedulis.web.webapp;
 
 import com.webank.wedatasphere.schedulis.common.i18nutils.LoadJsonUtils;
-import java.io.IOException;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 public class LocaleFilter implements Filter {
 
@@ -79,7 +75,7 @@ public class LocaleFilter implements Filter {
                 String languageType = (String) req.getSession().getAttribute("TRANS_I18N_LOCALE");
                 if (languageType == null || languageType.isEmpty()) {
                     languageType = req.getHeader("Accept-Language");
-                    String type = languageType.split(",")[0];
+                    String type = languageType == null ? "zh":languageType.split(",")[0];
                     if (type.equalsIgnoreCase("zh-CN") || type.equalsIgnoreCase("zh")) {
                         languageType = "zh_CN";
                     } else {

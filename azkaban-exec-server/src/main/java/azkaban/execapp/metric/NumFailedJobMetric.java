@@ -41,7 +41,7 @@ public class NumFailedJobMetric extends TimeBasedReportingMetric<Integer> implem
   /**
    * Listen for events to maintain correct value of number of failed jobs {@inheritDoc}
    *
-   * @see azkaban.event.EventListener#handleEvent(azkaban.event.Event)
+   * @see EventListener#handleEvent(Event)
    */
   @Override
   public synchronized void handleEvent(final Event event) {

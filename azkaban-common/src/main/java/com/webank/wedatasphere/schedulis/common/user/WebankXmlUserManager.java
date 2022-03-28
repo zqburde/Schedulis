@@ -288,10 +288,18 @@ public class WebankXmlUserManager implements UserManager {
 //    if (user == null) {
 //      throw new UserManagerException("网络错误: 未发现用户.");
 //    }
-    if(foundUsername == null || "".equals(foundUsername) ||
-        !LdapCheckCenter.checkLogin(props, foundUsername, password) ||
-        user == null){
-      throw new UserManagerException("Error User Name Or Password");
+
+    boolean ldapSwitch = props.getBoolean("ladp.switch", false);
+    if (!ldapSwitch) {
+      if (foundUsername == null || "".equals(foundUsername) || user == null) {
+        throw new UserManagerException("Error User Name Or Password");
+      }
+    } else {
+      if(foundUsername == null || "".equals(foundUsername) ||
+          !LdapCheckCenter.checkLogin(props, foundUsername, password) ||
+          user == null){
+        throw new UserManagerException("Error User Name Or Password");
+      }
     }
 
 

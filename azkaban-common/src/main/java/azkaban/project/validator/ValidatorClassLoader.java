@@ -211,7 +211,7 @@ public class ValidatorClassLoader extends URLClassLoader {
   public boolean finalizeNativeLibs(final ClassLoader cl) throws ValidatorManagerException {
     boolean res = false;
     final Class classClassLoader = ClassLoader.class;
-    java.lang.reflect.Field nativeLibraries = null;
+    Field nativeLibraries = null;
     try {
       nativeLibraries = classClassLoader.getDeclaredField("nativeLibraries");
     } catch (final NoSuchFieldException e) {

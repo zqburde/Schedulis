@@ -37,6 +37,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -47,10 +48,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HistoryServlet extends LoginAbstractAzkabanServlet {
 
@@ -178,9 +179,11 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
             history = this.executorManagerAdapter.getUserExecutableFlows((pageNum - 1) * pageSize, pageSize, user.getUserId());
           }
         } else {
-          final long beginTime = "".equals(begin) ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN).parseDateTime(begin).getMillis();
+          final long beginTime = "".equals(begin) ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN).withLocale(
+              Locale.ENGLISH).parseDateTime(begin).getMillis();
 
-          final long endTime = "".equals(end) ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN).parseDateTime(end).getMillis();
+          final long endTime = "".equals(end) ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN).withLocale(
+              Locale.ENGLISH).parseDateTime(end).getMillis();
 
           //添加权限判断 admin 用户能查看所有flow历史 user用户只能查看自己的flow历史
           logger.info("userRoleSet value=" + userRoleSet.toString());
@@ -478,10 +481,11 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
         } else {
           final long beginTime =
               "".equals(begin) ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
-                  .parseDateTime(begin).getMillis();
+                  .withLocale(Locale.ENGLISH).parseDateTime(begin).getMillis();
 
           final long endTime =
-              "".equals(end) ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN).parseDateTime(end).getMillis();
+              "".equals(end) ? -1 : DateTimeFormat.forPattern(FILTER_BY_DATE_PATTERN)
+                  .withLocale(Locale.ENGLISH).parseDateTime(end).getMillis();
 
           //添加权限判断 admin 用户能查看所有flow历史 user用户只能查看自己的flow历史
           if(userRoleSet.contains("admin")){
@@ -833,6 +837,7 @@ public class HistoryServlet extends LoginAbstractAzkabanServlet {
       historyInfo.put("flowType", executableFlow.getFlowType());
 //      historyInfo.put("execTime", WebUtils.formatDurationTime(executableFlow.getStartTime(), executableFlow.getEndTime()) + "");
 //      historyInfo.put("moyenne", executableFlow.getOtherOption().get("moyenne"));
+      historyInfo.put(ExecutableFlow.COMMENT_PARAM, executableFlow.getComment());
       historyList.add(historyInfo);
     }
 

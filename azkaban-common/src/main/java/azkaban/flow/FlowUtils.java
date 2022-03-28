@@ -235,4 +235,36 @@ public class FlowUtils {
     }
   }
 
+  /**
+   * 跟上一次执行的flow对比，把上一次的dag结构复制到当前执行的flow中
+   * @param currentFlow
+   * @param lastExecutableFlow
+   */
+  public static void compareAndCopyFlow(ExecutableFlowBase currentFlow, ExecutableFlowBase lastExecutableFlow){
+    if(lastExecutableFlow.getFlowId().equals(currentFlow.getFlowId())) {
+      for(ExecutableNode executableNode: lastExecutableFlow.getExecutableNodes()){
+        resetExecutableNode(executableNode);
+        currentFlow.addExecutableNode(executableNode);
+      }
+    } else {
+      for(ExecutableNode node: lastExecutableFlow.getExecutableNodes()){
+        if(node instanceof ExecutableFlowBase){
+          compareAndCopyFlow(currentFlow, (ExecutableFlowBase) node);
+        }
+      }
+    }
+  }
+
+  public static void resetExecutableNode(ExecutableNode node){
+    node.setStatus(Status.READY);
+    node.setStartTime(-1);
+    node.setEndTime(-1);
+    node.setUpdateTime(-1);
+    if(node instanceof ExecutableFlowBase){
+      for(ExecutableNode tmpNode: ((ExecutableFlowBase) node).getExecutableNodes()){
+        resetExecutableNode(tmpNode);
+      }
+    }
+  }
+
 }

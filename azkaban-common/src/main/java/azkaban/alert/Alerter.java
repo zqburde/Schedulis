@@ -16,6 +16,7 @@
 
 package azkaban.alert;
 
+import azkaban.history.ExecutionRecover;
 import com.webank.wedatasphere.schedulis.common.executor.ExecutionCycle;
 import org.slf4j.Logger;
 
@@ -71,4 +72,6 @@ public interface Alerter {
   void alertOnFlowPausedSla(SlaOption slaOption, ExecutableFlow exflow, String nodePath) throws Exception;
 
   void alertOnCycleFlowInterrupt(ExecutableFlow flow, ExecutionCycle cycleFlow, List<String> emails, String alertLevel, String... extraReasons) throws Exception;
+
+  void alertOnHistoryRecoverFinish(ExecutionRecover executionRecover) throws Exception;
 }

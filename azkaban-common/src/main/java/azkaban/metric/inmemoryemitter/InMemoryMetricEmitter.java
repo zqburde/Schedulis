@@ -87,7 +87,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
   /**
    * Ingest metric in snapshot data structure while maintaining interval {@inheritDoc}
    *
-   * @see azkaban.metric.IMetricEmitter#reportMetric(azkaban.metric.IMetric)
+   * @see IMetricEmitter#reportMetric(IMetric)
    */
   @Override
   public void reportMetric(final IMetric<?> metric) throws MetricException {
@@ -234,7 +234,7 @@ public class InMemoryMetricEmitter implements IMetricEmitter {
   /**
    * Clear snapshot data structure {@inheritDoc}
    *
-   * @see azkaban.metric.IMetricEmitter#purgeAllData()
+   * @see IMetricEmitter#purgeAllData()
    */
   @Override
   public void purgeAllData() throws MetricException {
