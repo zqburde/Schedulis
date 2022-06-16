@@ -177,6 +177,10 @@
           <groupId>org.apache.logging.log4j</groupId>
         </exclusion>
         <exclusion>
+          <groupId>org.pentaho</groupId>
+          <artifactId>pentaho-aggdesigner-algorithm</artifactId>
+        </exclusion>
+        <exclusion>
           <artifactId>log4j-core</artifactId>
           <groupId>org.apache.logging.log4j</groupId>
         </exclusion>
