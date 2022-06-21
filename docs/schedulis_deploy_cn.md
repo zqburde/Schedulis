@@ -99,6 +99,12 @@ ln -sf /appcom/config/schedulis-config/schedulis-exec/exec_azkaban.properties /a
 ln -sf /appcom/config/schedulis-config/schedulis-exec/common.properties /appcom/Install/AzkabanInstall/schedulis-exec/plugins/jobtypes/common.properties;
 ln -sf /appcom/config/schedulis-config/schedulis-exec/commonprivate.properties /appcom/Install/AzkabanInstall/schedulis-exec/plugins/jobtypes/commonprivate.properties;
 ln -sf /appcom/config/schedulis-config/schedulis-exec/exec_plugin.properties /appcom/Install/AzkabanInstall/schedulis-exec/plugins/alerter/WebankIMS/conf/plugin.properties;
+
+# WebServer 配置软链
+ln -sf /appcom/Install/AzkabanInstall/schedulis_{{version_new}}_web /appcom/Install/AzkabanInstall/schedulis-web;
+ln -sf /appcom/config/schedulis-config/schedulis-web/web_azkaban.properties /appcom/Install/AzkabanInstall/schedulis-web/conf/azkaban.properties;
+ln -sf /appcom/config/schedulis-config/schedulis-web/web_plugin_ims.properties /appcom/Install/AzkabanInstall/schedulis-web/plugins/alerter/WebankIMS/conf/plugin.properties;
+ln -sf /appcom/config/schedulis-config/schedulis-web/web_plugin_system.properties /appcom/Install/AzkabanInstall/schedulis-web/plugins/viewer/system/conf/plugin.properties;
 ```
 
 #### 1. 修改 host.properties 文件
@@ -122,7 +128,7 @@ executor3_hostname=3
 
 #### 2. Executor Server 配置修改<a name="exec-config">
 
-##### 执行包修改
+##### 执行包修改（自动化部署无需执行该步骤）
 
 项目文件根目录下的 bin/construct 目录中任务执行依赖的包 execute-as-user ，复制到 Executor Server 的 lib 下（schedulis_xxx_exec/lib/），并且更新权限
 ```
